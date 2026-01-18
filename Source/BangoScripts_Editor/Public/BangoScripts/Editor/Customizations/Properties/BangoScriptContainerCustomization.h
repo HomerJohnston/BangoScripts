@@ -4,16 +4,24 @@
 #include "IPropertyTypeCustomization.h"
 #include "Input/Reply.h"
 
+class IClassViewerFilter;
 struct FCanLoadMap;
 class SVerticalBox;
 class FBangoBlueprintEditor;
 
-enum class EBangoScriptRenameStatus
+enum class EBangoScriptRenameStatus : uint8
 {
 	ValidNewName,
 	MatchesCurrent,
 	MatchesOther,
 	InvalidNewName,
+};
+
+enum class EBangoScriptType : uint8
+{
+	Unset,
+	ContentAssetScript,
+	LevelScript,
 };
 
 class FBangoScriptContainerCustomization : public IPropertyTypeCustomization
@@ -42,6 +50,8 @@ protected:
 	
 	EBangoScriptRenameStatus ProposedNameStatus;
 
+	TArray<TSharedRef<IClassViewerFilter>> BangoScriptClassViewerFilters;
+	
 	// ------------------------------------------
 
 	void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
@@ -50,7 +60,9 @@ protected:
 	
 	FReply OnClicked_CreateScript();
 	
-	FReply OnClicked_DeleteScript();
+	FText Text_UnsetDeleteScript() const;
+	
+	FReply OnClicked_UnsetDeleteScript();
 	
 	bool IsEnabled_ScriptClassPicker() const;
 	
@@ -72,7 +84,11 @@ protected:
 	
 	FReply OnClicked_RenameScript() const;
 	
-	FReply OnClicked_DeleteLevelScript() const;
+	FText Text_RefreshScriptInputs() const;
+	
+	bool IsEnabled_RefreshScriptInputs() const;
+	
+	FSlateColor ButtonColorAndOpacity_RefreshScriptInputs() const;
 	
 	FReply OnClicked_RefreshScriptInputs() const;
 	
@@ -100,7 +116,7 @@ protected:
 	
 	// ------------------------------------------
 
-	AActor* GetOwner() const;
+	AActor* GetOwnerActor() const;
 	
 	UObject* GetOuter() const;
 	
@@ -115,4 +131,8 @@ protected:
 	void OnScriptContainerDestroyed(UObject* Object, FBangoScriptContainer* ScriptContainer);
 	
 	void OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap);
+	
+	void GetScriptContainerAndOuter(UObject*& Outer, FBangoScriptContainer*& ScriptContainer) const;
+	
+	EBangoScriptType GetScriptType() const;
 };

@@ -44,10 +44,51 @@ void FBangoScriptContainer::SetScriptClass(TSubclassOf<UObject> NewScriptClass)
 // ----------------------------------------------
 
 #if WITH_EDITOR
+bool FBangoScriptContainer::AreScriptInputsOutDated()
+{
+	static uint64 CachedFrameCheck = 0;
+	static bool CachedResult = false;
+	
+	// Limit checking to once per tick
+	if (GFrameCounter == CachedFrameCheck)
+	{
+		return CachedResult;
+	}
+	
+	TArray<FProperty*> MissingProperties;
+	TArray<FName> DeadProperties;
+	
+	GetStuff(MissingProperties, DeadProperties);
+	
+	CachedFrameCheck = GFrameCounter;
+	CachedResult = MissingProperties.Num() > 0 || DeadProperties.Num() > 0;
+	
+	return CachedResult;
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
 void FBangoScriptContainer::UpdateScriptInputs()
 {
-	TArray<FProperty*> Properties;
+	TArray<FProperty*> MissingProperties;
+	TArray<FName> DeadProperties;
 	
+	GetStuff(MissingProperties, DeadProperties);
+
+	// Modify(); // TODO, IMPORTANT 
+	ScriptInputs.RemovePropertiesByName(DeadProperties);
+	
+	for (FProperty* Property : MissingProperties)
+	{
+		//Modify(); // TODO, IMPORTANT
+		ScriptInputs.AddProperty(Property->GetFName(), Property);
+	}
+}
+
+void FBangoScriptContainer::GetStuff(TArray<FProperty*>& MissingProperties, TArray<FName>& DeadProperties) const
+{
 	if (GetScriptClass().IsValid())
 	{
 		TSubclassOf<UBangoScript> Script = GetScriptClass().Get();
@@ -58,8 +99,7 @@ void FBangoScriptContainer::UpdateScriptInputs()
 			
 			if (Property->HasAnyPropertyFlags(CPF_Edit | CPF_ExposeOnSpawn) && !Property->IsNative())
 			{
-				UE_LOG(LogBangoEditor, Display, TEXT("%s"), *Property->GetName());
-				Properties.Add(Property);
+				MissingProperties.Add(Property);
 			}
 		}
 	}
@@ -70,16 +110,14 @@ void FBangoScriptContainer::UpdateScriptInputs()
 
 	if (BagStruct)
 	{
-		TSet<FName> DeadProperties;
-	
 		for (int32 i = 0; i < NumBagProperties; ++i)
 		{
 			const FPropertyBagPropertyDesc* Desc = BagStruct->FindPropertyDescByIndex(i);
 		
-			if (Properties.ContainsByPredicate( [Desc] (const FProperty* Property) { return Desc->Name == Property->GetFName(); } ))
+			if (MissingProperties.ContainsByPredicate( [Desc] (const FProperty* Property) { return Desc->Name == Property->GetFName(); } ))
 			{
 				// We already have this property. We won't need to add it.
-				Properties.RemoveAll([Desc] (const FProperty* Property) { return Desc->Name == Property->GetFName(); } );
+				MissingProperties.RemoveAll([Desc] (const FProperty* Property) { return Desc->Name == Property->GetFName(); } );
 			}
 			else
 			{
@@ -87,18 +125,6 @@ void FBangoScriptContainer::UpdateScriptInputs()
 				DeadProperties.Add(Desc->Name);
 			}
 		}
-		
-		if (DeadProperties.Num() > 0)
-		{
-			//Modify();
-			ScriptInputs.RemovePropertiesByName(DeadProperties.Array());
-		}
-	}
-	
-	for (FProperty* Property : Properties)
-	{
-		//Modify();
-		ScriptInputs.AddProperty(Property->GetFName(), Property);
 	}
 }
 #endif

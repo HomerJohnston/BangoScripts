@@ -22,7 +22,7 @@
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
 TSharedPtr<FSlateStyleSet> FBangoScripts_EditorModule::StyleSet = nullptr;
-TSharedPtr<FBangoClassViewerFilter> FBangoScripts_EditorModule::BangoClassViewerFilter = nullptr;
+TSharedPtr<FBangoScriptsGlobalClassViewerFilter> FBangoScripts_EditorModule::BangoClassViewerFilter = nullptr;
 
 EAssetTypeCategories::Type FBangoScripts_EditorModule::BangoAssetCategory = static_cast<EAssetTypeCategories::Type>(0);
 FAssetCategoryPath FBangoAssetCategoryPaths::Bango(LOCTEXT("Bango", "Bango"));
@@ -98,8 +98,6 @@ void FBangoScripts_EditorModule::ShutdownModule()
 
 void FBangoScripts_EditorModule::LateRegisterClassFilter()
 {
-	// TODO: project settings! IF PROJECT SETTINGS ONLY ENABLE CLASS FILTER FEATURE
-	
 	FEditorDelegates::OnEditorInitialized.AddLambda([this] (double TimeElapsed)
 	{
 		FTimerHandle DummyHandle;
@@ -107,9 +105,10 @@ void FBangoScripts_EditorModule::LateRegisterClassFilter()
 		{
 			FClassViewerModule& ClassViewerModule = FModuleManager::Get().LoadModuleChecked<FClassViewerModule>("ClassViewer");
 
+			// If other plugins register global class viewer filters on startup, we will "wrap" them with ours. Ours will check theirs and then run our own logic.
 			TSharedPtr<IClassViewerFilter> ExistingFilter = ClassViewerModule.GetGlobalClassViewerFilter();
 			
-			BangoClassViewerFilter = MakeShared<FBangoClassViewerFilter>(ExistingFilter);
+			BangoClassViewerFilter = MakeShared<FBangoScriptsGlobalClassViewerFilter>(ExistingFilter);
 			
 			ClassViewerModule.RegisterGlobalClassViewerFilter(BangoClassViewerFilter.ToSharedRef());
 			

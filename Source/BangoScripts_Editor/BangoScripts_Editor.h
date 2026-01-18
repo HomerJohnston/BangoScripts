@@ -28,7 +28,7 @@ protected:
 	
 	static TSharedPtr<FSlateStyleSet> StyleSet;
 	
-	static TSharedPtr<FBangoClassViewerFilter> BangoClassViewerFilter;
+	static TSharedPtr<FBangoScriptsGlobalClassViewerFilter> BangoClassViewerFilter;
 		
 	// ============================================================================================
 	// API

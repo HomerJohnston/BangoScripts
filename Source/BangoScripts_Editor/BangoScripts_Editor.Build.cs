@@ -44,7 +44,11 @@ public class BangoScripts_Editor : ModuleRules
 				"AssetTools",
 				"UMGEditor",
 				"ApplicationCore",
-				"PropertyEditor"
+				"PropertyEditor",
+				"ToolWidgets",
+				"EditorWidgets", 
+				"GameProjectGeneration",
+				"AssetRegistry"
             }
         );
         
