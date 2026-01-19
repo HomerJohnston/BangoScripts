@@ -26,7 +26,7 @@ bool FBangoScriptsGlobalClassViewerFilter::IsClassAllowed(const FClassViewerInit
 	{
 		return false;
 	}
-	
+		
 	if (InClass->IsChildOf(UBangoScript::StaticClass()))
 	{
 		return false;

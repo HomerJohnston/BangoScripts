@@ -71,7 +71,7 @@ EAssetCommandResult UAssetDefinition_BangoScript::OpenAssets(const FAssetOpenArg
 
 UFactory_BangoScript::UFactory_BangoScript()
 {
-	SupportedClass = UBangoScript::StaticClass();
+	SupportedClass = UBangoScriptBlueprint::StaticClass();
 	bCreateNew = true;
 	bEditorImport = false;
 	bEditAfterNew = true;

@@ -58,8 +58,6 @@ protected:
 	
 	void OnBangoScriptFinished(UBangoScript* ScriptInstance);
 	
-	int32 Instances = 0;
-	
 protected:
 	// Copied from Editor.h
 	bool GetBEGIN(const TCHAR** Stream, const TCHAR* Match) const;

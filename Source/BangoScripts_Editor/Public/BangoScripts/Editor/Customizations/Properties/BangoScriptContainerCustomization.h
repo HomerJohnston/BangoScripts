@@ -3,6 +3,7 @@
 #include "BangoScripts/Core/BangoScriptContainer.h"
 #include "IPropertyTypeCustomization.h"
 #include "Input/Reply.h"
+#include "Layout/Visibility.h"
 
 class IClassViewerFilter;
 struct FCanLoadMap;
@@ -51,7 +52,7 @@ protected:
 	EBangoScriptRenameStatus ProposedNameStatus;
 
 	TArray<TSharedRef<IClassViewerFilter>> BangoScriptClassViewerFilters;
-	
+
 	// ------------------------------------------
 
 	void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
@@ -75,6 +76,8 @@ protected:
 	// ------------------------------------------
 
 	void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
+	
+	EVisibility Visibility_HasValidGraph() const;
 	
 	int WidgetIndex_GraphEditor() const;
 	

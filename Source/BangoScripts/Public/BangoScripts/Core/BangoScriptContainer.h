@@ -63,11 +63,13 @@ public:
 	
 	void SetScriptClass(TSubclassOf<UObject> NewScriptClass);
 
+	const FInstancedPropertyBag* GetPropertyBag() const;
+	
 	bool AreScriptInputsOutDated();
 	
 	void UpdateScriptInputs();
 	
-	void GetStuff(TArray<FProperty*>& NonExistentProperties, TArray<FName>& DeadProperties) const;
+	void GetPropertiesForRefresh(TArray<FProperty*>& NonExistentProperties, TArray<FName>& DeadProperties) const;
 	
 	void SetRequestedName(const FString& InName);
 

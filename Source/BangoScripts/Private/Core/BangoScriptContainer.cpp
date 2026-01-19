@@ -39,6 +39,11 @@ void FBangoScriptContainer::SetScriptClass(TSubclassOf<UObject> NewScriptClass)
 {
 	ScriptClass = NewScriptClass;
 }
+
+const FInstancedPropertyBag* FBangoScriptContainer::GetPropertyBag() const
+{
+	return &ScriptInputs;
+}
 #endif
 
 // ----------------------------------------------
@@ -58,7 +63,7 @@ bool FBangoScriptContainer::AreScriptInputsOutDated()
 	TArray<FProperty*> MissingProperties;
 	TArray<FName> DeadProperties;
 	
-	GetStuff(MissingProperties, DeadProperties);
+	GetPropertiesForRefresh(MissingProperties, DeadProperties);
 	
 	CachedFrameCheck = GFrameCounter;
 	CachedResult = MissingProperties.Num() > 0 || DeadProperties.Num() > 0;
@@ -75,7 +80,7 @@ void FBangoScriptContainer::UpdateScriptInputs()
 	TArray<FProperty*> MissingProperties;
 	TArray<FName> DeadProperties;
 	
-	GetStuff(MissingProperties, DeadProperties);
+	GetPropertiesForRefresh(MissingProperties, DeadProperties);
 
 	// Modify(); // TODO, IMPORTANT 
 	ScriptInputs.RemovePropertiesByName(DeadProperties);
@@ -87,7 +92,7 @@ void FBangoScriptContainer::UpdateScriptInputs()
 	}
 }
 
-void FBangoScriptContainer::GetStuff(TArray<FProperty*>& MissingProperties, TArray<FName>& DeadProperties) const
+void FBangoScriptContainer::GetPropertiesForRefresh(TArray<FProperty*>& MissingProperties, TArray<FName>& DeadProperties) const
 {
 	if (GetScriptClass().IsValid())
 	{
@@ -114,7 +119,16 @@ void FBangoScriptContainer::GetStuff(TArray<FProperty*>& MissingProperties, TArr
 		{
 			const FPropertyBagPropertyDesc* Desc = BagStruct->FindPropertyDescByIndex(i);
 		
-			if (MissingProperties.ContainsByPredicate( [Desc] (const FProperty* Property) { return Desc->Name == Property->GetFName(); } ))
+			if (MissingProperties.ContainsByPredicate( [Desc] (const FProperty* Property)
+			{
+				if (Desc->Name != Property->GetFName())
+					return false;
+				
+				if (!Property->SameType(Desc->CachedProperty))
+					return false;
+				
+				return true;
+			} ))
 			{
 				// We already have this property. We won't need to add it.
 				MissingProperties.RemoveAll([Desc] (const FProperty* Property) { return Desc->Name == Property->GetFName(); } );

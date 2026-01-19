@@ -2,6 +2,7 @@
 
 #include "BangoScripts/Core/BangoScriptHandle.h"
 #include "BangoScripts/Core/BangoScript.h"
+#include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Engine/AssetManager.h"
 #include "Engine/LatentActionManager.h"
@@ -91,7 +92,7 @@ void UBangoScriptSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 // ----------------------------------------------
 
-FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, bool bLoadImmediately)
+FBangoScriptHandle UBangoScriptSubsystem::K2_EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, bool bLoadImmediately)
 {
 	if (!Runner)
 	{
@@ -113,21 +114,19 @@ FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScri
 		return FBangoScriptHandle::GetNullHandle();
 	}
 	
-	FBangoScriptHandle Handle = FBangoScriptHandle::NewHandle();
-	
-	EnqueueScriptWithHandle(Handle, ScriptClass, Runner, bLoadImmediately);
-	
-	return Handle;
+	return EnqueueScript(ScriptClass, Runner, nullptr, bLoadImmediately);
 }
 
-void UBangoScriptSubsystem::EnqueueScriptWithHandle(FBangoScriptHandle Handle, TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, bool bLoadImmediately)
+FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, const FInstancedPropertyBag* PropertyBag, bool bLoadImmediately)
 {
 	check(Runner);
 	
 	UBangoScriptSubsystem* Subsystem = Get(Runner);
 	check(Subsystem);
 	
-	FBangoQueuedScript QueuedScript { Runner, ScriptClass, Handle };
+	FBangoScriptHandle NewHandle = FBangoScriptHandle::NewHandle();
+	
+	FBangoQueuedScript QueuedScript { Runner, PropertyBag, ScriptClass, NewHandle };
 	
 	if (bLoadImmediately)
 	{
@@ -135,6 +134,8 @@ void UBangoScriptSubsystem::EnqueueScriptWithHandle(FBangoScriptHandle Handle, T
 	}
 	
 	Subsystem->QueuedScripts.Add( MoveTemp(QueuedScript) );
+	
+	return NewHandle;
 }
 
 // ----------------------------------------------
@@ -274,6 +275,11 @@ void UBangoScriptSubsystem::LaunchQueuedScripts()
 			NewScriptInstance->Handle = QueuedScript.Handle;
 			NewScriptInstance->This = Runner;
 			
+			if (QueuedScript.PropertyBag)
+			{
+				TransferPropertyBagToScriptInstance(QueuedScript.PropertyBag, NewScriptInstance);
+			}
+			
 			RegisterScript(NewScriptInstance);
 			
 			QueuedScripts.RemoveAtSwap(i, EAllowShrinking::No);
@@ -285,6 +291,37 @@ void UBangoScriptSubsystem::LaunchQueuedScripts()
 	if (bScriptsRan && QueuedScripts.GetSlack() > 10)
 	{
 		QueuedScripts.Shrink();
+	}
+}
+
+void* ContainerVoidPtrToValuePtrInternal(const void* ContainerPtr, int32 Offset_Internal, int32 ElementSize, int32 ArrayIndex = 0)
+{	
+	return (uint8*)ContainerPtr + Offset_Internal + static_cast<size_t>(ElementSize) * ArrayIndex;
+}
+
+void UBangoScriptSubsystem::TransferPropertyBagToScriptInstance(const FInstancedPropertyBag* PropertyBag, UBangoScript* Script)
+{
+	FConstStructView BagView = PropertyBag->GetValue(); // a view of the actual bag data
+	const void* BagMemoryPtr = BagView.GetMemory(); // the actual memory address of the bag data
+	
+	// for each property in the UScriptStruct definition of the FInstancedPropertyBag
+	for (const FPropertyBagPropertyDesc& PropertyDesc : PropertyBag->GetPropertyBagStruct()->GetPropertyDescs())
+	{
+		const FName ScriptPropertyName = PropertyDesc.Name;
+		
+		FProperty* ScriptProperty = Script->GetClass()->FindPropertyByName(ScriptPropertyName);
+		const FProperty* BagProperty = PropertyDesc.CachedProperty;
+		
+		if (ScriptProperty && BagProperty)
+		{
+			int32 Offset = BagProperty->GetOffset_ForInternal();
+			int32 ElementSize = BagProperty->GetElementSize();
+			
+			void* BagValue = ContainerVoidPtrToValuePtrInternal(BagMemoryPtr, Offset, ElementSize, 0);
+			void* ScriptValue = ScriptProperty->ContainerPtrToValuePtr<void>(Script);
+
+			ScriptProperty->CopySingleValue(ScriptValue, BagValue);
+		}
 	}
 }
 
@@ -322,13 +359,14 @@ void UBangoScriptSubsystem::UnregisterScript(UObject* WorldContext, FBangoScript
 	if (Subsystem->RunningScripts.RemoveAndCopyValue(Handle, ScriptInstance))
 	{
 		UE_LOG(LogBango, Verbose, TEXT("Script halting: {%s}"), *ScriptInstance->GetName());
-			
+
 #if WITH_EDITOR
 		FBangoEditorDelegates::OnBangoScriptFinished.Broadcast(ScriptInstance);
 #endif
-
+		
 		UBangoScript::Finish(ScriptInstance);
 	}
+
 
 	OnScriptFinished.Broadcast(Handle);
 	

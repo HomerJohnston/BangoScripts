@@ -20,7 +20,7 @@ enum class EBangoScriptComponent_ThisArg : uint8
 };
 */
 
-UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = ("Navigation","Activation"))
+UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = ("Activation", "AssetUserData", "Cooking", "Navigation", "Tags"))
 class BANGOSCRIPTS_API UBangoScriptComponent : public UActorComponent
 {
 	GENERATED_BODY()

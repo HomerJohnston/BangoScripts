@@ -26,6 +26,8 @@ FBangoBlueprintEditor::FBangoBlueprintEditor() : FBlueprintEditor()
 
 FBangoBlueprintEditor::~FBangoBlueprintEditor()
 {
+	FBangoEditorDelegates::OnBangoScriptRan.RemoveAll(this);
+	FBangoEditorDelegates::OnBangoScriptFinished.RemoveAll(this);
 }
 
 void FBangoBlueprintEditor::SetupGraphEditorEvents(UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents)
@@ -683,7 +685,15 @@ void FBangoBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, const FVe
 void FBangoBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
 {
 	UBangoScriptBlueprint* RunningBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(TSoftClassPtr<UBangoScript>(ScriptInstance->GetClass()));
-	UBangoScriptBlueprint* ThisBlueprint = Cast<UBangoScriptBlueprint>(GetEditingObject());
+	
+	const TArray<UObject*>* CurrentObjects = (this) ? GetObjectsCurrentlyBeingEdited() : nullptr;
+	
+	if (!CurrentObjects || CurrentObjects->Num() != 1)
+	{
+		return;
+	}
+	
+	UBangoScriptBlueprint* ThisBlueprint = Cast<UBangoScriptBlueprint>((*CurrentObjects)[0]);
 	
 	if (RunningBlueprint == ThisBlueprint)
 	{
@@ -691,14 +701,6 @@ void FBangoBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
 		{
 			ThisBlueprint->SetObjectBeingDebugged(ScriptInstance);
 		}
-		
-		Instances++;
-	}
-	
-	if (Instances > 0)
-	{
-		FText WarningText_ScriptCount = LOCTEXT("LevelScriptEditor_ScriptCountHint", "Instances Running: {0}");
-		WarningText = FText::Format(WarningText_ScriptCount, FText::AsNumber(Instances));
 	}
 }
 
@@ -706,18 +708,8 @@ void FBangoBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
 
 void FBangoBlueprintEditor::OnBangoScriptFinished(UBangoScript* ScriptInstance)
 {
-	UBangoScriptBlueprint* RunningBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(TSoftClassPtr<UBangoScript>(ScriptInstance->GetClass()));
-	UBangoScriptBlueprint* ThisBlueprint = Cast<UBangoScriptBlueprint>(GetEditingObject());
-	
-	if (RunningBlueprint == ThisBlueprint)
-	{
-		Instances--;
-	}
-	
-	if (Instances <= 0)
-	{
-		WarningText = FText::GetEmpty();
-	}
+	// UBangoScriptBlueprint* RunningBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(TSoftClassPtr<UBangoScript>(ScriptInstance->GetClass()));
+	// UBangoScriptBlueprint* ThisBlueprint = Cast<UBangoScriptBlueprint>(GetEditingObject());
 }
 
 // ----------------------------------------------

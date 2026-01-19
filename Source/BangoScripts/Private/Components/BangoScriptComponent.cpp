@@ -239,9 +239,9 @@ void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent&
 void UBangoScriptComponent::Run()
 {
 #if WITH_EDITOR
-	RunningHandle = 
+	FBangoScriptHandle Handle =  
 #endif
-	UBangoScriptSubsystem::EnqueueScript(ScriptContainer.GetScriptClass(), GetOwner());
+	UBangoScriptSubsystem::EnqueueScript(ScriptContainer.GetScriptClass(), GetOwner(), ScriptContainer.GetPropertyBag());
 	
 #if WITH_EDITOR
 	if (RunningHandle.IsRunning())

@@ -172,7 +172,7 @@ void UK2Node_BangoRunScript::ExpandNode(class FKismetCompilerContext& Compiler, 
 	
 	Node_CastToBangoScript->TargetType = UBangoScript::StaticClass(); 
 	
-	Node_ExecuteScript->FunctionReference.SetExternalMember(GET_FUNCTION_NAME_CHECKED(UBangoScriptSubsystem, EnqueueScript), UBangoScriptSubsystem::StaticClass());
+	Node_ExecuteScript->FunctionReference.SetExternalMember(GET_FUNCTION_NAME_CHECKED(UBangoScriptSubsystem, K2_EnqueueScript), UBangoScriptSubsystem::StaticClass());
 	
 	Builder.FinishDeferredNodes(true);
 

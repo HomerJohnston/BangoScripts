@@ -14,8 +14,6 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "PropertyEditorModule.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
-#include "ClassViewerFilter/BangoClassViewerFilter.h"
-#include "Kismet2/SClassPickerDialog.h"
 
 #include "Private/BangoEditorStyle.h"
 #include "Private/Subsystems/BangoLevelScriptsEditorSubsystem.h"
@@ -23,7 +21,6 @@
 #include "Private/Widgets/SBangoGraphEditor.h"
 #include "Utilities/BangoEditorUtility.h"
 #include "Widgets/SBangoScriptClassViewer.h"
-#include "Widgets/SBangoScriptPickerDialog.h"
 #include "Widgets/SBangoScriptPropertyEditorClass.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
@@ -182,31 +179,39 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 			.AutoWidth()
 			.Padding(0, 0, 6, 0)
 			[
-				SNew(SButton)
-				.Text(LOCTEXT("ScriptContainerCustomization_EditScriptButtonLabel", "Edit"))
-				.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
-				.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_EditScript)
-				.VAlign(VAlign_Center)
-				.HAlign(HAlign_Center)
+				SNew(SBox)
+				.MinDesiredWidth(80.0f)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ScriptContainerCustomization_EditScriptButtonLabel", "Edit"))
+					.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
+					.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_EditScript)
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Center)
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				SNew(SBox)
+				.MinDesiredWidth(80.0f)
+				[
+					SNew(SButton)
+					.ButtonStyle(FAppStyle::Get(), "FlatButton.Danger")
+					.NormalPaddingOverride(0)
+					.PressedPaddingOverride(0)
+					.ButtonColorAndOpacity(FLinearColor::Gray)
+					.Text(this, &FBangoScriptContainerCustomization::Text_UnsetDeleteScript)
+					.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
+					.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript)
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Center)
+				]
 			]
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)
 			[
 				SNew(SSpacer)
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			[
-				SNew(SButton)
-				.ButtonStyle(FAppStyle::Get(), "FlatButton.Danger")
-				.NormalPaddingOverride(0)
-				.PressedPaddingOverride(0)
-				//.ButtonColorAndOpacity(FLinearColor::Red)
-				.Text(this, &FBangoScriptContainerCustomization::Text_UnsetDeleteScript)
-				.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
-				.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript)
-				.VAlign(VAlign_Center)
-				.HAlign(HAlign_Center)
 			]
 		]
 	];
@@ -249,57 +254,58 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 		return;
 	}
 	
+	auto VisibilityAttribute = TAttribute<EVisibility>::CreateSP(this, &FBangoScriptContainerCustomization::Visibility_HasValidGraph);
+	
 	Box = SNew(SVerticalBox);
 	
-	ChildBuilder.AddCustomRow(LOCTEXT("BangoScriptHolder_SearchTerm", "Bango"))
+	// Description field
+	TSharedPtr<IPropertyHandle> DescriptionProperty = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, Description));
+	IDetailPropertyRow& DescriptionPropertyRow = ChildBuilder.AddProperty(DescriptionProperty.ToSharedRef());
+	
+	DescriptionPropertyRow.Visibility(VisibilityAttribute);
+	
+	// Embedded Graph Widget
+	FDetailWidgetRow& GraphRow = ChildBuilder.AddCustomRow(LOCTEXT("BangoScriptHolder_SearchTerm", "Bango"))
 	.ShouldAutoExpand(true)
 	[
 		Box.ToSharedRef()
 	];
+	
+	GraphRow.Visibility(VisibilityAttribute);
+	
+	// Script Inputs
+	TSharedPtr<IPropertyHandle> ScriptInputsProperty = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, ScriptInputs));
+	IDetailPropertyRow& ScriptsInputRow = ChildBuilder.AddProperty(ScriptInputsProperty.ToSharedRef());
+	
+	ScriptsInputRow.Visibility(VisibilityAttribute);
 
-	UpdateBox();
-	
-	// Add native children (Description field etc.)
-	
-	uint32 NumChildren;
-	PropertyHandle->GetNumChildren(NumChildren);
-	
-	for (uint32 ChildIndex = 0; ChildIndex <  NumChildren; ++ChildIndex)
-	{
-		TSharedPtr<IPropertyHandle> ChildHandle = PropertyHandle->GetChildHandle(ChildIndex);
-		
-		if (ChildHandle->IsValidHandle() && ChildHandle->IsEditable())
-		{
-			if (ChildHandle->GetProperty()->GetFName() == GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, ScriptInputs))
-			{
-				IDetailPropertyRow& Row = ChildBuilder.AddProperty(ChildHandle.ToSharedRef());
-
-				TSharedPtr<SWidget> NameWidget, ValueWidget;
-				Row.GetDefaultWidgets(NameWidget, ValueWidget);
+	TSharedPtr<SWidget> NameWidget, ValueWidget;
+	ScriptsInputRow.GetDefaultWidgets(NameWidget, ValueWidget);
 				
-				Row.CustomWidget(true)
-				.NameContent()
-				[
-					NameWidget.ToSharedRef()
-				]
-				.ValueContent()
-				[
-					SNew(SButton)
-					.Text(this, &FBangoScriptContainerCustomization::Text_RefreshScriptInputs)
-					.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
-					.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_RefreshScriptInputs)
-					.ButtonColorAndOpacity(this, &FBangoScriptContainerCustomization::ButtonColorAndOpacity_RefreshScriptInputs)
-					.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_RefreshScriptInputs)
-					.VAlign(VAlign_Center)
-					.HAlign(HAlign_Center)
-				];
-			}
-			else
-			{
-				ChildBuilder.AddProperty(ChildHandle.ToSharedRef());
-			}
-		}
-	}
+	ScriptsInputRow.CustomWidget(true)
+	.NameContent()
+	[
+		NameWidget.ToSharedRef()
+	]
+	.ValueContent()
+	[
+		SNew(SButton)
+		.Text(this, &FBangoScriptContainerCustomization::Text_RefreshScriptInputs)
+		.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
+		.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_RefreshScriptInputs)
+		.ButtonColorAndOpacity(this, &FBangoScriptContainerCustomization::ButtonColorAndOpacity_RefreshScriptInputs)
+		.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_RefreshScriptInputs)
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+	];
+	
+	// Load the graph widget
+	UpdateBox();
+}
+
+EVisibility FBangoScriptContainerCustomization::Visibility_HasValidGraph() const
+{
+	return GetPrimaryEventGraph() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 // ----------------------------------------------

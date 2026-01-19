@@ -22,11 +22,14 @@ struct FBangoQueuedScript
 	
 	FBangoQueuedScript() = default;
 	
-	FBangoQueuedScript(UObject* InRunner, TSoftClassPtr<UBangoScript> InScriptClass, FBangoScriptHandle InHandle)	
-		: Runner(InRunner), ScriptClass(InScriptClass), Handle(InHandle) { }
+	FBangoQueuedScript(UObject* InRunner, const FInstancedPropertyBag* InPropertyBag, TSoftClassPtr<UBangoScript> InScriptClass, FBangoScriptHandle InHandle)	
+		: Runner(InRunner), PropertyBag(InPropertyBag), ScriptClass(InScriptClass), Handle(InHandle) { }
 	
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UObject> Runner;
+
+	// MUST be contained on the Runner, for safety. This is uncontrolled. TODO is there a nicer way to architect this?
+	const FInstancedPropertyBag* PropertyBag;
 	
 	UPROPERTY(Transient)
 	TSoftClassPtr<UBangoScript> ScriptClass;
@@ -69,10 +72,10 @@ public:
 
 	// Normal usage path
 	UFUNCTION(BlueprintCallable, Category = "Bango|Scripts", meta = (BlueprintInternalUseOnly = "true"))
-	static FBangoScriptHandle EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, bool bLoadImmediately = false);
+	static FBangoScriptHandle K2_EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, bool bLoadImmediately = false);
 	
 	// Alternate usage for cases where I want external things to supply the handle - for example the ScriptComponent does this so that it can 
-	static void EnqueueScriptWithHandle(FBangoScriptHandle Handle, TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, bool bLoadImmediately = false);
+	static FBangoScriptHandle EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, const FInstancedPropertyBag* PropertyBag, bool bLoadImmediately = false);
 	
 	static void AbortScript(UObject* Requester, FBangoScriptHandle& Handle);
 	
@@ -86,8 +89,10 @@ protected:
 	void PruneQueuedInvalidRunnerScripts();
 	
 	void LoadQueuedScripts();
-	
+
 	void LaunchQueuedScripts();
+	
+	void TransferPropertyBagToScriptInstance(const FInstancedPropertyBag* PropertyBag, UBangoScript* Script);
 	
 	void RegisterScript(UBangoScript* ScriptInstance);
 
