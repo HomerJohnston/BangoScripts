@@ -102,7 +102,7 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectTransacted(UObject* Object, cons
 	
 	if (!Bango::Editor::IsComponentInEditedLevel(ScriptComponent))
 	{
-		EnqueueDestroyedScriptComponent(Object, &ScriptComponent->ScriptContainer);
+		EnqueueDestroyedScriptContainer(Object, &ScriptComponent->ScriptContainer);
 	}
 }
 
@@ -197,7 +197,7 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(UObject* O
 
 	ScriptContainer->SetRequestedName(BlueprintName);
 	
-	EnqueueCreatedScriptComponent(Outer, ScriptContainer);
+	EnqueueCreatedScriptContainer(Outer, ScriptContainer);
 }
 
 // ----------------------------------------------
@@ -206,7 +206,7 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDestroyed(UObject*
 {
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDestroyed: %s"), *Outer->GetName());
 
-	EnqueueDestroyedScriptComponent(Outer, ScriptContainer);
+	EnqueueDestroyedScriptContainer(Outer, ScriptContainer);
 }
 
 // ----------------------------------------------
@@ -216,14 +216,13 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(UObject
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDuplicated: %s, %s, %s"), *Outer->GetName(), *ScriptContainer->GetGuid().ToString(), *BlueprintName);
 	
 	ScriptContainer->SetIsDuplicate();
-	ScriptContainer->SetRequestedName(BlueprintName);
 	
-	EnqueueCreatedScriptComponent(Outer, ScriptContainer);
+	EnqueueCreatedScriptContainer(Outer, ScriptContainer);	
 }
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::EnqueueCreatedScriptComponent(UObject* Owner, FBangoScriptContainer* ScriptContainer)
+void UBangoLevelScriptsEditorSubsystem::EnqueueCreatedScriptContainer(UObject* Owner, FBangoScriptContainer* ScriptContainer)
 {
 	if (GEditor->IsPlaySessionInProgress())
 	{
@@ -255,7 +254,7 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueCreatedScriptComponent(UObject* O
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::EnqueueDestroyedScriptComponent(UObject* Owner, FBangoScriptContainer* ScriptContainer)
+void UBangoLevelScriptsEditorSubsystem::EnqueueDestroyedScriptContainer(UObject* Owner, FBangoScriptContainer* ScriptContainer)
 {
 	if (GEditor->IsPlaySessionInProgress())
 	{
@@ -322,11 +321,6 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	
 	for (const auto& Request : CreationRequests)
 	{
-		if (!Request.ScriptOuter.IsValid())
-		{
-			continue;
-		}
-		
 		TSoftClassPtr<UBangoScript> Script = Request.ScriptContainer->GetScriptClass();
 		UE_LOG(LogBangoEditor, Verbose, TEXT("     %s"),*Request.ScriptContainer->GetScriptClass().ToString());
 		
@@ -360,8 +354,11 @@ void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(TWeakObjectP
 	
 	if (ExistingScriptClass.IsNull())
 	{
-		// This must be a fresh shiny brand new script container. Make a script for it!
-		CreateLevelScript(Owner.Get(), ScriptContainer);
+		if (ScriptContainer->ConsumeNewLevelScriptRequest())
+		{
+			// This must be a fresh shiny brand new script container. Make a script for it!
+			CreateLevelScript(Owner.Get(), ScriptContainer);	
+		}
 	}
 	else
 	{

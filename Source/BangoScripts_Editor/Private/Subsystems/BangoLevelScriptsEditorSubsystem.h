@@ -103,9 +103,9 @@ public:
 	// ------------------------------------------
 	// Level script creation functions
 private:
-	void EnqueueCreatedScriptComponent(UObject* Owner, FBangoScriptContainer* ScriptContainer);
+	void EnqueueCreatedScriptContainer(UObject* Owner, FBangoScriptContainer* ScriptContainer);
 	
-	void EnqueueDestroyedScriptComponent(UObject* Owner, FBangoScriptContainer* ScriptContainer);
+	void EnqueueDestroyedScriptContainer(UObject* Owner, FBangoScriptContainer* ScriptContainer);
 
 	void RequestScriptQueueProcessing();
 	

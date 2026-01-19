@@ -58,8 +58,7 @@ void UBangoScriptComponent::OnRegister()
 	if (Bango::Editor::IsComponentInEditedLevel(this))
 	{
 		FString ScriptName = GetName(); // We will use the component name for the script name
-	
-		// FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
+		FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
 	}
 	
 	if (!IsTemplate())
@@ -140,7 +139,7 @@ void UBangoScriptComponent::OnComponentCreated()
 	}
 	else
 	{
-		// FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
+		FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
 	}
 }
 #endif

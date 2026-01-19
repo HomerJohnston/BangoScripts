@@ -386,42 +386,11 @@ FReply FBangoScriptContainerCustomization::OnClicked_CreateScript()
 	FBangoScriptContainer* ScriptContainer;
 	GetScriptContainerAndOuter(Outer, ScriptContainer);
 	
+	ScriptContainer->bNewLeveScriptRequested = true;
+	
 	FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(Outer, ScriptContainer, *Outer->GetFName().ToString());
 	
 	ScriptContainerProperty->SetExpanded(true);
-	/*
-	ScriptClassProperty->GetOuterPackages(Packages);
-	
-	if (Packages.Num() != 1)
-	{
-		return FReply::Handled();
-	}
-
-	void* GuidPtr;
-	GuidProperty->GetValueData(GuidPtr);
-	FGuid* Guid = reinterpret_cast<FGuid*>(GuidPtr);
-	
-	FString BPName;
-	UPackage* ScriptPackage = Bango::Editor::MakePackageForScript(ScriptClassProperty, Packages[0], BPName, *Guid);
-	
-	if (!ScriptPackage)
-	{
-		return FReply::Handled();
-	}
-	
-	UBlueprint* Script = Bango::Editor::MakeScriptAsset(ScriptPackage, BPName, *Guid);
-	
-	if (!Script)
-	{
-		return FReply::Handled();
-	}
-
-	//if (Bango::Editor::SaveScriptPackage(ScriptPackage, Script))
-	//{
-		ScriptClassProperty->SetValue(Script->GeneratedClass);
-		PostScriptCreated.Broadcast();
-	//}
-	*/
 	
 	return FReply::Handled();
 }

@@ -169,6 +169,13 @@ void FBangoScriptContainer::SetIsDuplicate()
 {
 	bIsDuplicate = true;
 }
+
+bool FBangoScriptContainer::ConsumeNewLevelScriptRequest()
+{
+	bool bRequest = bNewLeveScriptRequested;
+	bNewLeveScriptRequested = false;
+	return bRequest;
+}
 #endif
 
 // ----------------------------------------------

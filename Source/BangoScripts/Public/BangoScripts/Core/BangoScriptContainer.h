@@ -41,7 +41,7 @@ private:
 #if WITH_EDITORONLY_DATA
 	// Used during construction of the ScriptClass only
 	FString RequestedName = "";
-	
+	bool bNewLeveScriptRequested = false;
 	bool bIsDuplicate = false;
 #endif
 	
@@ -77,6 +77,8 @@ public:
 
 	void SetIsDuplicate();
 
+	bool ConsumeNewLevelScriptRequest();
+	
 	bool ConsumeDuplicate();
 
 	const FString& GetDescription() const;
