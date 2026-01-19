@@ -132,6 +132,16 @@ void UBangoLevelScriptsEditorSubsystem::OnMapOpened(const FString& String, bool 
 
 void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, UObject* RenamedObjectOuter, FName OldName) const
 {
+	if (!GEditor || !GEditor->IsInitialized())
+	{
+		return;
+	}
+    
+	if (IsRunningCommandlet())
+	{
+		return;
+	}
+	
 	// TODO I need a way to allow hooking in other types more nicely. What if a user wants a custom type and not just UBangoScriptComponent?
 	// Should I have a C++ interface that other things could hook into?
 	
