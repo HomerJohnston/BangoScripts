@@ -300,11 +300,19 @@ void* ContainerVoidPtrToValuePtrInternal(const void* ContainerPtr, int32 Offset_
 
 void UBangoScriptSubsystem::TransferPropertyBagToScriptInstance(const FInstancedPropertyBag* PropertyBag, UBangoScript* Script)
 {
+    const UPropertyBag* PropertyBagStruct = PropertyBag->GetPropertyBagStruct();
+
+    if (!IsValid(PropertyBagStruct))
+    {
+        // If no properties have been added this will be nullptr
+        return;
+    }
+        
 	FConstStructView BagView = PropertyBag->GetValue(); // a view of the actual bag data
 	const void* BagMemoryPtr = BagView.GetMemory(); // the actual memory address of the bag data
 	
 	// for each property in the UScriptStruct definition of the FInstancedPropertyBag
-	for (const FPropertyBagPropertyDesc& PropertyDesc : PropertyBag->GetPropertyBagStruct()->GetPropertyDescs())
+	for (const FPropertyBagPropertyDesc& PropertyDesc : PropertyBagStruct->GetPropertyDescs())
 	{
 		const FName ScriptPropertyName = PropertyDesc.Name;
 		
