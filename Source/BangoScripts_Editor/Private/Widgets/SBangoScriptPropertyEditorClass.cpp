@@ -10,7 +10,6 @@
 #include "ClassViewerModule.h"
 #include "ClassViewerFilter.h"
 #include "SBangoScriptClassViewer.h"
-#include "VerseClassConstraintFilters.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "ClassViewerFilter/BangoClassViewerFilter.h"
 #include "UObject/Object.h"
@@ -53,15 +52,6 @@ public:
 
 	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< FClassViewerFilterFuncs > InFilterFuncs ) override
 	{
-		if (bRequiresVerseConcrete && !FVerseConcreteClassFilter::StaticIsClassAllowed(InClass))
-		{
-			return false;
-		}
-		if (bRequiresVerseCastable && !FVerseCastableClassFilter::StaticIsClassAllowed(InClass))
-		{
-			return false;
-		}
-
 		return IsClassAllowedHelper(InClass);
 	}
 	
@@ -236,7 +226,7 @@ void SBangoScriptPropertyEditorClass::SendToObjects(const FString& NewValue)
 	{
 		const UClass* NewClass = nullptr;
 
-		if (const UObject* Object = StaticLoadObject(nullptr, nullptr, NewValue))
+		if (const UObject* Object = StaticLoadObject(nullptr, nullptr, *NewValue))
 		{
 			if (const UClass* Class = Cast<UClass>(Object))
 			{
