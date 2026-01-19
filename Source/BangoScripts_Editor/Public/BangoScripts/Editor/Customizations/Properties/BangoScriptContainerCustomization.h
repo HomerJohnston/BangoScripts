@@ -65,6 +65,8 @@ protected:
 	
 	FReply OnClicked_UnsetDeleteScript();
 	
+	bool IsEnabled_DeleteUnsetButton() const;
+	
 	bool IsEnabled_ScriptClassPicker() const;
 	
 	bool IsEnabled_CreateLevelScriptButton() const;
@@ -78,6 +80,10 @@ protected:
 	void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 	
 	EVisibility Visibility_HasValidGraph() const;
+	
+	EVisibility Visibility_HasNoValidGraph() const;
+	
+	EVisibility Visibility_HasScriptInputs() const;
 	
 	int WidgetIndex_GraphEditor() const;
 	

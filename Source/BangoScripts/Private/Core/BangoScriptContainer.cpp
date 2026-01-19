@@ -29,6 +29,7 @@ void FBangoScriptContainer::Unset()
 	Guid.Invalidate();
 	ScriptClass = nullptr;
 	ScriptClass.Reset();
+	ScriptInputs.Reset();
 }
 #endif
 

@@ -198,7 +198,9 @@ void FBangoEditorStyle::SetupStyles()
 	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PortalIn,						"NodeIcons/Icon_PortalIn", ".svg",				FVector2f(20, 20), Bango::Colors::White);
 	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PortalOut,						"NodeIcons/Icon_PortalOut", ".svg",				FVector2f(20, 20), Bango::Colors::White);
 	
-	BANGO_DEFINE_BRUSH(FSlateBorderBrush,		Border_InlineBlueprintGraph,		"Textures/Border_2px_White_Sharp", ".png", FMargin(4.0f / 8.0f));
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_EditScript,					"ButtonIcons/Icon_EditScript", ".svg",			FVector2f(20, 20), Bango::Colors::White);
+	
+	BANGO_DEFINE_BRUSH(FSlateBorderBrush,		Border_InlineBlueprintGraph,		"Textures/Border_2px_White_Sharp", ".png",		FMargin(4.0f / 8.0f));
 	
 	// ============================================================================================
 	// SLIDER STYLES
