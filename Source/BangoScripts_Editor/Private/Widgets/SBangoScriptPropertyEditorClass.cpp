@@ -9,15 +9,23 @@
 #include "DragAndDrop/AssetDragDropOp.h"
 #include "ClassViewerModule.h"
 #include "ClassViewerFilter.h"
-#include "PropertyEditorUtils.h"
-#include "UObject/UObjectIterator.h"
+#include "SBangoScriptClassViewer.h"
 #include "VerseClassConstraintFilters.h"
-#include "PropertyEditorHelpers.h"
-#include "PropertyNode.h"
-#include "PropertyRestriction.h"
+#include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
+#include "ClassViewerFilter/BangoClassViewerFilter.h"
+#include "UObject/Object.h"
 #include "UObject/Class.h"
 
 #define LOCTEXT_NAMESPACE "PropertyEditor"
+
+const FName BangoPropertyEditorConstants::PropertyFontStyle( TEXT("PropertyWindow.NormalFont") );
+const FName BangoPropertyEditorConstants::CategoryFontStyle( TEXT("DetailsView.CategoryFontStyle") );
+
+const FName BangoPropertyEditorConstants::MD_Bitmask( TEXT("Bitmask") );
+const FName BangoPropertyEditorConstants::MD_BitmaskEnum( TEXT("BitmaskEnum") );
+const FName BangoPropertyEditorConstants::MD_UseEnumValuesAsMaskValuesInEditor( TEXT("UseEnumValuesAsMaskValuesInEditor") );
+
+const FText BangoPropertyEditorConstants::DefaultUndeterminedText(NSLOCTEXT("PropertyEditor", "MultipleValues", "Multiple Values"));
 
 class FPropertyEditorClassFilter : public IClassViewerFilter
 {
@@ -95,104 +103,21 @@ void SBangoScriptPropertyEditorClass::GetDesiredWidth(float& OutMinDesiredWidth,
 	OutMaxDesiredWidth = 400.0f;
 }
 
-bool SBangoScriptPropertyEditorClass::Supports(const TSharedRef< FPropertyEditor >& InPropertyEditor)
-{
-	const TSharedRef< FPropertyNode > PropertyNode = InPropertyEditor->GetPropertyNode();
-	const FProperty* Property = InPropertyEditor->GetProperty();
-	int32 ArrayIndex = PropertyNode->GetArrayIndex();
-
-	if ((Property->IsA(FClassProperty::StaticClass()) || Property->IsA(FSoftClassProperty::StaticClass())) 
-		&& ((ArrayIndex == -1 && Property->ArrayDim == 1) || (ArrayIndex > -1 && Property->ArrayDim > 0)))
-	{
-		return true;
-	}
-
-	return false;
-}
-
-/** @return True if the property can be edited */
-bool SBangoScriptPropertyEditorClass::CanEdit() const
-{
-	return PropertyEditor.IsValid() ? !PropertyEditor->IsEditConst() : true;
-}
-
 void SBangoScriptPropertyEditorClass::Construct(const FArguments& InArgs, const TSharedPtr< FPropertyEditor >& InPropertyEditor)
 {
-	PropertyEditor = InPropertyEditor;
+	check(InArgs._MetaClass);
+	check(InArgs._SelectedClass.IsSet());
+	check(InArgs._OnSetClass.IsBound());
 
-	TArray<TSharedRef<class IClassViewerFilter>> ClassViewerFilters = InArgs._ClassViewerFilters;
-
-	if (PropertyEditor.IsValid())
-	{
-		const TSharedRef<FPropertyNode> PropertyNode = PropertyEditor->GetPropertyNode();
-		const FProperty* const Property = PropertyNode->GetProperty();
-		if (const FClassProperty* const ClassProp = CastField<FClassProperty>(Property))
-		{
-			MetaClass = ClassProp->MetaClass;
-		}
-		else if (const FSoftClassProperty* const SoftClassProperty = CastField<FSoftClassProperty>(Property))
-		{
-			MetaClass = SoftClassProperty->MetaClass;
-		}
-		else
-		{
-			check(false);
-		}
-
-		const FString* AllowAbstractString = Property->GetOwnerProperty()->FindMetaData(TEXT("AllowAbstract"));
-		
-		bShowViewOptions = Property->GetOwnerProperty()->HasMetaData(TEXT("HideViewOptions")) ? false : true;
-		bShowDisplayNames = Property->GetOwnerProperty()->HasMetaData(TEXT("ShowDisplayNames"));
-
-		// Filter based on UPROPERTY meta data
-		TArray<UObject*> ObjectList;
-		if (PropertyEditor->GetPropertyHandle()->IsValidHandle())
-		{
-			PropertyEditor->GetPropertyHandle()->GetOuterObjects(ObjectList);
-		}
-		PropertyEditorUtils::GetAllowedAndDisallowedClasses(ObjectList, *Property, AllowedClassFilters, DisallowedClassFilters, false);
-
-		// Filter based on restrictions
-		for (const TSharedRef<const FPropertyRestriction>& ClassRestriction : PropertyNode->GetRestrictions())
-		{
-			for (TArray<FString>::TConstIterator Iter = ClassRestriction.Get().GetHiddenValuesIterator(); Iter; ++Iter)
-			{
-				if (const UClass* HiddenClass = PropertyEditorHelpers::FindOrLoadClass(*Iter))
-				{
-					DisallowedClassFilters.Add(HiddenClass);
-				}
-			}
-
-			for (TArray<FString>::TConstIterator Iter = ClassRestriction.Get().GetDisabledValuesIterator(); Iter; ++Iter)
-			{
-				if (const UClass* DisabledClass = PropertyEditorHelpers::FindOrLoadClass(*Iter))
-				{
-					DisallowedClassFilters.Add(DisabledClass);
-				}
-			}
-
-			for (TArray<TSharedRef<IClassViewerFilter>>::TConstIterator Iter = ClassRestriction.Get().GeClassViewFilterIterator(); Iter; ++Iter)
-			{
-				ClassViewerFilters.Add(*Iter);
-			}
-		}
-	}
-	else
-	{
-		check(InArgs._MetaClass);
-		check(InArgs._SelectedClass.IsSet());
-		check(InArgs._OnSetClass.IsBound());
-
-		MetaClass = InArgs._MetaClass;
-		bShowViewOptions = InArgs._ShowViewOptions;
-		bShowDisplayNames = InArgs._ShowDisplayNames;
-		SelectedClass = InArgs._SelectedClass;
-		OnSetClass = InArgs._OnSetClass;
-	}
+	MetaClass = InArgs._MetaClass;
+	bShowViewOptions = InArgs._ShowViewOptions;
+	bShowDisplayNames = InArgs._ShowDisplayNames;
+	SelectedClass = InArgs._SelectedClass;
+	OnSetClass = InArgs._OnSetClass;
 
 	InvalidObjectDisplayText = InArgs._InvalidObjectDisplayText;
 
-	CreateClassFilter(ClassViewerFilters);
+	CreateClassFilter();
 
 	SAssignNew(ComboButton, SComboButton)
 		.OnGetMenuContent(this, &SBangoScriptPropertyEditorClass::GenerateClassPicker)
@@ -208,8 +133,6 @@ void SBangoScriptPropertyEditorClass::Construct(const FArguments& InArgs, const 
 	[
 		ComboButton.ToSharedRef()
 	];
-
-	SetEnabled(TAttribute<bool>(this, &SBangoScriptPropertyEditorClass::CanEdit));
 }
 
 /** Util to give better names for BP generated classes */
@@ -239,24 +162,7 @@ FText SBangoScriptPropertyEditorClass::GetDisplayValueAsString() const
 	// Guard against re-entrancy which can happen if the delegate executed below (SelectedClass.Get()) forces a slow task dialog to open, thus causing this to lose context and regain focus later starting the loop over again
 	if( !bIsReentrant )
 	{
-		if (bIsMultiOptionalSetter)
-		{
-			return FText::FromString("Multiple States");
-		}
-
 		TGuardValue<bool> Guard( bIsReentrant, true );
-		if(PropertyEditor.IsValid())
-		{
-			UObject* ObjectValue = nullptr;
-			FPropertyAccess::Result Result = PropertyEditor->GetPropertyHandle()->GetValue(ObjectValue);
-
-			if(Result == FPropertyAccess::Success && ObjectValue != nullptr)
-			{
-				return GetClassDisplayName(ObjectValue, bShowDisplayNames, InvalidObjectDisplayText);
-			}
-
-			return FText::FromString(FPaths::GetBaseFilename(PropertyEditor->GetValueAsString()));
-		}
 
 		return GetClassDisplayName(SelectedClass.Get(), bShowDisplayNames, InvalidObjectDisplayText);
 	}
@@ -266,46 +172,28 @@ FText SBangoScriptPropertyEditorClass::GetDisplayValueAsString() const
 	}
 }
 
-void SBangoScriptPropertyEditorClass::CreateClassFilter(const TArray<TSharedRef<IClassViewerFilter>>& InClassFilters)
+void SBangoScriptPropertyEditorClass::CreateClassFilter()
 {
 	ClassViewerOptions.bShowBackgroundBorder = false;
 	ClassViewerOptions.bShowUnloadedBlueprints = true;
 	ClassViewerOptions.bShowNoneOption = true;
 
-	if (PropertyEditor.IsValid())
-	{
-		ClassViewerOptions.PropertyHandle = PropertyEditor->GetPropertyHandle();
-	}
-
-	ClassViewerOptions.bIsBlueprintBaseOnly = bIsBlueprintBaseOnly;
-	ClassViewerOptions.bIsPlaceableOnly = bAllowOnlyPlaceable;
+	//ClassViewerOptions.bIsBlueprintBaseOnly = bIsBlueprintBaseOnly;
+	ClassViewerOptions.bIsPlaceableOnly = false;
 	ClassViewerOptions.NameTypeToDisplay = (bShowDisplayNames ? EClassViewerNameTypeToDisplay::DisplayName : EClassViewerNameTypeToDisplay::ClassName);
-	ClassViewerOptions.DisplayMode = bShowTree ? EClassViewerDisplayMode::TreeView : EClassViewerDisplayMode::ListView;
+	ClassViewerOptions.DisplayMode = EClassViewerDisplayMode::ListView;
 	ClassViewerOptions.bAllowViewOptions = bShowViewOptions;
-	ClassViewerOptions.ClassFilters.Append(InClassFilters);
-	ClassViewerOptions.bShowObjectRootClass	= bShowObjectRootClass;
+	ClassViewerOptions.bShowObjectRootClass	= false;
 
 	TSharedRef<FPropertyEditorClassFilter> PropEdClassFilter = MakeShared<FPropertyEditorClassFilter>();
 	PropEdClassFilter->ClassPropertyMetaClass = MetaClass;
-	PropEdClassFilter->InterfaceThatMustBeImplemented = RequiredInterface;
-	PropEdClassFilter->bAllowAbstract = bAllowAbstract;
-	PropEdClassFilter->AllowedClassFilters = AllowedClassFilters;
-	PropEdClassFilter->DisallowedClassFilters = DisallowedClassFilters;
-
-	if (PropertyEditor.IsValid())
-	{
-		const TSharedRef<FPropertyNode> PropertyNode = PropertyEditor->GetPropertyNode();
-		const FProperty* const Property = PropertyNode->GetProperty();
-		if (const FVerseClassProperty* const VerseClassProp = CastField<FVerseClassProperty>(Property))
-		{
-			PropEdClassFilter->bRequiresVerseConcrete = VerseClassProp->bRequiresConcrete;
-			PropEdClassFilter->bRequiresVerseCastable = VerseClassProp->bRequiresCastable;
-		}
-	}
+	PropEdClassFilter->bAllowAbstract = false;
+	//PropEdClassFilter->AllowedClassFilters = AllowedClassFilters;
+	//PropEdClassFilter->DisallowedClassFilters = DisallowedClassFilters;
 
 	ClassViewerOptions.ClassFilters.Add(PropEdClassFilter);
 
-	ClassFilter = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer").CreateClassFilter(ClassViewerOptions);
+	ClassFilter = MakeShared<FBangoScriptsScriptContainerClassViewerFilter>(ClassViewerOptions);// FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer").CreateClassFilter(ClassViewerOptions);
 	ClassFilterFuncs = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer").CreateFilterFuncs();
 }
 
@@ -321,7 +209,9 @@ TSharedRef<SWidget> SBangoScriptPropertyEditorClass::GenerateClassPicker()
 			.AutoHeight()
 			.MaxHeight(500.0f)
 			[
-				FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer").CreateClassViewer(ClassViewerOptions, OnPicked)
+				SNew(SBangoScriptClassViewer, ClassViewerOptions)
+				.OnClassPickedDelegate(OnPicked)
+				//FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer").CreateClassViewer(ClassViewerOptions, OnPicked)
 			]			
 		];
 }
@@ -342,14 +232,26 @@ void SBangoScriptPropertyEditorClass::OnClassPicked(UClass* InClass)
 
 void SBangoScriptPropertyEditorClass::SendToObjects(const FString& NewValue)
 {
-	if (PropertyEditor.IsValid())
+	if (!NewValue.IsEmpty() && NewValue != TEXT("None"))
 	{
-		const TSharedRef<IPropertyHandle> PropertyHandle = PropertyEditor->GetPropertyHandle();
-		PropertyHandle->SetValueFromFormattedString(NewValue);
-	}
-	else if (!NewValue.IsEmpty() && NewValue != TEXT("None"))
-	{
-		const UClass* NewClass = PropertyEditorHelpers::FindOrLoadClass(NewValue);
+		const UClass* NewClass = nullptr;
+
+		if (const UObject* Object = StaticLoadObject(nullptr, nullptr, NewValue))
+		{
+			if (const UClass* Class = Cast<UClass>(Object))
+			{
+				NewClass = Class;
+			}
+			else
+			{
+				UE_LOG(LogBangoEditor, Error, TEXT("Found object '%s' instead of a class."), *Object->GetFullName());
+			}
+		}
+		else
+		{
+			UE_LOG(LogBangoEditor, Error, TEXT("Unable to load class '%s'."), *NewValue);
+		}
+
 		OnSetClass.Execute(NewClass);
 	}
 	else

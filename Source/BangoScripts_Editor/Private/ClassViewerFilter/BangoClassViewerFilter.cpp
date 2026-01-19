@@ -10,6 +10,7 @@
 #include "Misc/TextFilterExpressionEvaluator.h"
 #include "UObject/Package.h"
 #include "UObject/Class.h"
+#include "Widgets/BangoScriptClassViewerNode.h"
 
 // ----------------------------------------------
 
@@ -87,8 +88,17 @@ FBangoScriptsScriptContainerClassViewerFilter::FBangoScriptsScriptContainerClass
 
 // ================================================================================================
 
-bool FBangoScriptsScriptContainerClassViewerFilter::IsNodeAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef<FBangoScriptClassViewerNode>& Node, const bool bCheckTextFilter)
+bool FBangoScriptsScriptContainerClassViewerFilter::IsNodeAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef<FBangoScriptClassViewerNode>& Node)
 {
+	if (Node->Class.IsValid())
+	{
+		return IsClassAllowed(InInitOptions, Node->Class.Get(), FilterFunctions);
+	}
+	else if (InInitOptions.bShowUnloadedBlueprints && Node->UnloadedBlueprintData.IsValid())
+	{
+		return IsUnloadedClassAllowed(InInitOptions, Node->UnloadedBlueprintData.ToSharedRef(), FilterFunctions);
+	}
+
 	return false;
 }
 

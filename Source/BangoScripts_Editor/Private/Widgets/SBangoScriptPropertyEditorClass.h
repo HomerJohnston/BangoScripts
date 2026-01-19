@@ -11,13 +11,12 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Styling/AppStyle.h"
-#include "Presentation/PropertyEditor/PropertyEditor.h"
-#include "UserInterface/PropertyEditor/PropertyEditorConstants.h"
 #include "PropertyCustomizationHelpers.h"
 #include "ClassViewerModule.h"
 
 class IClassViewerFilter;
 class FClassViewerFilterFuncs;
+class UClass;
 
 class BangoPropertyEditorConstants
 {
@@ -48,7 +47,7 @@ public:
 class SBangoScriptPropertyEditorClass : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SPropertyEditorClass)
+	SLATE_BEGIN_ARGS(SBangoScriptPropertyEditorClass)
 		: _Font(FAppStyle::GetFontStyle(BangoPropertyEditorConstants::PropertyFontStyle)) 
 		, _MetaClass(UObject::StaticClass())
 		, _ShowDisplayNames(false)
@@ -70,8 +69,6 @@ public:
 		/** Text to show when no class is selected (Default of "None") */
 		SLATE_ARGUMENT(FString, InvalidObjectDisplayText)
 	SLATE_END_ARGS()
-
-	static bool Supports(const TSharedRef< class FPropertyEditor >& InPropertyEditor);
 
 	void Construct(const FArguments& InArgs, const TSharedPtr< class FPropertyEditor >& InPropertyEditor = nullptr);
 
@@ -105,12 +102,7 @@ private:
 	 */
 	FText GetDisplayValueAsString() const;
 
-	bool CanEdit() const;
-
 private:
-	/** The property editor we were constructed for, or null if we're editing using the construction arguments */
-	TSharedPtr<class FPropertyEditor> PropertyEditor;
-
 	/** Used when the property deals with Classes and will display a Class Picker. */
 	TSharedPtr<class SComboButton> ComboButton;
 
@@ -137,5 +129,5 @@ private:
 	/** Delegate used to set the currently selected class (required if PropertyEditor == null) */
 	FOnSetClass OnSetClass;
 
-	void CreateClassFilter(const TArray<TSharedRef<IClassViewerFilter>>& InClassFilters);
+	void CreateClassFilter();
 };

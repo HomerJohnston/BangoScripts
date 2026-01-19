@@ -400,13 +400,11 @@ namespace ClassViewer
 		static bool AddChildren_Tree(TSharedPtr< FBangoScriptClassViewerNode >& InOutRootNode, const TSharedPtr< FBangoScriptClassViewerNode >& InOriginalRootNode, 
 			const TSharedPtr<FBangoScriptsScriptContainerClassViewerFilter>& InClassFilter, const FClassViewerInitializationOptions& InInitOptions)
 		{
-			bool bCheckTextFilter = true;
-			InOutRootNode->bPassesFilter = InClassFilter->IsNodeAllowed(InInitOptions, InOutRootNode.ToSharedRef(), bCheckTextFilter);
+			InOutRootNode->bPassesFilter = InClassFilter->IsNodeAllowed(InInitOptions, InOutRootNode.ToSharedRef());
 
 			bool bReturnPassesFilter = InOutRootNode->bPassesFilter;
 
-			bCheckTextFilter = false;
-			InOutRootNode->bPassesFilterRegardlessTextFilter = bReturnPassesFilter || InClassFilter->IsNodeAllowed(InInitOptions, InOutRootNode.ToSharedRef(), bCheckTextFilter);
+			InOutRootNode->bPassesFilterRegardlessTextFilter = bReturnPassesFilter || InClassFilter->IsNodeAllowed(InInitOptions, InOutRootNode.ToSharedRef());
 
 			TArray< TSharedPtr< FBangoScriptClassViewerNode > >& ChildList = InOriginalRootNode->GetChildrenList();
 			for(int32 ChildIdx = 0; ChildIdx < ChildList.Num(); ChildIdx++)
@@ -472,8 +470,7 @@ namespace ClassViewer
 		static void AddChildren_List(TArray< TSharedPtr< FBangoScriptClassViewerNode > >& InOutNodeList, const TSharedPtr< FBangoScriptClassViewerNode >& InOriginalRootNode, 
 			const TSharedPtr< FBangoScriptsScriptContainerClassViewerFilter >& InClassFilter, const FClassViewerInitializationOptions& InInitOptions)
 		{
-			const bool bCheckTextFilter = true;
-			if (InClassFilter->IsNodeAllowed(InInitOptions, InOriginalRootNode.ToSharedRef(), bCheckTextFilter))
+			if (InClassFilter->IsNodeAllowed(InInitOptions, InOriginalRootNode.ToSharedRef()))
 			{
 				TSharedPtr< FBangoScriptClassViewerNode > NewNode = MakeShared<FBangoScriptClassViewerNode>(*InOriginalRootNode.Get());
 				NewNode->bPassesFilter = true;
@@ -499,7 +496,7 @@ namespace ClassViewer
 		 *	@param InInitOptions						The class viewer's options, holds the AllowedClasses and DisallowedClasses.
 		 *
 		 *	@return A fully built list.
-		 */
+		 */ 
 		static void GetClassList(TArray< TSharedPtr< FBangoScriptClassViewerNode > >& InOutNodeList, const TSharedPtr<FBangoScriptsScriptContainerClassViewerFilter>& InClassFilter, 
 			const FClassViewerInitializationOptions& InInitOptions)
 		{
@@ -508,8 +505,7 @@ namespace ClassViewer
 			// If the option to see the object root class is set, add it to the list, proceed normally from there so the actor's only filter continues to work.
 			if (InInitOptions.bShowObjectRootClass)
 			{
-				const bool bCheckTextFilter = true;
-				if (InClassFilter->IsNodeAllowed(InInitOptions, ObjectClassRoot.ToSharedRef(), bCheckTextFilter))
+				if (InClassFilter->IsNodeAllowed(InInitOptions, ObjectClassRoot.ToSharedRef()))
 				{
 					TSharedPtr< FBangoScriptClassViewerNode > NewNode = MakeShared<FBangoScriptClassViewerNode>(*ObjectClassRoot.Get());
 					NewNode->bPassesFilter = true;

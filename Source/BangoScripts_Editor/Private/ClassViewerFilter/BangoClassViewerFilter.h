@@ -36,7 +36,7 @@ public:
 	 * @param Node						The Node to check.
 	 * @param bCheckTextFilter			Whether to check the TextFilter. Disabling it could be useful e.g., to verify that the parent class of a IsNodeAllowed() object is also valid (regardless of the TextFilter, which will likely fail to pass).
 	 */
-	bool IsNodeAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef<FBangoScriptClassViewerNode>& Node, const bool bCheckTextFilter);
+	bool IsNodeAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef<FBangoScriptClassViewerNode>& Node);
 
 	bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef<class FClassViewerFilterFuncs> InFilterFuncs) override;
 	

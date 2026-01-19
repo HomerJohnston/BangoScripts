@@ -132,7 +132,11 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				
+				SNew(SBangoScriptPropertyEditorClass)
+				.MetaClass(UBangoScript::StaticClass())
+				.SelectedClass(this, &FBangoScriptContainerCustomization::SelectedClass_ScriptClass)
+				.OnSetClass(this, &FBangoScriptContainerCustomization::OnSetClass_ScriptClass)
+				/*
 				SNew(SButton)
 				.Text(INVTEXT("Pick Script"))
 				.OnClicked_Lambda([]()
@@ -145,7 +149,7 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 					
 					return FReply::Handled();
 				})
-				
+				*/
 				/*
 				SNew(SClassPropertyEntryBox)
 				.MetaClass(UBangoScript::StaticClass())
@@ -302,7 +306,24 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 
 int FBangoScriptContainerCustomization::WidgetIndex_GraphEditor() const
 {
-	return GetScriptClass() ? 1 : 0;
+	switch (GetScriptType())
+	{
+		case EBangoScriptType::Unset:
+		{
+			return 0;
+		}
+		case EBangoScriptType::LevelScript:
+		{
+			return 1;
+		}
+		case EBangoScriptType::ContentAssetScript:
+		{
+			return 0;
+		}
+	}
+	
+	checkNoEntry();
+	return 0;
 }
 
 // ----------------------------------------------
