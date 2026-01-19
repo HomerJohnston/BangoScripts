@@ -24,6 +24,8 @@ public:
 	
 	const TSoftClassPtr<UBangoScript>& GetScriptClass() const { return ScriptClass; }
 
+	const FInstancedPropertyBag* GetPropertyBag() const { return &ScriptInputs; }
+
 private:
 	/** A brief description of the blueprint. This can be displayed in the level editor viewport. */
 	UPROPERTY(EditInstanceOnly)
@@ -62,8 +64,6 @@ public:
 	void Unset();
 	
 	void SetScriptClass(TSubclassOf<UObject> NewScriptClass);
-
-	const FInstancedPropertyBag* GetPropertyBag() const;
 	
 	bool AreScriptInputsOutDated();
 	

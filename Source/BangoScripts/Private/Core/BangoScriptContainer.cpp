@@ -1,8 +1,6 @@
 ﻿#include "BangoScripts/Core/BangoScriptContainer.h"
 
 #include "BangoScripts/Core/BangoScript.h"
-#include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
-#include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
 
@@ -39,11 +37,6 @@ void FBangoScriptContainer::Unset()
 void FBangoScriptContainer::SetScriptClass(TSubclassOf<UObject> NewScriptClass)
 {
 	ScriptClass = NewScriptClass;
-}
-
-const FInstancedPropertyBag* FBangoScriptContainer::GetPropertyBag() const
-{
-	return &ScriptInputs;
 }
 #endif
 
