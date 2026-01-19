@@ -29,7 +29,7 @@ UBangoScriptComponent::UBangoScriptComponent()
 	if (!IsRunningCookCommandlet())
 	{
 		FCookLoadScope EditorOnlyLoadScope(ECookLoadType::EditorOnly);
-		IconTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Bango/Icon_Script.Icon_Script"));
+		IconTexture = LoadObject<UTexture2D>(nullptr, TEXT("/BangoScripts/Icon_Script.Icon_Script"));
 	}
 #endif
 }

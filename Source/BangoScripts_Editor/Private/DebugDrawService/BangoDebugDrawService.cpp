@@ -9,7 +9,7 @@ void UBangoDebugDrawService::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	
-	UDebugDrawService::Register(TEXT("BangoEventsShowFlag"), FDebugDrawDelegate::CreateUObject(this, &ThisClass::DebugDraw));
+	UDebugDrawService::Register(TEXT("BangoScriptsShowFlag"), FDebugDrawDelegate::CreateUObject(this, &ThisClass::DebugDraw));
 }
 
 void UBangoDebugDrawService::DebugDraw(UCanvas* Canvas, APlayerController* ALWAYSNULL_DONOTUSE) const
