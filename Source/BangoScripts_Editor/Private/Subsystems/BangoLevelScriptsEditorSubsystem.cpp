@@ -331,6 +331,11 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	
 	for (const auto& Request : CreationRequests)
 	{
+		if (!Request.ScriptOuter.IsValid())
+		{
+			continue;
+		}
+		
 		TSoftClassPtr<UBangoScript> Script = Request.ScriptContainer->GetScriptClass();
 		UE_LOG(LogBangoEditor, Verbose, TEXT("     %s"),*Request.ScriptContainer->GetScriptClass().ToString());
 		

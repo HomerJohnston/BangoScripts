@@ -64,43 +64,44 @@ void UBangoScriptComponent::OnRegister()
 		FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
 	}
 	
-    if (bUseDebugDraw)
+    if (!IsTemplate())
     {
-	    if (!IsTemplate())
-	    {
-		    FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDraw);
-	    }
+	    FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate);
     }
-    else
+
+	if (!Billboard && GetOwner() /*&& !GetWorld()->IsGameWorld()*/)
     {
-        if (!Billboard && GetOwner() && !GetWorld()->IsGameWorld())
-        {
-            {
-                FCookLoadScope EditorOnlyLoadScope(ECookLoadType::EditorOnly);
-                const EObjectFlags TransactionalFlag = GetFlags() & RF_Transactional;
+        //{
+        //    FCookLoadScope EditorOnlyLoadScope(ECookLoadType::EditorOnly);
+            const EObjectFlags TransactionalFlag = GetFlags() & RF_Transactional;
+	
+            Billboard = NewObject<UBillboardComponent>(GetOwner(), NAME_None, TransactionalFlag | RF_Transient | RF_TextExportTransient);
+        	
+        	int32 U = 0;
+        	int32 UL = 64;
+        	int32 V = 0;
+        	int32 VL = 64;
 		
-                Billboard = NewObject<UBillboardComponent>(GetOwner(), NAME_None, TransactionalFlag | RF_Transient | RF_TextExportTransient);
-                Billboard->Sprite = Bango::Debug::GetScriptBillboardIcon();
-            }
-		
-            Billboard->SetupAttachment(GetOwner()->GetRootComponent());
-            Billboard->bHiddenInGame = true;
-            Billboard->bIsScreenSizeScaled = true;
-            Billboard->SetRelativeLocation(100.0f * FVector::UpVector);
-            
-            Billboard->SetRelativeScale3D_Direct(FVector(1.0f, 1.0f, 1.0f));
-            Billboard->Mobility = EComponentMobility::Movable;
-            Billboard->AlwaysLoadOnClient = false;
-            Billboard->SetIsVisualizationComponent(true);
-            Billboard->SpriteInfo.Category = TEXT("Misc");
-            Billboard->SpriteInfo.DisplayName = NSLOCTEXT("SpriteCategory", "Misc", "Misc");
-            Billboard->CreationMethod = CreationMethod;
-            Billboard->bIsScreenSizeScaled = true;
-            Billboard->bUseInEditorScaling = true;
-            Billboard->OpacityMaskRefVal = .3f;
-		
-            Billboard->RegisterComponent();
-        }
+        	Billboard->SetSpriteAndUV(Bango::Debug::GetScriptBillboardIcon(), U, UL, V, VL);
+        //}
+	
+        Billboard->SetupAttachment(GetOwner()->GetRootComponent());
+        Billboard->bHiddenInGame = false;
+		Billboard->bIsScreenSizeScaled = true;
+        Billboard->SetRelativeLocation(100.0f * FVector::UpVector);
+        
+        Billboard->SetRelativeScale3D_Direct(FVector(1.0f, 1.0f, 1.0f));
+        Billboard->Mobility = EComponentMobility::Movable;
+        Billboard->AlwaysLoadOnClient = false;
+        //Billboard->SetIsVisualizationComponent(true);
+		Billboard->bIsEditorOnly = true;
+        Billboard->SpriteInfo.Category = TEXT("Misc");
+        Billboard->SpriteInfo.DisplayName = NSLOCTEXT("SpriteCategory", "Misc", "Misc");
+        Billboard->CreationMethod = CreationMethod;
+        Billboard->bIsScreenSizeScaled = true;
+        Billboard->bUseInEditorScaling = true;
+        Billboard->OpacityMaskRefVal = .3f;
+        Billboard->RegisterComponent();
     }
 }
 #endif
@@ -243,7 +244,7 @@ void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent&
 void UBangoScriptComponent::Run()
 {
 #if WITH_EDITOR
-	FBangoScriptHandle Handle =  
+	RunningHandle =  
 #endif
 	UBangoScriptSubsystem::EnqueueScript(ScriptContainer.GetScriptClass(), GetOwner(), ScriptContainer.GetPropertyBag());
 	
@@ -328,8 +329,36 @@ void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 // ----------------------------------------------
 
 #if WITH_EDITOR
-void UBangoScriptComponent::PerformDebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE)
-{    
+void UBangoScriptComponent::PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE)
+{   
+	// Update the billboard sprite
+	if (Billboard)
+	{
+		int32 U = 0;
+		int32 UL = 64;
+		int32 V = 0;
+		int32 VL = 64;
+		
+		if (!ScriptContainer.GetScriptClass().IsNull())
+		{
+			U = 64;
+			V = 0;
+		}
+		
+		if (RunningHandle.IsRunning())
+		{
+			U = 0;
+			V = 64;
+		}
+		else if (RunningHandle.IsExpired())
+		{
+			U = 64;
+			V = 64;
+		}
+		
+		Billboard->SetUV(U, UL, V, VL);
+	}
+	
 	// We delegate these requests over to the editor module to make it easier to build in editor functionality
 	// See UBangoDebugDraw_ScriptComponent
 	

@@ -74,9 +74,6 @@ protected:
 	// I am toying with using a standard billboard component to represent the script instead of debugdraw, not sure yet.
     UPROPERTY(Transient)
     TObjectPtr<UBillboardComponent> Billboard;
-    
-    UPROPERTY(EditAnywhere)
-    bool bUseDebugDraw = false;
 #endif
 	
 public:
@@ -95,7 +92,7 @@ public:
 	
 	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
 	
-	void PerformDebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE);
+	void PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE);
 	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	
