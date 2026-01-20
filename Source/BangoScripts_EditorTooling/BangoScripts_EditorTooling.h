@@ -6,9 +6,10 @@
 
 class FBangoScripts_EditorToolingModule : public IModuleInterface
 {
-	static TCustomShowFlag<EShowFlagShippingValue::ForceDisabled> BangoScriptsShowFlag;
+public:
+	BANGOSCRIPTS_EDITORTOOLING_API static TCustomShowFlag<EShowFlagShippingValue::ForceDisabled> BangoScriptsShowFlag;
 
 public:
-    virtual void StartupModule() override;
-    virtual void ShutdownModule() override;
+    void StartupModule() override;
+    void ShutdownModule() override;
 };

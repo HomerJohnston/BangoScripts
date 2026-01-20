@@ -24,22 +24,18 @@ private:
 	
 	// SETTINGS
 private:
-	float MinDrawDistance = 4000.0f; // TODO cvar/project settings?
-	float MaxDrawDistance = 5000.0f; // TODO cvar/project settings?
-	float HeightAboveActor = 50.0f; // TODO cvar/project settings?
+	float MinDrawDistance_Editor = 4000.0f; // TODO cvar/project settings?
+	float MaxDrawDistance_Editor = 5000.0f; // TODO cvar/project settings?
+	
+	float MinDrawDistance_PIE = 2000.0f; // TODO cvar/project settings?
+	float MaxDrawDistance_PIE = 3000.0f; // TODO cvar/project settings?
 	
 	// PUBLIC API
 public:
 	// Access the UCanvas to draw on
 	UCanvas* operator->() { return Canvas; } 
-
-	// Gets the top-middle screen position to start drawing in
-	FVector GetNextScreenPos(AActor* Actor);
 	
-	float GetAlpha(float Distance) const;
-	
-	// Gets an alpha value based on Min/Max Draw Distance settings
-	float GetAlpha(const FVector& WorldLocation) const;
+	float GetAlpha(const FVector& WorldLocation, bool bPIE) const;
 	
 	// STATE
 private:
@@ -52,9 +48,6 @@ private:
 	// INTERNAL
 private:
 
-	// The nominal vertical gap between users
-	float GetLineHeight() const; 
-	
 	// Gets camera position in worldspace
 	void GetCameraPos(FVector& CameraPos) const;
 	
@@ -67,9 +60,6 @@ public:
 	bool GetScreenLocation(const USceneComponent* SceneComponent, FVector& OutScreenPos);
 	
 	bool GetScreenLocation(const AActor* Actor, FVector& OutScreenPos);
-	
-	// Gets actor position in screen space, returns false if the actor is not visible
-	bool GetScreenLocationAboveActor(const AActor* Actor, FVector& ScreenLocation) const; 
 	
 	bool GetMousePosInLevelViewport(FIntPoint& OutMousePos) const;
 };

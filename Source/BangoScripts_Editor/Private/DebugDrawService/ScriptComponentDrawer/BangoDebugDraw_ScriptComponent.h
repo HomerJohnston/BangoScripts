@@ -5,7 +5,7 @@
 class UBangoScriptComponent;
 struct FBangoDebugDrawCanvas;
 
-UCLASS()
+UCLASS(Abstract, NotBlueprintable)
 class UBangoDebugDraw_ScriptComponent : public UObject
 {
 	GENERATED_BODY()
@@ -19,4 +19,6 @@ protected:
 	static void DebugDrawEditorImpl(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent, float Alpha, const FVector& BillboardScreenPos);
 	
 	static void DebugDrawPIE(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent);
+	
+	static void DebugDrawPIEImpl(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent, float Alpha, const FVector& BillboardScreenPos);
 };

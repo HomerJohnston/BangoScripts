@@ -94,6 +94,8 @@ public:
 	
 	void PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE);
 	
+	void OnShowFlagChanged(bool bShowFlagState);
+	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawPIE;

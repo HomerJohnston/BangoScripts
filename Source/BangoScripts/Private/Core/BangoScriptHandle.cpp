@@ -17,7 +17,7 @@ bool FBangoScriptHandle::IsNull() const
 
 bool FBangoScriptHandle::IsRunning() const
 {
-	return Guid.IsValid();
+	return Guid.IsValid() && Guid != ExpiredGuid;
 }
 
 bool FBangoScriptHandle::IsExpired() const
