@@ -69,16 +69,14 @@ protected:
 	
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> IconTexture;
-	
-	UPROPERTY(Transient)
 	FBangoScriptHandle RunningHandle;
 	
 	// I am toying with using a standard billboard component to represent the script instead of debugdraw, not sure yet.
-#if 0
-	UPROPERTY(Transient)
-	TObjectPtr<UBillboardComponent> Billboard;
-#endif
+    UPROPERTY(Transient)
+    TObjectPtr<UBillboardComponent> Billboard;
+    
+    UPROPERTY(EditAnywhere)
+    bool bUseDebugDraw = false;
 #endif
 	
 public:
@@ -97,12 +95,12 @@ public:
 	
 	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
 	
-	void DebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE) const;
+	void DebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE);
 	
 	void DebugDrawEditor(FBangoDebugDrawCanvas& Canvas) const;
 	
 	void DebugDrawGame(FBangoDebugDrawCanvas& Canvas) const;
-	
+    
 	void PreEditUndo() override;
 
 	void PostEditUndo(TSharedPtr<ITransactionObjectAnnotation> TransactionAnnotation) override;

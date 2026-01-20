@@ -3,11 +3,96 @@
 #include "BangoScripts/EditorTooling/BangoDebugUtility.h"
 
 #include "DrawDebugHelpers.h"
+#include "IImageWrapperModule.h"
+#include "PixelFormat.h"
+#include "TextureResource.h"
 #include "Components/ActorComponent.h"
+#include "Engine/Texture2D.h"
+#include "Engine/TextureDefines.h"
 #include "GameFramework/Actor.h"
+#include "Interfaces/IPluginManager.h"
 #include "Math/MathFwd.h"
 #include "Math/Ray.h"
+#include "Misc/FileHelper.h"
+#include "Modules/ModuleManager.h"
 #include "UObject/Package.h"
+
+// ----------------------------------------------
+
+UTexture2D* Bango::Debug::GetScriptDebugDrawIcon()
+{
+    static TStrongObjectPtr<UTexture2D> IconTexture = nullptr;
+    
+    static bool bLoaded = false;
+    
+    if (!bLoaded)
+    {
+        // Only attempt to load it once
+        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_Small.png");
+        bLoaded = true;
+    }
+    
+    return IconTexture.Get();
+}
+
+// ----------------------------------------------
+
+UTexture2D* Bango::Debug::GetScriptBillboardIcon()
+{
+    static TStrongObjectPtr<UTexture2D> IconTexture = nullptr;
+    
+    static bool bLoaded = false;
+    
+    if (!bLoaded)
+    {
+        // Only attempt to load it once
+        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_BillboardComponent.png");
+        bLoaded = true;
+    }
+    
+    return IconTexture.Get();
+}
+
+// ----------------------------------------------
+
+void Bango::Debug::LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FString& Path)
+{
+    const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BangoScripts"));
+    check(Plugin.IsValid());
+
+    IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(TEXT("ImageWrapper"));
+    
+    const FString ResourcesDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(Plugin->GetBaseDir(), TEXT("Resources")));
+	
+    TArray<uint8> PNGData;
+    FFileHelper::LoadFileToArray(PNGData, *(ResourcesDir / *Path));
+
+    TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
+    
+    ImageWrapper->SetCompressed(PNGData.GetData(), PNGData.Num());
+    
+    UTexture2D* Texture = UTexture2D::CreateTransient(
+           ImageWrapper->GetWidth(),
+           ImageWrapper->GetHeight(),
+           PF_B8G8R8A8
+       );
+
+    TArray<uint8> RawData;
+    ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData);
+    
+    Texture->MipGenSettings = TMGS_NoMipmaps;
+    Texture->SRGB = true;
+    
+    void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+    FMemory::Memcpy(TextureData, RawData.GetData(), RawData.Num());
+    Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
+    
+    Texture->UpdateResource();
+    
+    Destination = TStrongObjectPtr<UTexture2D>(Texture);
+}
+
+// ----------------------------------------------
 
 void Bango::Debug::PrintComponentState(UActorComponent* Component, FString Msg)
 {
@@ -32,6 +117,8 @@ void Bango::Debug::PrintComponentState(UActorComponent* Component, FString Msg)
 	
 	UE_LOG(LogBangoEditor, VeryVerbose, TEXT("%s: %s"), *Component->GetName(), *FString::Format(TEXT("{0} --- Flags: {1}                          --- Internal Flags: {2}"), { Msg, *BitString1, *BitString2 } ));
 }
+
+// ----------------------------------------------
 
 void Bango::Debug::PrintFlagNames()
 {
@@ -115,6 +202,8 @@ void Bango::Debug::PrintFlagNames()
 	}
 }
 
+// ----------------------------------------------
+
 void Bango::Debug::Draw::DebugDrawDashedLine(UWorld* World, const FVector& Start, const FVector& End, float DashLength, const FColor& Color, bool bPersistentLines, float Lifetime, uint8 DepthPriority, float Thickness)
 {
 	float Distance = (End - Start).Size();
@@ -123,6 +212,8 @@ void Bango::Debug::Draw::DebugDrawDashedLine(UWorld* World, const FVector& Start
 	
 	DebugDrawDashedLine(World, Ray, Distance, DashLength, Color, bPersistentLines, Lifetime, DepthPriority, Thickness);
 }
+
+// ----------------------------------------------
 
 void Bango::Debug::Draw::DebugDrawDashedLine(UWorld* World, const FVector& Start, const FVector& End, int32 NumDashes, const FColor& Color, bool bPersistentLines, float Lifetime, uint8 DepthPriority, float Thickness)
 {
@@ -134,6 +225,8 @@ void Bango::Debug::Draw::DebugDrawDashedLine(UWorld* World, const FVector& Start
 	
 	DebugDrawDashedLine(World, Ray, Distance, DashLength, Color, bPersistentLines, Lifetime, DepthPriority, Thickness);
 }
+
+// ----------------------------------------------
 
 void Bango::Debug::Draw::DebugDrawDashedLine(UWorld* World, const FRay& Ray, float Distance, float DashLength, const FColor& Color, bool bPersistentLines, float Lifetime, uint8 DepthPriority, float Thickness)
 {
@@ -163,3 +256,5 @@ void Bango::Debug::Draw::DebugDrawDashedLine(UWorld* World, const FRay& Ray, flo
 		CurrentSegment++;
 	}
 }
+
+// ----------------------------------------------

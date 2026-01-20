@@ -23,8 +23,8 @@ private:
 	
 	// SETTINGS
 private:
-	float MinDrawDistance = 2000.0f; // TODO cvar/project settings?
-	float MaxDrawDistance = 2500.0f; // TODO cvar/project settings?
+	float MinDrawDistance = 4000.0f; // TODO cvar/project settings?
+	float MaxDrawDistance = 5000.0f; // TODO cvar/project settings?
 	float HeightAboveActor = 50.0f; // TODO cvar/project settings?
 	
 	// PUBLIC API

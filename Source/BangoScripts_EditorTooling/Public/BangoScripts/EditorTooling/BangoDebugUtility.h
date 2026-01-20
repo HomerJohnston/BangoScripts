@@ -4,13 +4,21 @@
 
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "Containers/UnrealString.h"
+#include "UObject/StrongObjectPtrTemplates.h"
 
 class UActorComponent;
+class UTexture2D;
 
 namespace Bango
 {
 	namespace Debug
 	{
+	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptDebugDrawIcon();
+	    
+	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptBillboardIcon();
+    
+	    BANGOSCRIPTS_EDITORTOOLING_API void LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FString& Path);
+	    
 		BANGOSCRIPTS_EDITORTOOLING_API void PrintComponentState(UActorComponent* Component, FString Msg);
 
 		BANGOSCRIPTS_EDITORTOOLING_API void PrintFlagNames();

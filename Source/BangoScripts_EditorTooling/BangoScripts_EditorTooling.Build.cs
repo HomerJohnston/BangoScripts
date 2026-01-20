@@ -24,7 +24,8 @@ public class BangoScripts_EditorTooling : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-				"UnrealEd"
+				"UnrealEd",
+				"Projects"
             }
         );
         

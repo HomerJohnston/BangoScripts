@@ -118,6 +118,12 @@ FBangoScriptHandle UBangoScriptSubsystem::K2_EnqueueScript(TSoftClassPtr<UBangoS
 
 FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScript> ScriptClass, UObject* Runner, const FInstancedPropertyBag* PropertyBag, bool bLoadImmediately)
 {
+    if (ScriptClass.IsNull())
+    {
+        UE_LOG(LogBango, Warning, TEXT("RunScript called with null script!"));
+        return FBangoScriptHandle::GetNullHandle();
+    }
+    
 	check(Runner);
 	
 	UBangoScriptSubsystem* Subsystem = Get(Runner);
