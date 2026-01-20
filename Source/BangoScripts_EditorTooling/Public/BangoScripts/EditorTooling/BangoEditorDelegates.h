@@ -37,7 +37,7 @@ struct FBangoEditorDelegates
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent)> OnScriptComponentClicked;
 	
 	//  
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(FBangoDebugDrawCanvas& DebugDrawData, bool bPIE)> BangoDebugDraw;
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(FBangoDebugDrawCanvas& DebugDrawData, bool bPIE)> DebugDrawRequest;
 	
 	// FBangoScriptContainerCustomization instances subscribe to this to regenerate themselves when the script subsystem does things to level scripts
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void()> OnScriptGenerated;

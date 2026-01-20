@@ -2,9 +2,13 @@
 
 #include "BangoScripts/EditorTooling/BangoDebugDrawCanvas.h"
 
+#include "LevelEditor.h"
+#include "SLevelViewport.h"
 #include "Engine/Canvas.h"
 #include "GameFramework/Actor.h"
 #include "Math/Vector.h"
+#include "Modules/ModuleManager.h"
+#include "Slate/SceneViewport.h"
 
 // ----------------------------------------------
 
@@ -41,19 +45,28 @@ FVector FBangoDebugDrawCanvas::GetNextScreenPos(AActor* Actor)
 	return DrawLocation.InitialPositon + FVector(0.0f, GetLineHeight() * DrawLocation.LineIndex++, 0.0f);
 }
 
+float FBangoDebugDrawCanvas::GetAlpha(float Distance) const
+{
+	float MinDistanceSq = FMath::Square(MinDrawDistance);
+	float MaxDistanceSq = FMath::Square(MaxDrawDistance);
+	float DistanceSq = Distance * Distance;
+	
+	// This isn't linear but I'm OK with that for debug drawing
+	float LerpAlpha = FMath::Clamp((DistanceSq - MinDistanceSq) / (MaxDistanceSq - MinDistanceSq), 0.0f, 1.0f);
+	
+	return 1.0f - LerpAlpha;
+}
+
 // ----------------------------------------------
 
-float FBangoDebugDrawCanvas::GetAlpha(AActor* Actor) const
+float FBangoDebugDrawCanvas::GetAlpha(const FVector& WorldLocation) const
 {
-	check(Canvas);
-	check(Actor);
-	
 	FVector CameraPos;
 	GetCameraPos(CameraPos);
 	
 	float MinDistanceSq = FMath::Square(MinDrawDistance);
 	float MaxDistanceSq = FMath::Square(MaxDrawDistance);
-	float DistanceSq = FVector::DistSquared(CameraPos, Actor->GetActorLocation());
+	float DistanceSq = FVector::DistSquared(CameraPos, WorldLocation);
 	
 	// This isn't linear but I'm OK with that for debug drawing
 	float LerpAlpha = FMath::Clamp((DistanceSq - MinDistanceSq) / (MaxDistanceSq - MinDistanceSq), 0.0f, 1.0f);
@@ -89,7 +102,32 @@ void FBangoDebugDrawCanvas::GetCameraPos(FVector& CameraPos, FVector& CameraDir)
 	Canvas->Deproject(FVector2D(X, Y), CameraPos, CameraDir);
 }
 
-bool FBangoDebugDrawCanvas::GetScreenLocationAboveActor(AActor* Actor, FVector& ScreenLocation) const
+// ----------------------------------------------
+
+bool FBangoDebugDrawCanvas::GetScreenLocation(const FVector& WorldPos, FVector& OutScreenPos)
+{
+	OutScreenPos = Canvas->Project(WorldPos, false);
+	
+	return OutScreenPos.Z > 0;
+}
+
+// ----------------------------------------------
+
+bool FBangoDebugDrawCanvas::GetScreenLocation(const USceneComponent* SceneComponent, FVector& OutScreenPos)
+{
+	return GetScreenLocation(SceneComponent->GetComponentLocation(), OutScreenPos);
+}
+
+// ----------------------------------------------
+
+bool FBangoDebugDrawCanvas::GetScreenLocation(const AActor* Actor, FVector& OutScreenPos)
+{
+	return GetScreenLocation(Actor->GetActorLocation(), OutScreenPos);
+}
+
+// ----------------------------------------------
+
+bool FBangoDebugDrawCanvas::GetScreenLocationAboveActor(const AActor* Actor, FVector& ScreenLocation) const
 {
 	check(Canvas);
 	check(Actor);
@@ -108,3 +146,26 @@ bool FBangoDebugDrawCanvas::GetScreenLocationAboveActor(AActor* Actor, FVector& 
 	
 	return true;
 }
+
+bool FBangoDebugDrawCanvas::GetMousePosInLevelViewport(FIntPoint& OutMousePos) const
+{
+	TSharedPtr<SLevelViewport> LevelViewport = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor").GetFirstActiveLevelViewport();
+	TSharedPtr<FSceneViewport> SceneViewport = nullptr;
+	
+	if (LevelViewport.IsValid())
+	{
+		SceneViewport = LevelViewport->GetSceneViewport();
+	}
+	
+	if (!SceneViewport)
+	{
+		return false;
+	}
+	
+	SceneViewport->GetMousePos(OutMousePos);
+	
+	return true;
+}
+
+// ----------------------------------------------
+

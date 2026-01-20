@@ -25,7 +25,10 @@
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
-#define USE_BANGO_DEBUG_DRAW 0
+#if WITH_EDITOR
+TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> UBangoScriptComponent::OnDebugDrawEditor;
+TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> UBangoScriptComponent::OnDebugDrawPIE;
+#endif
 
 // ----------------------------------------------
 
@@ -65,7 +68,7 @@ void UBangoScriptComponent::OnRegister()
     {
 	    if (!IsTemplate())
 	    {
-		    FBangoEditorDelegates::BangoDebugDraw.AddUObject(this, &ThisClass::DebugDraw);
+		    FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDraw);
 	    }
     }
     else
@@ -107,7 +110,7 @@ void UBangoScriptComponent::OnRegister()
 #if WITH_EDITOR
 void UBangoScriptComponent::OnUnregister()
 {
-	FBangoEditorDelegates::BangoDebugDraw.RemoveAll(this);
+	FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this);
 
 	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(this, &ScriptContainer);
 		
@@ -325,259 +328,18 @@ void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 // ----------------------------------------------
 
 #if WITH_EDITOR
-void UBangoScriptComponent::DebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE)
+void UBangoScriptComponent::PerformDebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE)
 {    
+	// We delegate these requests over to the editor module to make it easier to build in editor functionality
+	// See UBangoDebugDraw_ScriptComponent
+	
 	if (bPIE)
 	{
-		DebugDrawGame(Canvas);
+		OnDebugDrawPIE.Broadcast(Canvas, this);
 	}
 	else
 	{
-		DebugDrawEditor(Canvas);
-	}
-}
-#endif
-
-// ----------------------------------------------
-
-#if WITH_EDITOR
-void UBangoScriptComponent::DebugDrawEditor(FBangoDebugDrawCanvas& Canvas) const
-{
-    /*
-	FLinearColor TagColor = Bango::Colors::White;
-
-	float Alpha = Canvas.GetAlpha(GetOwner());
-	
-	if (Alpha <= 0.0f)
-	{
-		return;
-	}
-	
-	FVector ScreenLocation = Canvas.GetNextScreenPos(GetOwner());
-	
-	if (ScreenLocation.Z <= 0.0f)
-	{
-		return;
-	}
-	
-	if (GetWorld()->IsGameWorld())
-	{
-		if (RunningHandle.IsExpired())
-		{
-			TagColor = Bango::Colors::YellowBase;
-		}
-		else if (RunningHandle.IsRunning())
-		{
-			TagColor = Bango::Colors::LightBlue;
-		}
-		else if (RunningHandle.IsNull())
-		{
-			TagColor = FLinearColor::Black;
-		}
-	}
-	else
-	{
-		if (bRunOnBeginPlay)
-		{
-			TagColor = Bango::Colors::Green;
-		}
-	}
-	
-	FText LabelText = FText::FromString(ScriptContainer.GetDescription());
-	
-	if (LabelText.IsEmpty())
-	{
-		LabelText = FText::FromString(GetName());
-	}
-	
-	FVector2D TextSize = FVector2D::ZeroVector;
-	UFont* Font = GEngine->GetLargeFont();
-	
-	TagColor.A *= Alpha;
-	
-	float IconRawSize = 32.0f;
-	float IconScale = 0.5f;
-	
-	float IconSize = IconRawSize * IconScale;
-	float Padding = 4.0f;
-	float Border = 2.0f;
-	float IconPadding = 4.0f;
-	
-	if (!LabelText.IsEmpty())
-	{
-		const TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
-		TextSize = FontMeasureService->Measure(LabelText.ToString(), Font->GetLegacySlateFontInfo());
-	}
-
-	float TotalWidth = IconSize;
-	float TotalHeight = FMath::Max(IconSize, IconSize);
-	
-	if (TextSize.X > KINDA_SMALL_NUMBER)
-	{
-		TotalWidth += IconPadding + TextSize.X;
-	}
-	
-	{
-		// Background
-		float X = ScreenLocation.X - 0.5f * TotalWidth - Padding;
-		float Y = ScreenLocation.Y - 0.5f * TotalHeight - Padding;
-		float XL = TotalWidth + 2.0f * Padding;
-		float YL = TotalHeight + 2.0f * Padding;
-		
-		FVector4f UV(0.0f, 0.0f, 1.0f, 1.0f);
-	
-		UTexture* BackgroundTex = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture"));
-		
-		// Larger whitish rectangle
-		Canvas->SetDrawColor(FColor(150, 150, 150, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X - Border, Y - Border, XL + 2.0 * Border, YL + 2.0 * Border, UV.X, UV.Y, UV.Z, UV.Z);
-		
-		// Darker background
-		Canvas->SetDrawColor(FColor(20, 20, 20, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X, Y, XL, YL, UV.X, UV.Y, UV.Z, UV.Z);
-	}
-	
-	{
-		// Script Icon
-		float X = ScreenLocation.X - 0.5f * TotalWidth;
-		float Y = ScreenLocation.Y - 0.5f * IconSize;
-		
-		FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptDebugDrawIcon(), 0.0f, 0.0f, IconRawSize, IconRawSize);
-		Canvas->SetDrawColor(TagColor.ToFColor(false));
-		Canvas->DrawIcon(Icon, X, Y, IconScale);
-	}
-	
-	if (!LabelText.IsEmpty())
-	{
-		// Text
-		float X = ScreenLocation.X - 0.5f * TotalWidth + 0.5f * IconSize + 0.5f * IconPadding;
-		float Y = ScreenLocation.Y;
-		
-		FCanvasTextItem Text(FVector2D(X + 0.5f * IconSize + IconPadding, Y), LabelText, Font, Alpha * Bango::Colors::White);
-		Text.bCentreY = true;
-		Canvas->DrawItem(Text);
-	}
-	*/
-}
-#endif
-
-// ----------------------------------------------
-
-#if WITH_EDITOR
-void UBangoScriptComponent::DebugDrawGame(FBangoDebugDrawCanvas& Canvas) const
-{
-	FLinearColor TagColor = Bango::Colors::White;
-
-	float Alpha = Canvas.GetAlpha(GetOwner());
-	
-	if (Alpha <= 0.0f)
-	{
-		return;
-	}
-	
-	FVector ScreenLocation = Canvas.GetNextScreenPos(GetOwner());
-	
-	if (ScreenLocation.Z <= 0.0f)
-	{
-		return;
-	}
-	
-	if (GetWorld()->IsGameWorld())
-	{
-		if (RunningHandle.IsExpired())
-		{
-			TagColor = Bango::Colors::YellowBase;
-		}
-		else if (RunningHandle.IsRunning())
-		{
-			TagColor = Bango::Colors::LightBlue;
-		}
-		else if (RunningHandle.IsNull())
-		{
-			TagColor = FLinearColor::Black;
-		}
-	}
-	else
-	{
-		if (bRunOnBeginPlay)
-		{
-			TagColor = Bango::Colors::Green;
-		}
-	}
-	
-	FText LabelText = FText::FromString(ScriptContainer.GetDescription());
-	
-	if (LabelText.IsEmpty())
-	{
-		LabelText = FText::FromString(GetName());
-	}
-	
-	FVector2D TextSize = FVector2D::ZeroVector;
-	UFont* Font = GEngine->GetLargeFont();
-	
-	TagColor.A *= Alpha;
-	
-	float IconRawSize = 32.0f;
-	float IconScale = 0.5f;
-	
-	float IconSize = IconRawSize * IconScale;
-	float Padding = 4.0f;
-	float Border = 2.0f;
-	float IconPadding = 4.0f;
-	
-	if (!LabelText.IsEmpty())
-	{
-		const TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
-		TextSize = FontMeasureService->Measure(LabelText.ToString(), Font->GetLegacySlateFontInfo());
-	}
-
-	float TotalWidth = IconSize;
-	float TotalHeight = FMath::Max(IconSize, IconSize);
-	
-	if (TextSize.X > KINDA_SMALL_NUMBER)
-	{
-		TotalWidth += IconPadding + TextSize.X;
-	}
-	
-	{
-		// Background
-		float X = ScreenLocation.X - 0.5f * TotalWidth - Padding;
-		float Y = ScreenLocation.Y - 0.5f * TotalHeight - Padding;
-		float XL = TotalWidth + 2.0f * Padding;
-		float YL = TotalHeight + 2.0f * Padding;
-		
-		FVector4f UV(0.0f, 0.0f, 1.0f, 1.0f);
-	
-		UTexture* BackgroundTex = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture"));
-		
-		// Larger whitish rectangle
-		Canvas->SetDrawColor(FColor(150, 150, 150, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X - Border, Y - Border, XL + 2.0 * Border, YL + 2.0 * Border, UV.X, UV.Y, UV.Z, UV.Z);
-		
-		// Darker background
-		Canvas->SetDrawColor(FColor(20, 20, 20, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X, Y, XL, YL, UV.X, UV.Y, UV.Z, UV.Z);
-	}
-	
-	{
-		// Script Icon
-		float X = ScreenLocation.X - 0.5f * TotalWidth;
-		float Y = ScreenLocation.Y - 0.5f * IconSize;
-		
-		FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptDebugDrawIcon(), 0.0f, 0.0f, IconRawSize, IconRawSize);
-		Canvas->SetDrawColor(TagColor.ToFColor(false));
-		Canvas->DrawIcon(Icon, X, Y, IconScale);
-	}
-	
-	if (!LabelText.IsEmpty())
-	{
-		// Text
-		float X = ScreenLocation.X - 0.5f * TotalWidth + 0.5f * IconSize + 0.5f * IconPadding;
-		float Y = ScreenLocation.Y;
-		
-		FCanvasTextItem Text(FVector2D(X + 0.5f * IconSize + IconPadding, Y), LabelText, Font, Alpha * Bango::Colors::White);
-		Text.bCentreY = true;
-		Canvas->DrawItem(Text);
+		OnDebugDrawEditor.Broadcast(Canvas, this);
 	}
 }
 #endif

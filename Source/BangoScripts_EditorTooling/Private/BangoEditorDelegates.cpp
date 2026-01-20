@@ -16,7 +16,7 @@ TMulticastDelegate<void(AActor* Actor)> FBangoEditorDelegates::RequestNewID;
 
 TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent)> FBangoEditorDelegates::OnScriptComponentClicked;
 
-TMulticastDelegate<void(FBangoDebugDrawCanvas& DebugDrawData, bool bPIE)> FBangoEditorDelegates::BangoDebugDraw;
+TMulticastDelegate<void(FBangoDebugDrawCanvas& DebugDrawData, bool bPIE)> FBangoEditorDelegates::DebugDrawRequest;
 
 TMulticastDelegate<void()> FBangoEditorDelegates::OnScriptGenerated;
 

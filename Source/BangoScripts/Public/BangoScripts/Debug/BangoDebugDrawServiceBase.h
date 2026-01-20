@@ -88,7 +88,7 @@ void FBangoDebugDrawServiceBase::BangoDebugDraw_Register(T* Component)
 	}
 	else if (Component->GetWorld()->IsGameWorld())
 	{
-		FBangoEditorDelegates::BangoDebugDraw.AddUObject(Component, &T::__DebugDrawGame);
+		FBangoEditorDelegates::DebugDrawRequest.AddUObject(Component, &T::__DebugDrawGame);
 	}
 }
 #endif

@@ -16,5 +16,5 @@ void UBangoDebugDrawService::DebugDraw(UCanvas* Canvas, APlayerController* ALWAY
 {
 	FBangoDebugDrawCanvas Data(Canvas);
 	
-	FBangoEditorDelegates::BangoDebugDraw.Broadcast(Data, GEditor->IsPlayingSessionInEditor());
+	FBangoEditorDelegates::DebugDrawRequest.Broadcast(Data, GEditor->IsPlayingSessionInEditor());
 }

@@ -3,7 +3,7 @@
 #include "BangoScriptHandle.generated.h"
 
 USTRUCT(BlueprintType)
-struct FBangoScriptHandle
+struct BANGOSCRIPTS_API FBangoScriptHandle
 {
 	GENERATED_BODY()
 

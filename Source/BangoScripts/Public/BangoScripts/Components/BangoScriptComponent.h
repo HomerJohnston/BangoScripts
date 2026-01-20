@@ -95,14 +95,22 @@ public:
 	
 	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
 	
-	void DebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE);
+	void PerformDebugDraw(FBangoDebugDrawCanvas& Canvas, bool bPIE);
 	
-	void DebugDrawEditor(FBangoDebugDrawCanvas& Canvas) const;
+	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	
-	void DebugDrawGame(FBangoDebugDrawCanvas& Canvas) const;
-    
+	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawPIE;
+	
 	void PreEditUndo() override;
 
 	void PostEditUndo(TSharedPtr<ITransactionObjectAnnotation> TransactionAnnotation) override;
+	
+	UBillboardComponent* GetBillboard() const { return Billboard; }
+	
+	const FBangoScriptHandle& GetRunningHandle() const { return RunningHandle; }
+	
+	bool GetRunOnBeginPlay() const { return bRunOnBeginPlay; }
+	
+	const FBangoScriptContainer& GetScriptContainer() const { return ScriptContainer; }
 #endif
 };
