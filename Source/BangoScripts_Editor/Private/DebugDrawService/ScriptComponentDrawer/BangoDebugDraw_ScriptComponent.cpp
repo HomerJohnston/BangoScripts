@@ -119,10 +119,13 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 		TotalWidth += IconPadding + TextSize.X;
 	}
 	
+    float WidgetCenterX = BillboardScreenPos.X;
+    float WidgetCenterY = BillboardScreenPos.Y + 2.0f * TotalHeight;
+    
 	{
 		// Background
-		float X = BillboardScreenPos.X - 0.5f * TotalWidth - Padding;
-		float Y = BillboardScreenPos.Y - 0.5f * TotalHeight - Padding;
+		float X = WidgetCenterX - 0.5f * TotalWidth - Padding;
+		float Y = WidgetCenterY - 0.5f * TotalHeight - Padding;
 		float XL = TotalWidth + 2.0f * Padding;
 		float YL = TotalHeight + 2.0f * Padding;
 		
@@ -142,8 +145,8 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 	if (!LabelText.IsEmpty())
 	{
 		// Text
-		float X = BillboardScreenPos.X - 0.5f * TotalWidth + 0.5f * IconPadding;
-		float Y = BillboardScreenPos.Y;
+		float X = WidgetCenterX - 0.5f * TotalWidth + 0.5f * IconPadding;
+		float Y = WidgetCenterY;
 		
 		FCanvasTextItem Text(FVector2D(X + IconPadding, Y), LabelText, Font, Alpha * Bango::Colors::White);
 		Text.bCentreY = true;
