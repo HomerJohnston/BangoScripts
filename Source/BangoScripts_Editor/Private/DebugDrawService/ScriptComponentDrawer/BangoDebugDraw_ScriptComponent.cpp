@@ -16,6 +16,8 @@
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
 
+#define LOCTEXT_NAMESPACE "BangoScripts"
+
 UBangoDebugDraw_ScriptComponent::UBangoDebugDraw_ScriptComponent()
 {
 	if (IsTemplate())
@@ -93,7 +95,14 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 	
 	if (LabelText.IsEmpty())
 	{
-		LabelText = FText::FromString(ScriptComponent->GetName());
+		if (!ScriptComponent->GetScriptContainer().GetScriptClass().IsNull())
+		{
+			LabelText = FText::FromString(ScriptComponent->GetName());
+		}
+		else
+		{
+			LabelText = LOCTEXT("DebugDrawPopup_NoScript", "No script"); 
+		}
 	}
 	
 	FVector2D TextSize = FVector2D::ZeroVector;
@@ -103,7 +112,7 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 	
 	float Padding = 4.0f;
 	float Border = 2.0f;
-	float IconPadding = 4.0f;
+	// float IconPadding = 4.0f;
 	
 	if (!LabelText.IsEmpty())
 	{
@@ -116,7 +125,7 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 	
 	if (TextSize.X > KINDA_SMALL_NUMBER)
 	{
-		TotalWidth += IconPadding + TextSize.X;
+		TotalWidth += TextSize.X;
 	}
 	
     float WidgetCenterX = BillboardScreenPos.X;
@@ -145,10 +154,10 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 	if (!LabelText.IsEmpty())
 	{
 		// Text
-		float X = WidgetCenterX - 0.5f * TotalWidth + 0.5f * IconPadding;
+		float X = WidgetCenterX - 0.5f * TotalWidth;
 		float Y = WidgetCenterY;
 		
-		FCanvasTextItem Text(FVector2D(X + IconPadding, Y), LabelText, Font, Alpha * Bango::Colors::White);
+		FCanvasTextItem Text(FVector2D(X, Y), LabelText, Font, Alpha * Bango::Colors::White);
 		Text.bCentreY = true;
 		Canvas->DrawItem(Text);
 	}
@@ -298,3 +307,4 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 	*/
 }
 
+#undef LOCTEXT_NAMESPACE
