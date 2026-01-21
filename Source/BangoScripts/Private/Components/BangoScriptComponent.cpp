@@ -81,10 +81,6 @@ void UBangoScriptComponent::OnRegister()
 		// Start registered
 	    FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate);
     }
-	else if (GetWorld()->IsGameWorld())
-	{
-		
-	}
 
 	if (!Billboard && GetOwner() /*&& !GetWorld()->IsGameWorld()*/)
     {
@@ -95,9 +91,9 @@ void UBangoScriptComponent::OnRegister()
             Billboard = NewObject<UBillboardComponent>(GetOwner(), NAME_None, TransactionalFlag | RF_Transient | RF_TextExportTransient);
         	
         	int32 U = 0;
-        	int32 UL = 64;
+        	int32 UL = 128;
         	int32 V = 0;
-        	int32 VL = 64;
+        	int32 VL = 128;
 		
         	Billboard->SetSpriteAndUV(Bango::Debug::GetScriptBillboardSprite(), U, UL, V, VL);
         }
@@ -106,8 +102,8 @@ void UBangoScriptComponent::OnRegister()
         Billboard->bHiddenInGame = true;
 		Billboard->bIsScreenSizeScaled = true;
         Billboard->SetRelativeLocation(100.0f * FVector::UpVector);
-        
-        Billboard->SetRelativeScale3D_Direct(FVector(1.0f, 1.0f, 1.0f));
+		//Billboard->ScreenSize = 0.0020;
+        //Billboard->SetRelativeScale3D(FVector(1.0f));
         Billboard->Mobility = EComponentMobility::Movable;
         Billboard->AlwaysLoadOnClient = false;
         Billboard->SetIsVisualizationComponent(true);
@@ -115,9 +111,8 @@ void UBangoScriptComponent::OnRegister()
         Billboard->SpriteInfo.Category = TEXT("Misc");
         Billboard->SpriteInfo.DisplayName = NSLOCTEXT("SpriteCategory", "Misc", "Misc");
         Billboard->CreationMethod = CreationMethod;
-        Billboard->bIsScreenSizeScaled = true;
         Billboard->bUseInEditorScaling = true;
-        Billboard->OpacityMaskRefVal = .3f;
+        Billboard->OpacityMaskRefVal = .1f;
         Billboard->RegisterComponent();
     }
 }
@@ -353,17 +348,17 @@ void UBangoScriptComponent::PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas
 	{
 		int32 U = 0;
 		int32 V = 0;
-		int32 UL = 64;
-		int32 VL = 64;
+		int32 UL = 128;
+		int32 VL = 128;
 		
 		if (!ScriptContainer.GetScriptClass().IsNull())
 		{
-			U = 64;
+			U = 128;
 		}
 		
 		if (bRunOnBeginPlay)
 		{
-			V = 64;
+			V = 128;
 		}
 		
 		Billboard->SetUV(U, UL, V, VL);

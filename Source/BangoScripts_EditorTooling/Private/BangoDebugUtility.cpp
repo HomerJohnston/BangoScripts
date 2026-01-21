@@ -80,7 +80,12 @@ void Bango::Debug::LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FSt
     TArray<uint8> RawData;
     ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData);
     
-    Texture->MipGenSettings = TMGS_NoMipmaps;
+	Texture->MipGenSettings = TMGS_NoMipmaps;
+	Texture->AddressX = TA_Clamp;
+	Texture->AddressY = TA_Clamp;
+	Texture->CompressionNone = true;
+	Texture->LODGroup = TEXTUREGROUP_UI;
+	Texture->Filter = TF_Nearest;
     Texture->SRGB = true;
     
     void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
