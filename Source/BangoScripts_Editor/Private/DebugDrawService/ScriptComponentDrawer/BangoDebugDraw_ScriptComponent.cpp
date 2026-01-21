@@ -187,8 +187,8 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 	FLinearColor TagColor = Bango::Colors::White;
 	
 	int32 U = 0;
-	int32 UL = 64;
 	int32 V = 0;
+	int32 UL = 64;
 	int32 VL = 64;
 		
 	if (!ScriptComponent->GetScriptContainer().GetScriptClass().IsNull())
@@ -276,7 +276,7 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 		float Y = BillboardScreenPos.Y - 0.5f * IconSize;
 		
 		//FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptDebugDrawIcon(), U, V, UL, VL);
-		FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptBillboardIcon(), U, V, UL, VL);
+		FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptPIESprite(), U, V, UL, VL);
 		Canvas->SetDrawColor(TagColor.ToFColor(false));
 		Canvas->DrawIcon(Icon, X, Y, IconScale);
 	}

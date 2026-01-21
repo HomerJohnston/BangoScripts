@@ -4,6 +4,7 @@
 
 #include "LevelEditor.h"
 #include "SLevelViewport.h"
+#include "BangoScripts/EditorTooling/BangoDevSettings.h"
 #include "Engine/Canvas.h"
 #include "GameFramework/Actor.h"
 #include "Math/Vector.h"
@@ -36,8 +37,11 @@ float FBangoDebugDrawCanvas::GetAlpha(const FVector& WorldLocation, bool bPIE) c
 	FVector CameraPos;
 	GetCameraPos(CameraPos);
 	
-	float MinDistanceSq = FMath::Square(bPIE ? MinDrawDistance_PIE : MinDrawDistance_Editor);
-	float MaxDistanceSq = FMath::Square(bPIE ? MaxDrawDistance_PIE : MaxDrawDistance_Editor);
+    float MaxDistance = UBangoScriptsDeveloperSettings::GetPIEDisplayDistance();
+    float FadeStartDistance = 0.9f * MaxDistance;
+    
+	float MinDistanceSq = FMath::Square(FadeStartDistance);
+	float MaxDistanceSq = FMath::Square(MaxDistance);
 	float DistanceSq = FVector::DistSquared(CameraPos, WorldLocation);
 	
 	// This isn't linear but I'm OK with that for debug drawing
@@ -45,9 +49,10 @@ float FBangoDebugDrawCanvas::GetAlpha(const FVector& WorldLocation, bool bPIE) c
 	
 	float Alpha = 1.0f - LerpAlpha;
 	
+    // In edit mode clamp the alpha so it always shows, just really dim if you're far away
 	if (!bPIE)
 	{
-		Alpha = FMath::Clamp(Alpha, 0.1f, 1.0f);
+		Alpha = FMath::Clamp(Alpha, 0.25f, 1.0f);
 	}
 	
 	return Alpha;

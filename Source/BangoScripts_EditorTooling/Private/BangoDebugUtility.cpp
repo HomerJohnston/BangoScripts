@@ -19,7 +19,7 @@
 
 // ----------------------------------------------
 
-UTexture2D* Bango::Debug::GetScriptDebugDrawIcon()
+UTexture2D* Bango::Debug::GetScriptPIESprite()
 {
     static TStrongObjectPtr<UTexture2D> IconTexture = nullptr;
     
@@ -28,7 +28,7 @@ UTexture2D* Bango::Debug::GetScriptDebugDrawIcon()
     if (!bLoaded)
     {
         // Only attempt to load it once
-        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_Small.png");
+        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_PIESprite.png");
         bLoaded = true;
     }
     
@@ -37,7 +37,7 @@ UTexture2D* Bango::Debug::GetScriptDebugDrawIcon()
 
 // ----------------------------------------------
 
-UTexture2D* Bango::Debug::GetScriptBillboardIcon()
+UTexture2D* Bango::Debug::GetScriptBillboardSprite()
 {
     static TStrongObjectPtr<UTexture2D> IconTexture = nullptr;
     
@@ -46,7 +46,7 @@ UTexture2D* Bango::Debug::GetScriptBillboardIcon()
     if (!bLoaded)
     {
         // Only attempt to load it once
-        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_BillboardComponent.png");
+        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_BillboardSprite.png");
         bLoaded = true;
     }
     

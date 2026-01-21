@@ -99,7 +99,7 @@ void UBangoScriptComponent::OnRegister()
         	int32 V = 0;
         	int32 VL = 64;
 		
-        	Billboard->SetSpriteAndUV(Bango::Debug::GetScriptBillboardIcon(), U, UL, V, VL);
+        	Billboard->SetSpriteAndUV(Bango::Debug::GetScriptBillboardSprite(), U, UL, V, VL);
         }
 	
         Billboard->SetupAttachment(GetOwner()->GetRootComponent());
@@ -352,24 +352,17 @@ void UBangoScriptComponent::PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas
 	if (Billboard)
 	{
 		int32 U = 0;
-		int32 UL = 64;
 		int32 V = 0;
+		int32 UL = 64;
 		int32 VL = 64;
 		
 		if (!ScriptContainer.GetScriptClass().IsNull())
 		{
 			U = 64;
-			V = 0;
 		}
 		
-		if (RunningHandle.IsRunning())
+		if (bRunOnBeginPlay)
 		{
-			U = 0;
-			V = 64;
-		}
-		else if (RunningHandle.IsExpired())
-		{
-			U = 64;
 			V = 64;
 		}
 		

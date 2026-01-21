@@ -13,9 +13,9 @@ namespace Bango
 {
 	namespace Debug
 	{
-	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptDebugDrawIcon();
+	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptPIESprite();
 	    
-	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptBillboardIcon();
+	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptBillboardSprite();
     
 	    BANGOSCRIPTS_EDITORTOOLING_API void LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FString& Path);
 	    

@@ -22,14 +22,6 @@ struct BANGOSCRIPTS_EDITORTOOLING_API FBangoDebugDrawCanvas
 private:
 	FBangoDebugDrawCanvas(UCanvas* InCanvas);;
 	
-	// SETTINGS
-private:
-	float MinDrawDistance_Editor = 4000.0f; // TODO cvar/project settings?
-	float MaxDrawDistance_Editor = 5000.0f; // TODO cvar/project settings?
-	
-	float MinDrawDistance_PIE = 2000.0f; // TODO cvar/project settings?
-	float MaxDrawDistance_PIE = 3000.0f; // TODO cvar/project settings?
-	
 	// PUBLIC API
 public:
 	// Access the UCanvas to draw on

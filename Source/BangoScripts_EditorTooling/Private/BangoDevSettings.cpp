@@ -1,16 +1,16 @@
 ﻿// Copyright Ghost Pepper Games, Inc. All Rights Reserved.
 
-#include "BangoScripts/Settings/BangoDevSettings.h"
+#include "BangoScripts/EditorTooling/BangoDevSettings.h"
 
-#include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "HAL/IConsoleManager.h"
 
 static TAutoConsoleVariable<bool> CVarBangoShowEventsInGame(
 	TEXT("Bango.ShowEventsInGame"),
 	false,
-	TEXT("Test"));
+	TEXT("TODO Test"));
 
-void UBangoDevSettings::PostCDOContruct()
+/*
+void UBangoScriptsDeveloperSettings::PostCDOContruct()
 {
 	Super::PostCDOContruct();
 	
@@ -21,27 +21,27 @@ void UBangoDevSettings::PostCDOContruct()
 	FAutoConsoleVariableSink CVarSink(FConsoleCommandDelegate::CreateUObject(this, &ThisClass::OnCvarChange));
 }
 
-bool UBangoDevSettings::GetShowEventsInGame() const
+bool UBangoScriptsDeveloperSettings::GetShowEventsInGame() const
 {
 	return bShowEventsInGame;
 }
 
-float UBangoDevSettings::GetFarDisplayDistance() const
+float UBangoScriptsDeveloperSettings::GetFarDisplayDistance() const
 {
-	return FarDisplayDistance;
+	return ScriptIconPIEDisplayDistance;
 }
 
-float UBangoDevSettings::GetNearDisplayDistance() const
+float UBangoScriptsDeveloperSettings::GetNearDisplayDistance() const
 {
 	return NearDisplayDistance;
 }
 
-float UBangoDevSettings::GetEventDisplaySize() const
+float UBangoScriptsDeveloperSettings::GetEventDisplaySize() const
 {
 	return EventDisplaySize;
 }
 
-void UBangoDevSettings::OnCvarChange()
+void UBangoScriptsDeveloperSettings::OnCvarChange()
 {	
 	const IConsoleVariable* ShowInGameCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("Bango.ShowEventsInGame"));
 
@@ -53,7 +53,7 @@ void UBangoDevSettings::OnCvarChange()
 }
 
 #if WITH_EDITOR
-void UBangoDevSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void UBangoScriptsDeveloperSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
@@ -64,3 +64,4 @@ void UBangoDevSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 	}
 }
 #endif
+*/
