@@ -36,6 +36,8 @@ TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptCompone
 UBangoScriptComponent::UBangoScriptComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	
+	BillboardOffset = FVector(0.0f, 0.0f, 100.0f);
 }
 
 // ----------------------------------------------
@@ -101,9 +103,6 @@ void UBangoScriptComponent::OnRegister()
         Billboard->SetupAttachment(GetOwner()->GetRootComponent());
         Billboard->bHiddenInGame = true;
 		Billboard->bIsScreenSizeScaled = true;
-        Billboard->SetRelativeLocation(100.0f * FVector::UpVector);
-		//Billboard->ScreenSize = 0.0020;
-        //Billboard->SetRelativeScale3D(FVector(1.0f));
         Billboard->Mobility = EComponentMobility::Movable;
         Billboard->AlwaysLoadOnClient = false;
         Billboard->SetIsVisualizationComponent(true);
@@ -247,6 +246,14 @@ void UBangoScriptComponent::UnsetScript()
 #if WITH_EDITOR
 void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
+	if (PropertyChangedEvent.MemberProperty->GetName() == GET_MEMBER_NAME_CHECKED(ThisClass, BillboardOffset))
+	{
+		if (Billboard)
+		{
+			Billboard->SetRelativeLocation(BillboardOffset);
+		}
+	}
+	
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 #endif

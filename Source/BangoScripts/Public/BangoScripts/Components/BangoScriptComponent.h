@@ -60,11 +60,16 @@ public:
 	
 protected:
 	/** Use this to run the script automatically upon BeginPlay. */
-	UPROPERTY(EditAnywhere, DisplayName = "Autoplay")
+	UPROPERTY(Category = "Bango", EditAnywhere, DisplayName = "Autoplay")
 	bool bRunOnBeginPlay = false;
 	
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(Category = "Bango", EditAnywhere)
+	FVector BillboardOffset;
+#endif
+	
 	/** The actual script instance. */
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(Category = "Bango", EditInstanceOnly)
 	FBangoScriptContainer ScriptContainer;
 	
 #if WITH_EDITORONLY_DATA
@@ -111,5 +116,7 @@ public:
 	bool GetRunOnBeginPlay() const { return bRunOnBeginPlay; }
 	
 	const FBangoScriptContainer& GetScriptContainer() const { return ScriptContainer; }
+	
+	const FVector& GetBillboardOffset() const { return BillboardOffset; }
 #endif
 };
