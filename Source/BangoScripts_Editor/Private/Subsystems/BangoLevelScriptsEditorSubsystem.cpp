@@ -299,7 +299,13 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueDestroyedScriptContainer(UObject*
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueDestroyedScriptComponent: %s (%p)"), *Owner->GetName(), ScriptContainer);
 	
-	DestructionRequests.Add(ScriptContainer->GetScriptClass());
+	TSoftClassPtr<UBangoScript> ScriptClass = ScriptContainer->GetScriptClass();
+    
+    if (!ScriptClass.IsNull())
+    {
+	    DestructionRequests.Add(ScriptContainer->GetScriptClass());
+    }
+    
 	RequestScriptQueueProcessing();
 }
 
@@ -336,11 +342,15 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 			continue;
 		}
 		
-		TSoftClassPtr<UBangoScript> Script = Request.ScriptContainer->GetScriptClass();
-		UE_LOG(LogBangoEditor, Verbose, TEXT("     %s"),*Request.ScriptContainer->GetScriptClass().ToString());
-		
-		// We want creation requests to take priority; parse through creations first and have any creation requests cancel out any destruction requestss
-		DestructionRequests.Remove(Script);
+		TSoftClassPtr<UBangoScript> ScriptClass = Request.ScriptContainer->GetScriptClass();
+
+	    // We want creation requests to take priority; parse through creations first and have any creation requests cancel out any destruction requestss
+	    
+	    if (!ScriptClass.IsNull())
+	    {
+    		DestructionRequests.Remove(ScriptClass);
+	    }
+	    
 		ProcessCreatedScriptRequest(Request.ScriptOuter, Request.ScriptContainer);
 	}
 	
