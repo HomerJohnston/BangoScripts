@@ -120,13 +120,19 @@ void Bango::Debug::PrintComponentState(UActorComponent* Component, FString Msg)
 		BitString2.AppendChar(((IntFlags >> i) & 1) ? TEXT('1') : TEXT('0'));
 	}
 	
-	UE_LOG(LogBangoEditor, VeryVerbose, TEXT("%s: %s"), *Component->GetName(), *FString::Format(TEXT("{0} --- Flags: {1}                          --- Internal Flags: {2}"), { Msg, *BitString1, *BitString2 } ));
+	//UE_LOG(LogBangoEditor, VeryVerbose, TEXT("%p: %s"), Component, *FString::Format(TEXT("{0} --- Flags: {1}                          --- Internal Flags: {2}"), { Msg, *BitString1, *BitString2 } ));
+	
+	FString FlagsString = GetFlagsString(Component);
+	
+	UE_LOG(LogBangoEditor, VeryVerbose, TEXT("%p: %s"), Component, *FString::Format(TEXT("{0} --- {1}"), { Msg, FlagsString } ));
 }
 
 // ----------------------------------------------
 
-void Bango::Debug::PrintFlagNames()
+FString Bango::Debug::GetFlagsString(UObject* Object)
 {
+	EObjectFlags Flags = Object->GetFlags();
+	
 	static const TMap<int64, FString> FlagDefs =
 	{
 		{ RF_Public,						TEXT("RF_Public") },
@@ -181,30 +187,33 @@ void Bango::Debug::PrintFlagNames()
 		{ 1u << 30, TEXT("RootSet") },
 		{ 1u << 31, TEXT("PendingConstruction") },
 	};
-			
-	for (int64 i = 0; i <= 30; ++i)
+	
+	TArray<FString> FlagStrings;
+	
+	for (int64 i = 0; i <= 64; ++i)
 	{
-		FString Print;
-		Print = Print.LeftPad(89);
-		FString Indent;
-		Indent = FString::ChrN(31 - i, '|');
-		FString Pointout = "o-";
-
-		FString FinalPrint = Print + Indent + Pointout;
-				
-		const FString* Value = FlagDefs.Find((uint64)1 << i);
-				
-		if (Value)
+		int64 AllObjectFlags = (int64)Flags;
+		int64 FlagToCheck = (int64)1 << i;
+		
+		checkSlow(!(Flags & (RF_MarkAsNative | RF_MarkAsRootSet)) || Flags == RF_AllFlags); // These flags can't be used outside of constructors / internal code
+		
+		if (( AllObjectFlags & FlagToCheck) == FlagToCheck)
 		{
-			FinalPrint += *Value;
-		}
-		else
-		{
-			FinalPrint += "NONE";
-		}
+			const FString* String = FlagDefs.Find(FlagToCheck);
 			
-		UE_LOG(LogBangoEditor, Display, TEXT("%s"), *FinalPrint);
+			if (String)
+			{
+				FlagStrings.Add(*String);
+			}
+		}
 	}
+	
+	if (FlagStrings.Num() == 0)
+	{
+		return "<None>";
+	}
+	
+	return FString::Join(FlagStrings, TEXT(", "));
 }
 
 // ----------------------------------------------

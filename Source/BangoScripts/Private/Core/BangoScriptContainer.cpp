@@ -10,11 +10,16 @@
 
 // ----------------------------------------------
 
+FBangoScriptContainer::FBangoScriptContainer()
+{
+}
+
 #if WITH_EDITOR
 void FBangoScriptContainer::SetGuid(const FGuid& InGuid)
 {
 	check(!Guid.IsValid());
-	
+	check(InGuid.IsValid());
+		
 	Guid = InGuid;
 }
 #endif
@@ -43,11 +48,8 @@ void FBangoScriptContainer::SetScriptClass(TSubclassOf<UObject> NewScriptClass)
 // ----------------------------------------------
 
 #if WITH_EDITOR
-bool FBangoScriptContainer::AreScriptInputsOutDated()
+bool FBangoScriptContainer::AreScriptInputsOutDated() const
 {
-	static uint64 CachedFrameCheck = 0;
-	static bool CachedResult = false;
-	
 	// Limit checking to once per tick
 	if (GFrameCounter == CachedFrameCheck)
 	{
@@ -58,9 +60,10 @@ bool FBangoScriptContainer::AreScriptInputsOutDated()
 	TArray<FName> DeadProperties;
 	
 	GetPropertiesForRefresh(MissingProperties, DeadProperties);
-	
-	CachedFrameCheck = GFrameCounter;
-	CachedResult = MissingProperties.Num() > 0 || DeadProperties.Num() > 0;
+
+	FBangoScriptContainer& MutableThis = *const_cast<FBangoScriptContainer*>(this);
+	MutableThis.CachedFrameCheck = GFrameCounter;
+	MutableThis.CachedResult = MissingProperties.Num() > 0 || DeadProperties.Num() > 0;
 	
 	return CachedResult;
 }
@@ -85,6 +88,8 @@ void FBangoScriptContainer::UpdateScriptInputs()
 		ScriptInputs.AddProperty(Property->GetFName(), Property);
 	}
 }
+
+// ----------------------------------------------
 
 void FBangoScriptContainer::GetPropertiesForRefresh(TArray<FProperty*>& MissingProperties, TArray<FName>& DeadProperties) const
 {
@@ -158,15 +163,48 @@ const FString& FBangoScriptContainer::GetRequestedName() const
 // ----------------------------------------------
 
 #if WITH_EDITOR
+void FBangoScriptContainer::SetNewLevelScriptRequested()
+{
+	bNewLeveScriptRequested = true;
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void FBangoScriptContainer::SetIsCreated()
+{
+	bCreated = true;
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
 void FBangoScriptContainer::SetIsDuplicate()
 {
 	bIsDuplicate = true;
 }
+#endif
 
+// ----------------------------------------------
+
+#if WITH_EDITOR
 bool FBangoScriptContainer::ConsumeNewLevelScriptRequest()
 {
 	bool bRequest = bNewLeveScriptRequested;
 	bNewLeveScriptRequested = false;
+	return bRequest;
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+bool FBangoScriptContainer::ConsumeCreated()
+{
+	bool bRequest = bCreated;
+	bCreated = false;
 	return bRequest;
 }
 #endif
@@ -181,6 +219,8 @@ bool FBangoScriptContainer::ConsumeDuplicate()
 	return bWasDuplicate;
 }
 #endif
+
+// ----------------------------------------------
 
 #if WITH_EDITOR
 const FString& FBangoScriptContainer::GetDescription() const

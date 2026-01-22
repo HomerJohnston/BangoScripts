@@ -44,14 +44,14 @@ public:
 
 	void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 	
+	void PostApplyToComponent() override;
+	
 	void BeginDestroy() override;
 	
 	void FinishDestroy() override;
 	
 	// This is only used to spawn script assets for CDO spawned components (actor dragged into world) as well as for duplicating any actors or any instance components
 	void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
-	
-	void UnsetScript();
 
 	void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
@@ -89,7 +89,6 @@ public:
 #if WITH_EDITOR
 public:
 	
-	FGuid GetScriptGuid() const;
 	
 	UBangoScriptBlueprint* GetScriptBlueprint(bool bForceLoad = false) const;
 	
@@ -98,8 +97,6 @@ public:
 	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
 	
 	void PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE);
-	
-	void OnShowFlagChanged(bool bShowFlagState);
 	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	

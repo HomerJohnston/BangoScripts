@@ -17,6 +17,9 @@ struct BANGOSCRIPTS_API FBangoScriptContainer
 {
 	GENERATED_BODY()
 	
+public:
+	FBangoScriptContainer();
+	
 	friend class FBangoScriptContainerCustomization;
 	
 public:
@@ -44,13 +47,14 @@ private:
 	// Used during construction of the ScriptClass only
 	FString RequestedName = "";
 	bool bNewLeveScriptRequested = false;
+	bool bCreated = false;
 	bool bIsDuplicate = false;
 #endif
 	
 #if WITH_EDITORONLY_DATA
 private:
 	// This will be kept in sync with the UBangoScriptObject's ScriptGuid and is used for undo/redo purposes and other sync
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	FGuid Guid;
 	
 public:
@@ -65,8 +69,6 @@ public:
 	
 	void SetScriptClass(TSubclassOf<UObject> NewScriptClass);
 	
-	bool AreScriptInputsOutDated();
-	
 	void UpdateScriptInputs();
 	
 	void GetPropertiesForRefresh(TArray<FProperty*>& NonExistentProperties, TArray<FName>& DeadProperties) const;
@@ -75,13 +77,25 @@ public:
 
 	const FString& GetRequestedName() const;
 
+	void SetNewLevelScriptRequested();
+	
+	void SetIsCreated();
+	
 	void SetIsDuplicate();
 
 	bool ConsumeNewLevelScriptRequest();
 	
+	bool ConsumeCreated();
+	
 	bool ConsumeDuplicate();
 
 	const FString& GetDescription() const;
+
+	bool AreScriptInputsOutDated() const;
+
+	uint64 CachedFrameCheck = 0;
+	bool CachedResult = false;
+
 #endif
 
 };

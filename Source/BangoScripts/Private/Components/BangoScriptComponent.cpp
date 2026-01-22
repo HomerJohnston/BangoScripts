@@ -59,7 +59,7 @@ void UBangoScriptComponent::OnRegister()
 {
 	Super::OnRegister();
 	
-	Bango::Debug::PrintComponentState(this, "OnRegister");
+	Bango::Debug::PrintComponentState(this, "OnRegister_Early");
 	
 	if (Bango::Editor::IsComponentInEditedLevel(this))
 	{
@@ -83,8 +83,8 @@ void UBangoScriptComponent::OnRegister()
 		// Start registered
 	    FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate);
     }
-
-	if (!Billboard && GetOwner() /*&& !GetWorld()->IsGameWorld()*/)
+	
+	if (!Billboard && GetOwner() && !GetWorld()->IsGameWorld())
     {
         {
             FCookLoadScope EditorOnlyLoadScope(ECookLoadType::EditorOnly);
@@ -99,7 +99,7 @@ void UBangoScriptComponent::OnRegister()
 		
         	Billboard->SetSpriteAndUV(Bango::Debug::GetScriptBillboardSprite(), U, UL, V, VL);
         }
-	
+		
         Billboard->SetupAttachment(GetOwner()->GetRootComponent());
         Billboard->bHiddenInGame = true;
 		Billboard->bIsScreenSizeScaled = true;
@@ -113,7 +113,11 @@ void UBangoScriptComponent::OnRegister()
         Billboard->bUseInEditorScaling = true;
         Billboard->OpacityMaskRefVal = .1f;
         Billboard->RegisterComponent();
+		
+		Billboard->SetRelativeLocation(BillboardOffset);
     }
+	
+	Bango::Debug::PrintComponentState(this, "OnRegister_Late");
 }
 #endif
 
@@ -122,11 +126,20 @@ void UBangoScriptComponent::OnRegister()
 #if WITH_EDITOR
 void UBangoScriptComponent::OnUnregister()
 {
+	Bango::Debug::PrintComponentState(this, "OnUnregister_Early");
+	
 	FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this);
 
 	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(this, &ScriptContainer);
 		
+	if (Billboard)
+	{
+		
+	}
+	
 	Super::OnUnregister();
+	
+	Bango::Debug::PrintComponentState(this, "OnUnregister_Late");	
 }
 #endif
 
@@ -135,29 +148,30 @@ void UBangoScriptComponent::OnUnregister()
 #if WITH_EDITOR
 void UBangoScriptComponent::OnComponentCreated()
 {
+	Bango::Debug::PrintComponentState(this, "OnComponentCreated_Early");
+	
 	Super::OnComponentCreated();
-	
-	if (!Bango::Editor::IsComponentInEditedLevel(this))
+		
+	if (Bango::Editor::IsComponentInEditedLevel(this))
 	{
-		return;
-	}
+		// With RF_LoadCompleted this is a default actor component. We rely on PostDuplicated instead.
+		if (!HasAllFlags(RF_LoadCompleted))
+		{
+			FString ScriptName = GetName(); // We will use the component name for the script name
 	
-	// With RF_LoadCompleted this is a default actor component. We rely on PostDuplicated instead.
-	if (HasAllFlags(RF_LoadCompleted))
-	{
-		return;
-	}
+			if (ScriptContainer.GetGuid().IsValid())
+			{
+				FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(this, &ScriptContainer, ScriptName);
+			}
+			else
+			{
+				FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
+			}	
+		}
 	
-	FString ScriptName = GetName(); // We will use the component name for the script name
-	
-	if (ScriptContainer.GetGuid().IsValid())
-	{
-		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(this, &ScriptContainer, ScriptName);
 	}
-	else
-	{
-		FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
-	}
+
+	Bango::Debug::PrintComponentState(this, "OnComponentCreated_Late");
 }
 #endif
 
@@ -170,10 +184,25 @@ void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 	
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
 	
+	if (Billboard)
+	{
+		Billboard->DestroyComponent();
+	}
+	
 	if (!ScriptClass.IsNull())
 	{
 		// Moves handling over to an editor module to handle more complicated package deletion/undo management
 		FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(this, &ScriptContainer);
+	}
+}
+
+void UBangoScriptComponent::PostApplyToComponent()
+{
+	Super::PostApplyToComponent();
+	
+	if (Billboard)
+	{
+		Billboard->SetRelativeLocation(BillboardOffset);
 	}
 }
 
@@ -218,25 +247,10 @@ void UBangoScriptComponent::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 		Bango::Debug::PrintComponentState(this, "PostDuplicate_CDO");
 
 		// Component is part of a blueprint, only run duplication code if it's in a level already
-		if (!GetOwner()->HasAnyFlags(RF_WasLoaded))
-		{
+		//if (GetOwner()->HasAnyFlags(RF_WasLoaded))
+		//{
 			FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(this, &ScriptContainer, GetName());
-		}
-	}
-}
-#endif
-
-// ----------------------------------------------
-
-#if WITH_EDITOR
-void UBangoScriptComponent::UnsetScript()
-{
-	Modify();
-	ScriptContainer.Unset();
-	
-	if (!MarkPackageDirty())
-	{
-		UE_LOG(LogBlueprint, Error, TEXT("Could not mark the actor package dirty?"));
+		//}
 	}
 }
 #endif
@@ -246,12 +260,9 @@ void UBangoScriptComponent::UnsetScript()
 #if WITH_EDITOR
 void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
-	if (PropertyChangedEvent.MemberProperty->GetName() == GET_MEMBER_NAME_CHECKED(ThisClass, BillboardOffset))
+	if (Billboard)
 	{
-		if (Billboard)
-		{
-			Billboard->SetRelativeLocation(BillboardOffset);
-		}
+		Billboard->SetRelativeLocation(BillboardOffset);
 	}
 	
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -275,15 +286,6 @@ void UBangoScriptComponent::Run()
 	}
 #endif
 }
-
-// ----------------------------------------------
-
-#if WITH_EDITOR
-FGuid UBangoScriptComponent::GetScriptGuid() const
-{
-	return ScriptContainer.GetGuid();
-}
-#endif
 
 // ----------------------------------------------
 
@@ -353,19 +355,22 @@ void UBangoScriptComponent::PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas
 	// Update the billboard sprite
 	if (Billboard)
 	{
+		int32 BillboardSize = Bango::Debug::GetScriptBillboardSprite()->GetSizeX();
+		const int32 SpriteSize = BillboardSize / 2;
+
 		int32 U = 0;
 		int32 V = 0;
-		int32 UL = 128;
-		int32 VL = 128;
+		int32 UL = SpriteSize;
+		int32 VL = SpriteSize;
 		
 		if (!ScriptContainer.GetScriptClass().IsNull())
 		{
-			U = 128;
+			U = SpriteSize;
 		}
 		
 		if (bRunOnBeginPlay)
 		{
-			V = 128;
+			V = SpriteSize;
 		}
 		
 		Billboard->SetUV(U, UL, V, VL);

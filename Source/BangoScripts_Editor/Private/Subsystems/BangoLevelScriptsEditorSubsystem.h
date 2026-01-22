@@ -74,6 +74,7 @@ public:
 	
 protected:
 	bool bMapLoading = false;
+	bool bDuplicatingActors = false;
 
 public:
 	// Simple solution to force any active FBangoScriptContainerCustomization instances to redraw
@@ -117,7 +118,7 @@ private:
 	
 	void CreateLevelScript(UObject* Outer, FBangoScriptContainer* ScriptContainer);
 	
-	void DuplicateLevelScript(UObject* Owner, FBangoScriptContainer* ScriptContainer);
+	void DuplicateLevelScript(UObject* Outer, FBangoScriptContainer* ScriptContainer);
 	
 	void TryUndeleteScript(FSoftObjectPath ScriptClassSoft, FBangoScriptContainer* ScriptContainer);
 	

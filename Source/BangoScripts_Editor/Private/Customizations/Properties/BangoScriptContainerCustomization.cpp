@@ -857,6 +857,11 @@ void FBangoScriptContainerCustomization::UpdateBox()
 		return;
 	}
 	
+	UObject* Outer;
+	FBangoScriptContainer* ScriptContainer;
+	GetScriptContainerAndOuter(Outer, ScriptContainer);
+	check(Outer && ScriptContainer);
+	
 	TSharedRef<SGraphEditor> GraphEditor = SNew(SGraphEditor)
 	.GraphToEdit(GetPrimaryEventGraph())
 	.IsEditable(false)
@@ -901,8 +906,9 @@ void FBangoScriptContainerCustomization::UpdateBox()
 			SNew(STextBlock)
 			.Text(FText::Format
 				(
-					INVTEXT("{0}\n{1}{2}"),
-					FText::FromName(GetBlueprint()->GetFName()),
+					INVTEXT("{0}\n{1}\n{2}{3}"),
+					FText::FromName( GetBlueprint()->GetFName() ),
+					FText::FromString( ScriptContainer->GetGuid().ToString() ),
 					FText::FromString( FPackageName::GetShortName( GetBlueprint()->GetPackage()->GetPathName() ) ),
 					FText::FromString( GetBlueprint()->GetPackage()->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension())
 				))

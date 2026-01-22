@@ -4,6 +4,7 @@
 
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "Containers/UnrealString.h"
+#include "UObject/ObjectMacros.h"
 #include "UObject/StrongObjectPtrTemplates.h"
 
 class UActorComponent;
@@ -21,7 +22,7 @@ namespace Bango
 	    
 		BANGOSCRIPTS_EDITORTOOLING_API void PrintComponentState(UActorComponent* Component, FString Msg);
 
-		BANGOSCRIPTS_EDITORTOOLING_API void PrintFlagNames();
+		BANGOSCRIPTS_EDITORTOOLING_API FString GetFlagsString(UObject* Object);
 		
 		namespace Draw
 		{		
