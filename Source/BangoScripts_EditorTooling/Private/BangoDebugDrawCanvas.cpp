@@ -49,11 +49,8 @@ float FBangoDebugDrawCanvas::GetAlpha(const FVector& WorldLocation, bool bPIE) c
 	
 	float Alpha = 1.0f - LerpAlpha;
 	
-    // In edit mode clamp the alpha so it always shows, just really dim if you're far away
-	if (!bPIE)
-	{
-		Alpha = FMath::Clamp(Alpha, 0.25f, 1.0f);
-	}
+    // Clamp the alpha so it always shows, just really dim if you're far away
+	Alpha = FMath::Clamp(Alpha, 0.25f, 1.0f);
 	
 	return Alpha;
 }

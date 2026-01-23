@@ -170,20 +170,27 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 		return;
 	}
 	
-	UBillboardComponent* ScriptBillboard = ScriptComponent->GetBillboard();
+    AActor* Owner = ScriptComponent->GetOwner();
+    if (!IsValid(Owner))
+    {
+        return;
+    }
+    
+    FVector AnchorPosition = Owner->GetActorLocation() + ScriptComponent->GetBillboardOffset();
 	
-	if (!ScriptBillboard)
-	{
-		return;
-	}
-	
+    const FConvexVolume& Frustum = Canvas->SceneView->GetCullingFrustum();
+    if (!Frustum.IntersectPoint(AnchorPosition))
+    {
+        return;
+    }
+    
 	FVector BillboardScreenPos;
-	if (!Canvas.GetScreenLocation(ScriptBillboard, BillboardScreenPos))
+	if (!Canvas.GetScreenLocation(AnchorPosition, BillboardScreenPos))
 	{
 		return;
 	}
 	
-	float Alpha = Canvas.GetAlpha(ScriptBillboard->GetComponentLocation(), true);
+	float Alpha = Canvas.GetAlpha(BillboardScreenPos, true);
 	if (Alpha <= KINDA_SMALL_NUMBER)
 	{
 		return;

@@ -10,14 +10,20 @@
 #include "Components/Viewport.h"
 #include "Framework/Application/SlateApplication.h"
 
+// ----------------------------------------------
+
 void FBangoScriptComponentVisualizer::OnRegister()
 {
 	FComponentVisualizer::OnRegister();
 }
 
+// ----------------------------------------------
+
 void FBangoScriptComponentVisualizer::DrawVisualization(const UActorComponent* Component, const FSceneView* View, FPrimitiveDrawInterface* PDI)
-{	
+{
 }
+
+// ----------------------------------------------
 
 struct FBangoActorNodeDraw
 {
@@ -32,7 +38,7 @@ struct FBangoActorNodeDraw
 	}
 };
 
-
+// ----------------------------------------------
 
 void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent* Component, const FViewport* Viewport,	const FSceneView* View, FCanvas* Canvas)
 {
@@ -140,6 +146,8 @@ void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent
 	}
 }
 
+// ----------------------------------------------
+
 void FBangoScriptComponentVisualizer::DrawCircle_ScreenSpace(const FSceneView* View, FCanvas* Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
 {
 	uint8 NumLineSegments = 24;
@@ -170,6 +178,8 @@ void FBangoScriptComponentVisualizer::DrawCircle_ScreenSpace(const FSceneView* V
 		Canvas->DrawNGon(FVector2D(ScreenPosition.X, ScreenPosition.Y), Color.ToFColor(false), 16, Radius);
 	}
 }
+
+// ----------------------------------------------
 
 void FBangoScriptComponentVisualizer::DrawLine_WorldSpace(const FSceneView* View, FCanvas* Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
 {
@@ -202,6 +212,8 @@ void FBangoScriptComponentVisualizer::DrawLine_WorldSpace(const FSceneView* View
 	Canvas->DrawItem(Line);
 }
 
+// ----------------------------------------------
+
 bool FBangoScriptComponentVisualizer::GetActorScreenPos(const FSceneView* View, FCanvas* Canvas, const AActor* Actor, FVector& OutWorldPosition, FVector& OutScreenPosition)
 {
 	FVector TargetBoxExtents;
@@ -229,6 +241,8 @@ bool FBangoScriptComponentVisualizer::GetActorScreenPos(const FSceneView* View, 
 	return true;
 }
 
+// ----------------------------------------------
+
 bool FBangoScriptComponentVisualizer::GetScreenPos(const FSceneView* View, const FVector& WorldPos, FVector2D& ScreenPos)
 {
 	FVector4 ScreenPoint = View->WorldToScreen(WorldPos);
@@ -236,3 +250,4 @@ bool FBangoScriptComponentVisualizer::GetScreenPos(const FSceneView* View, const
 	return View->ScreenToPixel(ScreenPoint, ScreenPos);
 }
 
+// ----------------------------------------------
