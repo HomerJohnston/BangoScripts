@@ -30,28 +30,26 @@ void FBangoScriptComponentVisualizer::DrawVisualization(const UActorComponent* C
 // TODO remove code duplication, try to run Bango::Editor::Draw instead ?
 void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent* Component, const FViewport* Viewport,	const FSceneView* View, FCanvas* Canvas)
 {
-	if (!IsValid(Component))
+	if (!IsValid(Component) || !View || !Canvas)
 	{
-		// This can happen if you delete or undo creation of the component or actor
 		return;
 	}
 	
-	const AActor* ComponentActor = Component->GetOwner();
 	const UBangoScriptComponent* ScriptComponent = Cast<UBangoScriptComponent>(Component);
-	const UBangoScriptBlueprint* Blueprint;
-	
-	if (!ComponentActor || !ScriptComponent)
+	if (!ScriptComponent)
 	{
 		return;
 	}
 	
-	Blueprint = ScriptComponent->GetScriptBlueprint();
-	
+	const UBangoScriptBlueprint* Blueprint = ScriptComponent->GetScriptBlueprint();
 	if (!Blueprint)
 	{
 		return;
 	}
 		
+	Bango::Editor::DebugDrawActorConnections(*Blueprint, *View, *Canvas);
+	
+	/*
 	TArray<UEdGraph*> Graphs;
 	Blueprint->GetAllGraphs(Graphs);
 	
@@ -132,6 +130,7 @@ void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent
 			// TODO fast path - just display count stuff
 		}
 	}
+	*/
 }
 
 // ----------------------------------------------

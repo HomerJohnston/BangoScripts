@@ -13,6 +13,7 @@
 #include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
 #include "BlueprintEditor/BangoScriptBlueprintEditor.h"
+#include "Components/Viewport.h"
 #include "HAL/FileManager.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/SavePackage.h"
@@ -221,13 +222,21 @@ FString Bango::Editor::GetLocalScriptName(FString InName)
 
 void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerController* ALWAYS_NULL, FBangoScriptBlueprintEditor* ScriptBlueprintEditor)
 {
-	const UBangoScriptBlueprint* Blueprint = ScriptBlueprintEditor->GetBangoScriptBlueprintObj();
+	if (!Canvas || !Canvas->Canvas || !Canvas->SceneView)
+	{
+		return;
+	}
 	
+	const UBangoScriptBlueprint* Blueprint = ScriptBlueprintEditor->GetBangoScriptBlueprintObj();
+
 	if (!Blueprint)
 	{
 		return;
 	}
 	
+	DebugDrawActorConnections(*Blueprint, *Canvas->SceneView, *Canvas->Canvas);
+	
+	/*
 	const TSoftObjectPtr<const AActor> OwnerActor = Blueprint->GetOwnerActor();
 	const IBangoScriptHolderInterface* ScripHolder = Blueprint->GetScriptHolder(); 
 
@@ -265,16 +274,7 @@ void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerControl
 	{
 		return;
 	}
-	
-	/*
-	FVector ComponentActorScreenPos = Canvas->Project(RepresentingComponentSoft->GetComponentLocation());
-
-	if (ComponentActorScreenPos.Z < 0.0f)
-	{
-		return;
-	}
-	*/
-	
+		
 	TArray<UK2Node_BangoFindActor*> FindActorNodes;
 	FocusedGraph->GetNodesOfClass(FindActorNodes);
 
@@ -307,84 +307,196 @@ void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerControl
 		float Radius = 0.005 * Canvas->SizeY;
 
 		// Now we draw
-		for (const FBangoActorNodeDraw& DrawInfo : VisitedActors)// int32 i = 0; i < VisitedActors FindActorNodes.Num(); ++i)
+		for (const FBangoActorNodeDraw& ActorNode : VisitedActors)// int32 i = 0; i < VisitedActors FindActorNodes.Num(); ++i)
 		{
-			float Saturation = DrawInfo.bFocused ? 1.0f : 0.8f;
-			float Luminosity = DrawInfo.bFocused ? 1.0f : 0.8f;
-			float Thickness = DrawInfo.bFocused ? 3.0f : 1.5f;
-			FLinearColor Color = Bango::Colors::Funcs::GetHashedColor(GetTypeHash(DrawInfo.Actor), Saturation, Luminosity);
-			
-			// Draw circle
-			FVector TargetActorWorldPos = DrawInfo.Actor.Get()->GetActorLocation();
-			FVector TargetActorScreenPos = Canvas->Project(TargetActorWorldPos);
-			
-			DrawCircle_ScreenSpace(Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
-			
-			// Draw connection line
-			FVector Delta = DrawInfo.Actor->GetActorLocation() - RepresentingPosition.GetValue();
-			
-			const float StartDrawDistance = 50.0f;
-			
-			if (Delta.SizeSquared() > FMath::Square(StartDrawDistance))
+			if (!ActorNode.Actor.IsValid())
 			{
-				FVector Start = RepresentingPosition.GetValue();
-				FVector End = TargetActorWorldPos;
-		
-				DrawLine_WorldSpace(Canvas, Start, End, Thickness, Color, StartDrawDistance, 0.0f);
+				continue;
 			}
+				
+			const AActor& Actor = *ActorNode.Actor.Get();
+			
+			float Saturation = ActorNode.bFocused ? 1.0f : 0.8f;
+			float Luminosity = ActorNode.bFocused ? 1.0f : 0.8f;
+			float Thickness = ActorNode.bFocused ? 3.0f : 1.5f;
+			FLinearColor Color = Bango::Colors::Funcs::GetHashedColor(GetTypeHash(ActorNode.Actor), Saturation, Luminosity);
+			
+			FVector TargetActorWorldPos;
+			FVector TargetActorScreenPos;
+			
+			if (!GetActorScreenPos(Canvas, ActorNode.Actor.Get(), TargetActorWorldPos, TargetActorScreenPos))
+			{
+				continue;
+			}
+			
+			DrawCircle_ScreenSpace(Canvas, TargetActorScreenPos, Radius, Thickness, Color);		
+			
+			FVector Start = RepresentingPosition.GetValue();
+			FVector End = TargetActorWorldPos;
+			const float StartDrawDistance = 50.0f;
+			DrawLine_WorldSpace(Canvas, Start, End, Thickness, Color, StartDrawDistance, 0.0f);
 		}
 	}
 	else
 	{
 		// TODO fast path - just display count stuff
 	}
+	*/
 }
 
-// ----------------------------------------------
-
-void Bango::Editor::DrawCircle_ScreenSpace(UCanvas* Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
+void Bango::Editor::DebugDrawActorConnections(const UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View,	FCanvas& Canvas)
 {
-	FSceneView* View = Canvas->SceneView;
+	const IBangoScriptHolderInterface* ScriptHolder = ScriptBlueprint.GetScriptHolder();
 	
-	if (!View)
+	if (!ScriptHolder)
 	{
 		return;
 	}
 	
-	DrawCircle_ScreenSpace(View, Canvas->Canvas, ScreenPosition, Radius, Thickness, Color);
-}
-
-// ----------------------------------------------
-
-void Bango::Editor::DrawLine_WorldSpace(UCanvas* Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
-{
-	FSceneView* View = Canvas->SceneView;
-	
-	if (!View)
+	if (!ScriptBlueprint.GetOwnerActor().IsValid())
 	{
 		return;
 	}
+	
+	AActor& OwnerActor = *ScriptBlueprint.GetOwnerActor().Get();
+	
+	FVector DrawOrigin = OwnerActor.GetActorLocation() + ScriptHolder->GetDebugDrawOrigin();
+	
+	TArray<UEdGraph*> Graphs;
+	ScriptBlueprint.GetAllGraphs(Graphs);
 
-	DrawLine_WorldSpace(View, Canvas->Canvas, WorldStart, WorldEnd, Thickness, Color, StartCutoff, EndCutoff);
+	for (const UEdGraph* Graph : Graphs)
+	{
+		// TODO can I check for focus?
+		
+		TArray<UK2Node_BangoFindActor*> AllFindActorNodes;
+		Graph->GetNodesOfClass(AllFindActorNodes);
+
+		TSet<FBangoActorNodeDraw> UniqueFindActorNodes;
+
+		// TODO this should be a cvar/ini setting
+		const int32 MaxActorVisualizationCount = 100;
+		
+		// This is kind of arbitrary but if some nutjob builds a script with 1000000 actor nodes I don't want to choke the system to a crawl.
+		if (AllFindActorNodes.Num() <= MaxActorVisualizationCount)
+		{
+			UniqueFindActorNodes.Reserve(AllFindActorNodes.Num());
+			
+			// First we iterate over the whole list to find all actors to draw
+			for (const UK2Node_BangoFindActor* Node : AllFindActorNodes)
+			{
+				const TSoftObjectPtr<AActor> TargetActor = Node->GetTargetActor();
+			
+				if (const AActor* Actor = TargetActor.Get())
+				{
+					FBangoActorNodeDraw DrawRecord;
+					DrawRecord.Actor = TargetActor;
+					
+					bool bAlreadyInSet;
+					FBangoActorNodeDraw& Draw = UniqueFindActorNodes.FindOrAddByHash(GetTypeHash(Actor), DrawRecord, &bAlreadyInSet);
+					Draw.bFocused = Draw.bFocused || (GFrameCounter - Node->LastSelectedFrame < 3);
+				}
+			}
+			
+			const float Radius = 0.005 * View.UnscaledViewRect.Size().Y;// Canvas.GetViewRect().Size().Y;// Viewport.GetSizeXY().Y;
+
+			// Now we draw
+			for (const FBangoActorNodeDraw& ActorNode : UniqueFindActorNodes)// int32 i = 0; i < VisitedActors FindActorNodes.Num(); ++i)
+			{
+				if (!ActorNode.Actor.IsValid())
+				{
+					continue;
+				}
+				
+				const AActor& Actor = *ActorNode.Actor.Get();
+				
+				float Saturation = ActorNode.bFocused ? 1.0f : 0.8f;
+				float Luminosity = ActorNode.bFocused ? 1.0f : 0.8f;
+				float Thickness = ActorNode.bFocused ? 3.0f : 1.5f;
+				FLinearColor Color = Bango::Colors::Funcs::GetHashedColor(GetTypeHash(ActorNode.Actor), Saturation, Luminosity);
+				
+				// Draw circle
+				FVector TargetActorWorldPos;
+				FVector TargetActorScreenPos;
+				if (!GetActorScreenPos(View, Actor, TargetActorWorldPos, TargetActorScreenPos))
+				{
+					return;
+				}
+				
+				Bango::Editor::DrawCircle_ScreenSpace(View, Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
+				
+				// Draw connection line
+				FVector Delta = ActorNode.Actor->GetActorLocation() - DrawOrigin;
+				
+				const float StartDrawDistance = 50.0f;
+				
+				if (Delta.SizeSquared() > FMath::Square(StartDrawDistance))
+				{
+					FVector Start = DrawOrigin;
+					FVector End = TargetActorWorldPos;
+			
+					Bango::Editor::DrawLine_WorldSpace(View, Canvas, Start, End, Thickness, Color, StartDrawDistance);
+				}
+			}
+		}
+		else
+		{
+			// TODO fast path - just display count stuff
+		}
+	}
 }
 
 // ----------------------------------------------
 
-bool Bango::Editor::GetActorScreenPos(UCanvas* Canvas, const AActor* Actor, FVector& OutWorldPosition, FVector& OutScreenPosition)
+void Bango::Editor::DrawCircle_ScreenSpace(UCanvas& Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
 {
-	const FSceneView* View = Canvas->SceneView;
-
-	return GetActorScreenPos(View, Actor, OutWorldPosition, OutScreenPosition);
+	FSceneView* View = Canvas.SceneView;
+	
+	if (!View || !Canvas.Canvas)
+	{
+		return;
+	}
+	
+	DrawCircle_ScreenSpace(*View, *Canvas.Canvas, ScreenPosition, Radius, Thickness, Color);
 }
 
 // ----------------------------------------------
 
-void Bango::Editor::DrawCircle_ScreenSpace(const FSceneView* View, FCanvas* Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
+void Bango::Editor::DrawLine_WorldSpace(UCanvas& Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
 {
-	uint8 NumLineSegments = 24;
-	static TArray<FVector2D> TempPoints;
-	TempPoints.Empty(NumLineSegments);
+	FSceneView* View = Canvas.SceneView;
+	
+	if (!View || !Canvas.Canvas)
+	{
+		return;
+	}
+	
+	DrawLine_WorldSpace(*View, *Canvas.Canvas, WorldStart, WorldEnd, Thickness, Color, StartCutoff, EndCutoff);
+}
 
+// ----------------------------------------------
+
+bool Bango::Editor::GetActorScreenPos(const UCanvas& Canvas, const AActor& Actor, FVector& OutWorldPosition, FVector& OutScreenPosition)
+{
+	const FSceneView* View = Canvas.SceneView;
+	
+	if (!View)
+	{
+		return false;
+	}
+
+	return GetActorScreenPos(*View, Actor, OutWorldPosition, OutScreenPosition);
+}
+
+// ----------------------------------------------
+
+void Bango::Editor::DrawCircle_ScreenSpace(const FSceneView& View, FCanvas& Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
+{
+	//uint8 NumLineSegments = 24;
+	//static TArray<FVector2D> TempPoints;
+	//TempPoints.Empty(NumLineSegments);
+
+	/*
 	const float NumFloatLineSegments = (float)NumLineSegments;
 	for (uint8 i = 0; i <= NumLineSegments; ++i)
 	{
@@ -395,28 +507,32 @@ void Bango::Editor::DrawCircle_ScreenSpace(const FSceneView* View, FCanvas* Canv
 		PointOnCircle.Y = sinf(Angle) * Radius + ScreenPosition.Y;
 		TempPoints.Add(PointOnCircle);
 	}
+	*/
 	
-	for (uint8 i = 0; i <= NumLineSegments; ++i)
-	{
-		uint8 Index0 = i;
-		uint8 Index1 = (i + 1) % NumLineSegments;
-				
-		Canvas->DrawNGon(FVector2D(ScreenPosition.X, ScreenPosition.Y), Color.ToFColor(true), 16, Radius);
-	}
+	//for (uint8 i = 0; i <= NumLineSegments; ++i)
+	//{
+		Canvas.DrawNGon(FVector2D(ScreenPosition.X, ScreenPosition.Y), Color.ToFColor(true), 16, Radius);
+	//}
 }
 
 // ----------------------------------------------
 
-void Bango::Editor::DrawLine_WorldSpace(const FSceneView* View, FCanvas* Canvas, const FVector& WorldStart,	const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
+void Bango::Editor::DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart,	const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
 {
 	FVector2D ScreenStart;
 	FVector2D ScreenEnd;
+	
+	FVector Delta = WorldEnd - WorldStart;
+	if (Delta.SizeSquared() <= FMath::Square(StartCutoff + EndCutoff))
+	{
+		return;
+	}
 	
 	FVector LineDir = (WorldEnd - WorldStart).GetSafeNormal();
 	
 	FVector TrueStart = WorldStart + StartCutoff * LineDir;
 	FVector TrueEnd = WorldEnd - EndCutoff * LineDir;
-
+	
 	if (!GetScreenPos(View, TrueStart, ScreenStart))
 	{
 		return;
@@ -435,20 +551,15 @@ void Bango::Editor::DrawLine_WorldSpace(const FSceneView* View, FCanvas* Canvas,
 	FCanvasLineItem Line(ScreenStart, ScreenEnd);
 	Line.LineThickness = Thickness;
 	Line.SetColor(Color);
-	Canvas->DrawItem(Line);
+	Canvas.DrawItem(Line);
 }
 
 // ----------------------------------------------
 
-bool Bango::Editor::GetActorScreenPos(const FSceneView* View, const AActor* Actor, FVector& OutWorldPosition, FVector& OutScreenPosition)
+bool Bango::Editor::GetActorScreenPos(const FSceneView& View, const AActor& Actor, FVector& OutWorldPosition, FVector& OutScreenPosition)
 {
-	if (!View)
-	{
-		return false;
-	}
-	
 	FVector TargetBoxExtents;
-	Actor->GetActorBounds(false, OutWorldPosition, TargetBoxExtents);
+	Actor.GetActorBounds(false, OutWorldPosition, TargetBoxExtents);
 	float TargetSphereRadius = TargetBoxExtents.GetMax() * 0.677f;
 	
 	FVector2D ScreenPos; 
@@ -457,8 +568,8 @@ bool Bango::Editor::GetActorScreenPos(const FSceneView* View, const AActor* Acto
 		return false;
 	}
 
-	FVector RightView = FVector::UpVector.Cross(View->GetViewDirection());
-	FVector UpView = RightView.Cross(View->GetViewDirection());
+	FVector RightView = FVector::UpVector.Cross(View.GetViewDirection());
+	FVector UpView = RightView.Cross(View.GetViewDirection());
 	
 	FVector2D RadiusScreenPos;
 	if (!GetScreenPos(View, OutWorldPosition + TargetSphereRadius * UpView, RadiusScreenPos))
@@ -474,11 +585,11 @@ bool Bango::Editor::GetActorScreenPos(const FSceneView* View, const AActor* Acto
 
 // ----------------------------------------------
 
-bool Bango::Editor::GetScreenPos(const FSceneView* View, const FVector& WorldPos, FVector2D& ScreenPos)
+bool Bango::Editor::GetScreenPos(const FSceneView& View, const FVector& WorldPos, FVector2D& ScreenPos)
 {
-	FVector4 ScreenPoint = View->WorldToScreen(WorldPos);
+	FVector4 ScreenPoint = View.WorldToScreen(WorldPos);
 
-	return View->ScreenToPixel(ScreenPoint, ScreenPos);
+	return View.ScreenToPixel(ScreenPoint, ScreenPos);
 }
 
 
