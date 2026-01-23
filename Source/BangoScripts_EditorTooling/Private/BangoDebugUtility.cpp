@@ -6,6 +6,7 @@
 #include "IImageWrapperModule.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
+#include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "Components/ActorComponent.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureDefines.h"
@@ -18,6 +19,12 @@
 #include "UObject/Package.h"
 
 // ----------------------------------------------
+
+const TCHAR* Bango::Debug::ScriptsShowFlagName()
+{
+	static const FString Val = TEXT("BangoScriptsShowFlag");
+	return *Val;
+}
 
 UTexture2D* Bango::Debug::GetScriptPIESprite()
 {

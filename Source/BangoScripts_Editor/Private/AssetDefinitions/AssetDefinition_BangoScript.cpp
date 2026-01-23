@@ -3,7 +3,7 @@
 #include "BangoScripts_Editor.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
-#include "BlueprintEditor/BangoBlueprintEditor.h"
+#include "BlueprintEditor/BangoScriptBlueprintEditor.h"
 #include "Kismet2/KismetEditorUtilities.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
@@ -54,7 +54,7 @@ EAssetCommandResult UAssetDefinition_BangoScript::OpenAssets(const FAssetOpenArg
 		
 		if (ScriptBlueprints.Num() == 1)
 		{
-			TSharedRef<FBangoBlueprintEditor> NewBlueprintEditor(new FBangoBlueprintEditor());
+			TSharedRef<FBangoScriptBlueprintEditor> NewBlueprintEditor(new FBangoScriptBlueprintEditor());
 
 			const bool bShouldOpenInDefaultsMode = false;
 

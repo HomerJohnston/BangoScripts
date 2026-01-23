@@ -2,15 +2,13 @@
 
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 
-TMulticastDelegate<void(UObject* Outer, FBangoScriptContainer* ScriptContainer, FString Name)> FBangoEditorDelegates::OnScriptContainerCreated;
+class IBangoScriptHolderInterface;
 
-TMulticastDelegate<void(UObject* Outer, FBangoScriptContainer* ScriptContainer, FString Name)> FBangoEditorDelegates::OnScriptContainerDuplicated;
+TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder, FString RequestedBlueprintName)> FBangoEditorDelegates::OnScriptContainerCreated;
 
-TMulticastDelegate<void(UObject* Outer, FBangoScriptContainer* ScriptContainer)> FBangoEditorDelegates::OnScriptContainerDestroyed;
+TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> FBangoEditorDelegates::OnScriptContainerDuplicated;
 
-TMulticastDelegate<void(UObject* Outer, TSoftClassPtr<UBangoScript> ScriptContainer)> FBangoEditorDelegates::OnScriptContainerUnregisteredDuringTransaction;
-
-TMulticastDelegate<void(FGuid ScriptID, UBangoScriptBlueprint*& FoundBlueprint)> FBangoEditorDelegates::OnBangoActorComponentUndoDelete;
+TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> FBangoEditorDelegates::OnScriptContainerDestroyed;
 
 TMulticastDelegate<void(AActor* Actor)> FBangoEditorDelegates::RequestNewID;
 

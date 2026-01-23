@@ -17,7 +17,7 @@
 
 #include "Private/BangoEditorStyle.h"
 #include "Private/Subsystems/BangoLevelScriptsEditorSubsystem.h"
-#include "Private/BlueprintEditor/BangoBlueprintEditor.h"
+#include "Private/BlueprintEditor/BangoScriptBlueprintEditor.h"
 #include "Private/Widgets/SBangoGraphEditor.h"
 #include "Utilities/BangoEditorUtility.h"
 #include "Widgets/SBangoScriptClassViewer.h"
@@ -382,13 +382,12 @@ FReply FBangoScriptContainerCustomization::OnClicked_CreateScript()
 	void* ScriptContainerPtr = nullptr;
 	ScriptContainerProperty->GetValueData(ScriptContainerPtr);
 	
-	UObject* Outer;
-	FBangoScriptContainer* ScriptContainer;
-	GetScriptContainerAndOuter(Outer, ScriptContainer);
+	IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
+	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
+	ScriptContainer.bNewLeveScriptRequested = true;
+	FString BlueprintName = ScriptHolder._getUObject()->GetFName().ToString();
 	
-	ScriptContainer->bNewLeveScriptRequested = true;
-	
-	FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(Outer, ScriptContainer, *Outer->GetFName().ToString());
+	FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(GetScriptHolder(), BlueprintName);
 	
 	ScriptContainerProperty->SetExpanded(true);
 	
@@ -434,15 +433,15 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 			if (Reply == EAppReturnType::Ok)
 			{
 				PreScriptDeleted.Broadcast();
-				
-				UObject* Outer;
-				FBangoScriptContainer* ScriptContainer;
-				GetScriptContainerAndOuter(Outer, ScriptContainer);
 			
-				Outer->Modify();
-				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(Outer, ScriptContainer);
+				IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
+				FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
+
+				ScriptHolder._getUObject()->Modify();
+
+				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(ScriptHolder);
 				
-				ScriptContainer->Unset();
+				ScriptContainer.Unset();
 			}
 
 			return FReply::Handled();				
@@ -545,7 +544,7 @@ FReply FBangoScriptContainerCustomization::OnClicked_EditScript() const
 FReply FBangoScriptContainerCustomization::OnClicked_EnlargeGraphView() const
 {
 #if 1
-	TSharedRef<FBangoBlueprintEditor> NewBlueprintEditor(new FBangoBlueprintEditor());
+	TSharedRef<FBangoScriptBlueprintEditor> NewBlueprintEditor(new FBangoScriptBlueprintEditor());
 
 	const bool bShouldOpenInDefaultsMode = false;
 	TArray<UBlueprint*> Blueprints;
@@ -760,7 +759,7 @@ TSharedRef<SWidget> FBangoScriptContainerCustomization::GetPopoutGraphEditor(FVe
 	SGraphEditor::FGraphEditorEvents Events;
 	
 	const bool bShouldOpenInDefaultsMode = false;
-	TSharedRef<FBangoBlueprintEditor> BlueprintEditor = MakeShared<FBangoBlueprintEditor>();
+	TSharedRef<FBangoScriptBlueprintEditor> BlueprintEditor = MakeShared<FBangoScriptBlueprintEditor>();
 	
 	// Not working. 
 	BlueprintEditor->InitBlueprintEditor(EToolkitMode::Standalone, nullptr, { GetBlueprint() }, bShouldOpenInDefaultsMode);
@@ -993,7 +992,7 @@ TSubclassOf<UBangoScript> FBangoScriptContainerCustomization::GetScriptClass() c
 	return nullptr;
 }
 
-void FBangoScriptContainerCustomization::OnScriptContainerDestroyed(UObject* Object, FBangoScriptContainer* ScriptContainer)
+void FBangoScriptContainerCustomization::OnScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder)
 {
 	OnPreScriptDeleted();
 }
@@ -1020,6 +1019,14 @@ void FBangoScriptContainerCustomization::GetScriptContainerAndOuter(UObject*& Ou
 	}
 	
 	ScriptContainer = reinterpret_cast<FBangoScriptContainer*>(ScriptContainerPtr);
+}
+
+IBangoScriptHolderInterface& FBangoScriptContainerCustomization::GetScriptHolder() const
+{
+	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(GetOuter());
+	check(ScriptHolder);
+	
+	return *ScriptHolder;
 }
 
 EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const

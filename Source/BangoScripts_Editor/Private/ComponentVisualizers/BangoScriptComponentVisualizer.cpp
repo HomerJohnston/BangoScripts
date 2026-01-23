@@ -9,6 +9,8 @@
 #include "Components/BillboardComponent.h"
 #include "Components/Viewport.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Unsorted/BangoActorNodeDraw.h"
+#include "Utilities/BangoEditorUtility.h"
 
 // ----------------------------------------------
 
@@ -25,21 +27,7 @@ void FBangoScriptComponentVisualizer::DrawVisualization(const UActorComponent* C
 
 // ----------------------------------------------
 
-struct FBangoActorNodeDraw
-{
-	TSoftObjectPtr<const AActor> Actor = nullptr;
-	bool bFocused = false;
-	
-	bool operator==(const FBangoActorNodeDraw& Other) const { return Other.Actor == this->Actor; }
-	
-	friend uint32 GetTypeHash(const FBangoActorNodeDraw& Struct)
-	{
-		return GetTypeHash(Struct.Actor);
-	}
-};
-
-// ----------------------------------------------
-
+// TODO remove code duplication, try to run Bango::Editor::Draw instead ?
 void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent* Component, const FViewport* Viewport,	const FSceneView* View, FCanvas* Canvas)
 {
 	if (!IsValid(Component))
@@ -123,7 +111,7 @@ void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent
 					return;
 				}
 				
-				DrawCircle_ScreenSpace(View, Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
+				Bango::Editor::DrawCircle_ScreenSpace(View, Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
 				
 				// Draw connection line
 				FVector Delta = DrawInfo.Actor->GetActorLocation() - ScriptComponent->GetBillboard()->GetComponentLocation();
@@ -135,7 +123,7 @@ void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent
 					FVector Start = ScriptComponent->GetBillboard()->GetComponentLocation();
 					FVector End = TargetActorWorldPos;
 			
-					DrawLine_WorldSpace(View, Canvas, Start, End, Thickness, Color, StartDrawDistance);
+					Bango::Editor::DrawLine_WorldSpace(View, Canvas, Start, End, Thickness, Color, StartDrawDistance);
 				}
 			}
 		}
@@ -144,72 +132,6 @@ void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent
 			// TODO fast path - just display count stuff
 		}
 	}
-}
-
-// ----------------------------------------------
-
-void FBangoScriptComponentVisualizer::DrawCircle_ScreenSpace(const FSceneView* View, FCanvas* Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
-{
-	uint8 NumLineSegments = 24;
-	static TArray<FVector2D> TempPoints;
-	TempPoints.Empty(NumLineSegments);
-
-	const float NumFloatLineSegments = (float)NumLineSegments;
-	for (uint8 i = 0; i <= NumLineSegments; ++i)
-	{
-		const float Angle = (i / NumFloatLineSegments) * TWO_PI;
-
-		FVector2D PointOnCircle;
-		PointOnCircle.X = cosf(Angle) * Radius + ScreenPosition.X;
-		PointOnCircle.Y = sinf(Angle) * Radius + ScreenPosition.Y;
-		TempPoints.Add(PointOnCircle);
-	}
-	
-	for (uint8 i = 0; i <= NumLineSegments; ++i)
-	{
-		uint8 Index0 = i;
-		uint8 Index1 = (i + 1) % NumLineSegments;
-		
-		FCanvasLineItem Line(TempPoints[Index0], TempPoints[Index1]);
-		Line.LineThickness = Thickness;
-		Line.SetColor(Color);
-		//Canvas->DrawItem(Line);
-		
-		Canvas->DrawNGon(FVector2D(ScreenPosition.X, ScreenPosition.Y), Color.ToFColor(false), 16, Radius);
-	}
-}
-
-// ----------------------------------------------
-
-void FBangoScriptComponentVisualizer::DrawLine_WorldSpace(const FSceneView* View, FCanvas* Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
-{
-	FVector2D ScreenStart;
-	FVector2D ScreenEnd;
-	
-	FVector LineDir = (WorldEnd - WorldStart).GetSafeNormal();
-	
-	FVector TrueStart = WorldStart + StartCutoff * LineDir;
-	FVector TrueEnd = WorldEnd - EndCutoff * LineDir;
-	
-	if (!GetScreenPos(View, TrueStart, ScreenStart))
-	{
-		return;
-	}
-	
-	if (!GetScreenPos(View, TrueEnd, ScreenEnd))
-	{
-		return;
-	}
-	
-	if ((TrueEnd - TrueStart).Dot(LineDir) <= 0.0f)
-	{
-		return;
-	}
-	
-	FCanvasLineItem Line(ScreenStart, ScreenEnd);
-	Line.LineThickness = Thickness;
-	Line.SetColor(Color);
-	Canvas->DrawItem(Line);
 }
 
 // ----------------------------------------------

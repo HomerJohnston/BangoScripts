@@ -6,6 +6,8 @@
 
 #include "BangoScriptBlueprint.generated.h"
 
+class IBangoScriptHolderInterface;
+
 UCLASS()
 class BANGOSCRIPTS_API UBangoScriptBlueprint : public UBlueprint
 {
@@ -26,9 +28,13 @@ public:
 	// Common editor functionality
 
 public:
-	const TSoftObjectPtr<AActor> GetActor() const;
+	const TSoftObjectPtr<AActor> GetOwnerActor() const;
 	
-	void SetActorReference(AActor* Actor);
+	const IBangoScriptHolderInterface* GetScriptHolder() const;
+	
+	void SetOwnerActor(AActor* Actor);
+	
+	void SetScriptHolder(IBangoScriptHolderInterface& ScriptHolder);
 	
 	const FGuid& GetScriptGuid();
 
@@ -82,6 +88,13 @@ protected:
 	 * This is only used for blueprint editor niceties and has no effect on gameplay.
 	 */
 	UPROPERTY(NonPIEDuplicateTransient, TextExportTransient)
-	FString ActorReference;
+	FString OwnerActorPath;
+	
+	/* 
+	 * We use a raw FString to avoid packaing/asset reference discovery issues with UE thinking that the actor is referenced by this script. 
+	 * This is only used for blueprint editor niceties and has no effect on gameplay.
+	 */
+	UPROPERTY(NonPIEDuplicateTransient, TextExportTransient)
+	FString ScriptHolderObjectPath;
 #endif
 };

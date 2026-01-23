@@ -19,7 +19,7 @@ using enum EBangoAllowInvalid;
 #if WITH_EDITOR
 namespace Bango::Editor
 {	
-	BANGOSCRIPTS_EDITORTOOLING_API bool IsComponentInEditedLevel(UActorComponent* Component, EBangoAllowInvalid AllowInvalid = EBangoAllowInvalid::RequireValid);
+	BANGOSCRIPTS_EDITORTOOLING_API bool IsComponentInEditedLevel(UObject* Object, EBangoAllowInvalid AllowInvalid = EBangoAllowInvalid::RequireValid);
 	
 	// BANGOSCRIPTS_EDITORTOOLING_API bool IsComponentBeingDeleted(UActorComponent* Component);
 	

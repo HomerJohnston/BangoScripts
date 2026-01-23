@@ -1,16 +1,20 @@
-﻿#include "BangoBlueprintEditor.h"
+﻿#include "BangoScriptBlueprintEditor.h"
 
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Literal.h"
 #include "SBlueprintEditorToolbar.h"
+#include "BangoScripts/Components/BangoScriptComponent.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
+#include "BangoScripts/EditorTooling/BangoDebugUtility.h"
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Private/BangoEditorStyle.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
+#include "Debug/DebugDrawService.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/DebuggerCommands.h"
+#include "Utilities/BangoEditorUtility.h"
 #include "WorldPartition/ActorDescContainerInstance.h"
 #include "WorldPartition/WorldPartition.h"
 
@@ -18,52 +22,59 @@
 
 // ----------------------------------------------
 
-FBangoBlueprintEditor::FBangoBlueprintEditor() : FBlueprintEditor()
+FBangoScriptBlueprintEditor::FBangoScriptBlueprintEditor() : FBlueprintEditor()
 {
-	FBangoEditorDelegates::OnBangoScriptRan.AddRaw(this, &FBangoBlueprintEditor::OnBangoScriptRan);
-	FBangoEditorDelegates::OnBangoScriptFinished.AddRaw(this, &FBangoBlueprintEditor::OnBangoScriptFinished);
+	FBangoEditorDelegates::OnBangoScriptRan.AddRaw(this, &FBangoScriptBlueprintEditor::OnBangoScriptRan);
+	FBangoEditorDelegates::OnBangoScriptFinished.AddRaw(this, &FBangoScriptBlueprintEditor::OnBangoScriptFinished);
+
+	DebugDrawHandle = UDebugDrawService::Register(Bango::Debug::ScriptsShowFlagName(), FDebugDrawDelegate::CreateStatic(Bango::Editor::DebugDrawBlueprintToViewport, this));
 }
 
-FBangoBlueprintEditor::~FBangoBlueprintEditor()
+FBangoScriptBlueprintEditor::~FBangoScriptBlueprintEditor()
 {
 	FBangoEditorDelegates::OnBangoScriptRan.RemoveAll(this);
 	FBangoEditorDelegates::OnBangoScriptFinished.RemoveAll(this);
+	
+	if (DebugDrawHandle.IsValid())
+	{
+		UDebugDrawService::Unregister(DebugDrawHandle);
+	}
 }
 
-void FBangoBlueprintEditor::SetupGraphEditorEvents(UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents)
+void FBangoScriptBlueprintEditor::SetupGraphEditorEvents(UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents)
 {
 	FBlueprintEditor::SetupGraphEditorEvents(InGraph, InEvents);
 	InEvents.OnDropActors.Unbind();
-	InEvents.OnDropActors = SGraphEditor::FOnDropActors::CreateSP(this, &FBangoBlueprintEditor::OnDropActors);
+	InEvents.OnDropActors = SGraphEditor::FOnDropActors::CreateSP(this, &FBangoScriptBlueprintEditor::OnDropActors);
 }
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::SetupGraphEditorEvents_Impl(UBlueprint* Blueprint, UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents)
+void FBangoScriptBlueprintEditor::SetupGraphEditorEvents_Impl(UBlueprint* Blueprint, UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents)
 {
 	SetupGraphEditorEvents(InGraph, InEvents);
 		
-	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP( this, &FBangoBlueprintEditor::OnSelectedNodesChanged );
-	InEvents.OnDropActors = SGraphEditor::FOnDropActors::CreateSP( this, &FBangoBlueprintEditor::OnGraphEditorDropActor );
-	InEvents.OnDropStreamingLevels = SGraphEditor::FOnDropStreamingLevels::CreateSP( this, &FBangoBlueprintEditor::OnGraphEditorDropStreamingLevel );
-	InEvents.OnNodeDoubleClicked = FSingleNodeEvent::CreateSP(this, &FBangoBlueprintEditor::OnNodeDoubleClicked);
-	InEvents.OnVerifyTextCommit = FOnNodeVerifyTextCommit::CreateSP(this, &FBangoBlueprintEditor::OnNodeVerifyTitleCommit);
-	InEvents.OnTextCommitted = FOnNodeTextCommitted::CreateSP(this, &FBangoBlueprintEditor::OnNodeTitleCommitted);
-	InEvents.OnSpawnNodeByShortcutAtLocation = SGraphEditor::FOnSpawnNodeByShortcutAtLocation::CreateSP(this, &FBangoBlueprintEditor::OnSpawnGraphNodeByShortcut, InGraph);
-	InEvents.OnNodeSpawnedByKeymap = SGraphEditor::FOnNodeSpawnedByKeymap::CreateSP(this, &FBangoBlueprintEditor::OnNodeSpawnedByKeymap );
+	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP( this, &FBangoScriptBlueprintEditor::OnSelectedNodesChanged );
+	InEvents.OnDropActors = SGraphEditor::FOnDropActors::CreateSP( this, &FBangoScriptBlueprintEditor::OnGraphEditorDropActor );
+	InEvents.OnDropStreamingLevels = SGraphEditor::FOnDropStreamingLevels::CreateSP( this, &FBangoScriptBlueprintEditor::OnGraphEditorDropStreamingLevel );
+	InEvents.OnNodeDoubleClicked = FSingleNodeEvent::CreateSP(this, &FBangoScriptBlueprintEditor::OnNodeDoubleClicked);
+	InEvents.OnVerifyTextCommit = FOnNodeVerifyTextCommit::CreateSP(this, &FBangoScriptBlueprintEditor::OnNodeVerifyTitleCommit);
+	InEvents.OnTextCommitted = FOnNodeTextCommitted::CreateSP(this, &FBangoScriptBlueprintEditor::OnNodeTitleCommitted);
+	InEvents.OnSpawnNodeByShortcutAtLocation = SGraphEditor::FOnSpawnNodeByShortcutAtLocation::CreateSP(this, &FBangoScriptBlueprintEditor::OnSpawnGraphNodeByShortcut, InGraph);
+	InEvents.OnNodeSpawnedByKeymap = SGraphEditor::FOnNodeSpawnedByKeymap::CreateSP(this, &FBangoScriptBlueprintEditor::OnNodeSpawnedByKeymap );
 	//InEvents.OnDisallowedPinConnection = SGraphEditor::FOnDisallowedPinConnection::CreateSP(this, &FBangoBlueprintEditor::OnDisallowedPinConnection);
-	InEvents.OnDoubleClicked = SGraphEditor::FOnDoubleClicked::CreateSP(this, &FBangoBlueprintEditor::NavigateToParentGraphByDoubleClick);
+	InEvents.OnDoubleClicked = SGraphEditor::FOnDoubleClicked::CreateSP(this, &FBangoScriptBlueprintEditor::NavigateToParentGraphByDoubleClick);
 		
 	// Custom menu for K2 schemas
 	if(InGraph->Schema != nullptr && InGraph->Schema->IsChildOf(UEdGraphSchema_K2::StaticClass()))
 	{
-		InEvents.OnCreateActionMenuAtLocation = SGraphEditor::FOnCreateActionMenuAtLocation::CreateSP(this, &FBangoBlueprintEditor::OnCreateGraphActionMenu);
+		InEvents.OnCreateActionMenuAtLocation = SGraphEditor::FOnCreateActionMenuAtLocation::CreateSP(this, &FBangoScriptBlueprintEditor::OnCreateGraphActionMenu);
 	}
 }
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::Tick(float DeltaTime)
+void FBangoScriptBlueprintEditor::Tick(float DeltaTime)
 {
 	if (bRequestedSavingOpenDocumentState)
 	{
@@ -97,7 +108,7 @@ void FBangoBlueprintEditor::Tick(float DeltaTime)
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::OnDropActors(const TArray<TWeakObjectPtr<AActor>>& Actors, UEdGraph* Graph, const UE::Math::TVector2<float>& DropLocation) const
+void FBangoScriptBlueprintEditor::OnDropActors(const TArray<TWeakObjectPtr<AActor>>& Actors, UEdGraph* Graph, const UE::Math::TVector2<float>& DropLocation) const
 {
 	UE_LOG(LogBango, Display, TEXT("Test 2"));
 	
@@ -122,7 +133,7 @@ void FBangoBlueprintEditor::OnDropActors(const TArray<TWeakObjectPtr<AActor>>& A
 
 // ----------------------------------------------
 
-FGraphAppearanceInfo FBangoBlueprintEditor::GetGraphAppearance(class UEdGraph* InGraph) const
+FGraphAppearanceInfo FBangoScriptBlueprintEditor::GetGraphAppearance(class UEdGraph* InGraph) const
 {
 	// Create the appearance info
 	FGraphAppearanceInfo AppearanceInfo;
@@ -155,16 +166,16 @@ FGraphAppearanceInfo FBangoBlueprintEditor::GetGraphAppearance(class UEdGraph* I
 
 // ----------------------------------------------
 
-FText FBangoBlueprintEditor::GetLevelNameAsText() const
+FText FBangoScriptBlueprintEditor::GetLevelNameAsText() const
 {
-	UBangoScriptBlueprint* Blueprint = Cast<UBangoScriptBlueprint>(GetBlueprintObj());
+	const UBangoScriptBlueprint* Blueprint = GetBangoScriptBlueprintObj();
 	
 	if (!Blueprint)
 	{
 		return FText::GetEmpty();
 	}
 	
-	TSoftObjectPtr<AActor> Actor = Blueprint->GetActor();
+	TSoftObjectPtr<AActor> Actor = Blueprint->GetOwnerActor();
 	
 	if (Actor.IsNull())
 	{
@@ -208,16 +219,16 @@ FText FBangoBlueprintEditor::GetLevelNameAsText() const
 
 // ----------------------------------------------
 
-FText FBangoBlueprintEditor::GetOwnerNameAsText() const
+FText FBangoScriptBlueprintEditor::GetOwnerNameAsText() const
 {
-	UBangoScriptBlueprint* Blueprint = Cast<UBangoScriptBlueprint>(GetBlueprintObj());
+	const UBangoScriptBlueprint* Blueprint = GetBangoScriptBlueprintObj();
 	
 	if (!Blueprint)
 	{
 		return FText::GetEmpty();
 	}
 	
-	TSoftObjectPtr<AActor> Actor = Blueprint->GetActor();
+	TSoftObjectPtr<AActor> Actor = Blueprint->GetOwnerActor();
 	
 	if (Actor.IsNull())
 	{
@@ -259,14 +270,14 @@ FText FBangoBlueprintEditor::GetOwnerNameAsText() const
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::SetWarningText(const FText& InText)
+void FBangoScriptBlueprintEditor::SetWarningText(const FText& InText)
 {
 	WarningText = InText;
 }
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::InitBangoBlueprintEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, const TArray<UBlueprint*>& InBlueprints, bool bShouldOpenInDefaultsMode)
+void FBangoScriptBlueprintEditor::InitBangoBlueprintEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, const TArray<UBlueprint*>& InBlueprints, bool bShouldOpenInDefaultsMode)
 {
 	check(InBlueprints.Num() == 1 || bShouldOpenInDefaultsMode);
 
@@ -355,33 +366,18 @@ void FBangoBlueprintEditor::InitBangoBlueprintEditor(const EToolkitMode::Type Mo
 			DumpMessagesToCompilerLog(Blueprint->UpgradeNotesLog->Messages, true);
 		}
 	}
-
-	/*
-	// Register for notifications when settings change
-	BlueprintEditorSettingsChangedHandle = GetMutableDefault<UBlueprintEditorSettings>()->OnSettingChanged()
-		.AddRaw(this, &FBlueprintEditor::OnBlueprintEditorPreferencesChanged);
-	BlueprintProjectSettingsChangedHandle = GetMutableDefault<UBlueprintEditorProjectSettings>()->OnSettingChanged()
-		.AddRaw(this, &FBlueprintEditor::OnBlueprintProjectSettingsChanged);
-	*/
-	
-	/*
-	if (const TSharedPtr<SSCSEditorViewport> Viewport = GetSubobjectViewport())
-	{
-		ViewportSelectabilityBridge = MakeUnique<FEditorViewportSelectabilityBridge>(Viewport->GetViewportClient());
-	}
-	*/
 }
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::AddEditingObject(UObject* Object)
+void FBangoScriptBlueprintEditor::AddEditingObject(UObject* Object)
 {
 	FBlueprintEditor::AddEditingObject(Object);
 }
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::SetCurrentMode(FName NewMode)
+void FBangoScriptBlueprintEditor::SetCurrentMode(FName NewMode)
 {
 	FBlueprintEditor::SetCurrentMode(NewMode);
 	//SetUISelectionState(NAME_None);
@@ -389,7 +385,7 @@ void FBangoBlueprintEditor::SetCurrentMode(FName NewMode)
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::PostInitAssetEditor()
+void FBangoScriptBlueprintEditor::PostInitAssetEditor()
 {
 	FBlueprintEditor::PostInitAssetEditor();
 	
@@ -398,21 +394,21 @@ void FBangoBlueprintEditor::PostInitAssetEditor()
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::PasteGeneric()
+void FBangoScriptBlueprintEditor::PasteGeneric()
 {
 	FBlueprintEditor::PasteGeneric();
 }
 
 // ----------------------------------------------
 
-bool FBangoBlueprintEditor::CanPasteGeneric() const
+bool FBangoScriptBlueprintEditor::CanPasteGeneric() const
 {
 	return FBlueprintEditor::CanPasteGeneric();
 }
 
 // ----------------------------------------------
 
-bool FBangoBlueprintEditor::CanPasteNodes() const
+bool FBangoScriptBlueprintEditor::CanPasteNodes() const
 {
 	// Check if the clipboard contains actors in a map
 	
@@ -527,7 +523,7 @@ bool FBangoBlueprintEditor::CanPasteNodes() const
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, const FVector2f& GraphLocation)
+void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, const FVector2f& GraphLocation)
 {
 	struct FClipboardActor
 	{
@@ -682,7 +678,7 @@ void FBangoBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, const FVe
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
+void FBangoScriptBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
 {
 	UBangoScriptBlueprint* RunningBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(TSoftClassPtr<UBangoScript>(ScriptInstance->GetClass()));
 	
@@ -706,15 +702,25 @@ void FBangoBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
 
 // ----------------------------------------------
 
-void FBangoBlueprintEditor::OnBangoScriptFinished(UBangoScript* ScriptInstance)
+void FBangoScriptBlueprintEditor::OnBangoScriptFinished(UBangoScript* ScriptInstance)
 {
 	// UBangoScriptBlueprint* RunningBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(TSoftClassPtr<UBangoScript>(ScriptInstance->GetClass()));
 	// UBangoScriptBlueprint* ThisBlueprint = Cast<UBangoScriptBlueprint>(GetEditingObject());
 }
 
+UBangoScriptBlueprint* FBangoScriptBlueprintEditor::GetBangoScriptBlueprintObj()
+{
+	return Cast<UBangoScriptBlueprint>(GetBlueprintObj());
+}
+
+const UBangoScriptBlueprint* FBangoScriptBlueprintEditor::GetBangoScriptBlueprintObj() const
+{
+	return Cast<UBangoScriptBlueprint>(GetBlueprintObj());
+}
+
 // ----------------------------------------------
 
-bool FBangoBlueprintEditor::GetBEGIN(const TCHAR** Stream, const TCHAR* Match) const
+bool FBangoScriptBlueprintEditor::GetBEGIN(const TCHAR** Stream, const TCHAR* Match) const
 {
 	const TCHAR* Original = *Stream;
 
@@ -730,7 +736,7 @@ bool FBangoBlueprintEditor::GetBEGIN(const TCHAR** Stream, const TCHAR* Match) c
 
 // ----------------------------------------------
 
-bool FBangoBlueprintEditor::GetEND(const TCHAR** Stream, const TCHAR* Match) const
+bool FBangoScriptBlueprintEditor::GetEND(const TCHAR** Stream, const TCHAR* Match) const
 {
 	const TCHAR* Original = *Stream;
 	

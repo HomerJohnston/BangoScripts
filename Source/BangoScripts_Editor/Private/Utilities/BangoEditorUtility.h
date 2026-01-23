@@ -7,6 +7,9 @@ class UBangoScriptBlueprint;
 class UBangoScriptComponent;
 class UBangoScript;
 class IPropertyHandle;
+class UCanvas;
+class APlayerController;
+class FBangoScriptBlueprintEditor;
 
 namespace Bango::Editor
 {
@@ -36,4 +39,23 @@ namespace Bango::Editor
 	
 	// Changes "BlueprintName" to "~BlueprintName", this is to make it hidden in the content browser without engine modifications.
 	FString GetLocalScriptName(FString InName);
+
+	void DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerController* ALWAYS_NULL, FBangoScriptBlueprintEditor* ScriptBlueprintEditor);
+	
+	// Varints for UDebugDrawService
+	void DrawCircle_ScreenSpace(UCanvas* Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color);
+	
+	void DrawLine_WorldSpace(UCanvas* Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff);
+	
+	bool GetActorScreenPos(UCanvas* Canvas, const AActor* Actor, FVector& OutWorldPosition, FVector& OutScreenPosition);
+	
+	// Variants for component visualizer
+	void DrawCircle_ScreenSpace(const FSceneView* View, FCanvas* Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color);
+	
+	void DrawLine_WorldSpace(const FSceneView* View, FCanvas* Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff = 0.0f, float EndCutoff = 0.0f);
+	
+	bool GetActorScreenPos(const FSceneView* View, const AActor* Actor, FVector& OutWorldPosition, FVector& OutScreenPosition);
+
+	// Common
+	bool GetScreenPos(const FSceneView* View, const FVector& WorldPos, FVector2D& ScreenPos);
 }

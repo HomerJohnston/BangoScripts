@@ -2,7 +2,12 @@
 
 #include "BangoDebugDraw_ScriptComponent.generated.h"
 
+class AActor;
+class APlayerController;
 class UBangoScriptComponent;
+class UCanvas;
+class USceneComponent;
+class FBangoScriptBlueprintEditor;
 struct FBangoDebugDrawCanvas;
 
 UCLASS(Abstract, NotBlueprintable)
@@ -12,7 +17,7 @@ class UBangoDebugDraw_ScriptComponent : public UObject
 	
 public:
 	UBangoDebugDraw_ScriptComponent();
-	
+
 protected:
 	static void DebugDrawEditor(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent);
 	

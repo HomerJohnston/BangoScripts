@@ -35,22 +35,51 @@ bool UBangoScriptBlueprint::ShouldBeMarkedDirtyUponTransaction() const
 // ----------------------------------------------
 
 #if WITH_EDITOR
-const TSoftObjectPtr<AActor> UBangoScriptBlueprint::GetActor() const
+const TSoftObjectPtr<AActor> UBangoScriptBlueprint::GetOwnerActor() const
 {
-	return TSoftObjectPtr<AActor>(FSoftObjectPath(ActorReference));
+	return TSoftObjectPtr<AActor>(FSoftObjectPath(OwnerActorPath));
 }
 #endif
 
 // ----------------------------------------------
 
 #if WITH_EDITOR
-void UBangoScriptBlueprint::SetActorReference(AActor* Actor)
+const IBangoScriptHolderInterface* UBangoScriptBlueprint::GetScriptHolder() const
+{
+	FSoftObjectPath ObjectPath(ScriptHolderObjectPath);
+	TSoftObjectPtr<UObject> ObjectSoft = TSoftObjectPtr<UObject>(ObjectPath);
+	
+	UObject* Object = ObjectSoft.Get();
+	
+	if (Object)
+	{
+		return Cast<IBangoScriptHolderInterface>(Object);
+	}
+	
+	return nullptr;
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void UBangoScriptBlueprint::SetOwnerActor(AActor* Actor)
 {
 	// This should only ever be called once in the asset's lifespan
-	check(ActorReference.IsEmpty());
+	check(OwnerActorPath.IsEmpty());
 	check(Actor);
 	
-	ActorReference = Actor->GetPathName();
+	OwnerActorPath = Actor->GetPathName();
+}
+
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void UBangoScriptBlueprint::SetScriptHolder(IBangoScriptHolderInterface& ScriptHolder)
+{
+	ScriptHolderObjectPath = ScriptHolder._getUObject()->GetPathName();
 }
 #endif
 
@@ -85,7 +114,7 @@ void UBangoScriptBlueprint::Reset()
 	//check(!ActorReference.IsEmpty());
 	//check(ScriptGuid.IsValid());
 	
-	ActorReference.Empty();
+	OwnerActorPath.Empty();
 	ScriptGuid.Invalidate();
 }
 

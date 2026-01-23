@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "Containers/UnrealString.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/StrongObjectPtrTemplates.h"
@@ -14,6 +13,8 @@ namespace Bango
 {
 	namespace Debug
 	{
+		BANGOSCRIPTS_EDITORTOOLING_API const TCHAR* ScriptsShowFlagName();
+		
 	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptPIESprite();
 	    
 	    BANGOSCRIPTS_EDITORTOOLING_API UTexture2D* GetScriptBillboardSprite();

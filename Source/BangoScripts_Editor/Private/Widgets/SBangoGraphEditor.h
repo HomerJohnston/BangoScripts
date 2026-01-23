@@ -3,7 +3,7 @@
 #include "GraphEditor.h"
 
 class FBlueprintEditor;
-class FBangoBlueprintEditor;
+class FBangoScriptBlueprintEditor;
 
 class SBangoGraphEditor : public SGraphEditor
 {

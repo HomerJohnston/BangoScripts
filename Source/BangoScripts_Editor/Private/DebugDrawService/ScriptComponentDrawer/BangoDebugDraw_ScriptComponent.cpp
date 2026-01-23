@@ -9,6 +9,8 @@
 #include "BangoScripts/EditorTooling/BangoDebugDrawCanvas.h"
 #include "BangoScripts/EditorTooling/BangoDebugUtility.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
+#include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
+#include "BlueprintEditor/BangoScriptBlueprintEditor.h"
 #include "Modules/ModuleManager.h"
 #include "Slate/SceneViewport.h"
 #include "Components/BillboardComponent.h"
@@ -17,6 +19,19 @@
 #include "Framework/Application/SlateApplication.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
+
+struct FBangoActorNodeDraw
+{
+	TSoftObjectPtr<const AActor> Actor = nullptr;
+	bool bFocused = false;
+	
+	bool operator==(const FBangoActorNodeDraw& Other) const { return Other.Actor == this->Actor; }
+	
+	friend uint32 GetTypeHash(const FBangoActorNodeDraw& Struct)
+	{
+		return GetTypeHash(Struct.Actor);
+	}
+};
 
 UBangoDebugDraw_ScriptComponent::UBangoDebugDraw_ScriptComponent()
 {

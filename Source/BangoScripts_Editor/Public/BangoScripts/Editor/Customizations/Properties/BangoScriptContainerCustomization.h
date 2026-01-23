@@ -8,7 +8,7 @@
 class IClassViewerFilter;
 struct FCanLoadMap;
 class SVerticalBox;
-class FBangoBlueprintEditor;
+class FBangoScriptBlueprintEditor;
 
 enum class EBangoScriptRenameStatus : uint8
 {
@@ -137,11 +137,13 @@ protected:
 	
 	// ------------------------------------------
 	
-	void OnScriptContainerDestroyed(UObject* Object, FBangoScriptContainer* ScriptContainer);
+	void OnScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder);
 	
 	void OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap);
 	
 	void GetScriptContainerAndOuter(UObject*& Outer, FBangoScriptContainer*& ScriptContainer) const;
+	
+	IBangoScriptHolderInterface& GetScriptHolder() const;
 	
 	EBangoScriptType GetScriptType() const;
 };

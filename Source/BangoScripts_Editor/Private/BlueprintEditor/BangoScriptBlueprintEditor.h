@@ -3,14 +3,15 @@
 #include "BlueprintEditor.h"
 #include "BangoScripts/Core/BangoScript.h"
 
+class UBangoScriptBlueprint;
 class UEdGraph;
 
-class FBangoBlueprintEditor : public FBlueprintEditor
+class FBangoScriptBlueprintEditor : public FBlueprintEditor
 {
 public:
-	FBangoBlueprintEditor();
+	FBangoScriptBlueprintEditor();
 	
-	virtual ~FBangoBlueprintEditor();
+	virtual ~FBangoScriptBlueprintEditor();
 	
 public:
 	void SetupGraphEditorEvents(UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents) override;
@@ -35,6 +36,10 @@ public:
 	
 	FText WarningText;
 	
+	static bool bDebugDrawRegistered;
+	
+	FDelegateHandle DebugDrawHandle; 
+		
 	void SetWarningText(const FText& InText);
 	
 	void InitBangoBlueprintEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost >& InitToolkitHost, const TArray<UBlueprint*>& InBlueprints, bool bShouldOpenInDefaultsMode);
@@ -57,6 +62,11 @@ protected:
 	void OnBangoScriptRan(UBangoScript* ScriptInstance);
 	
 	void OnBangoScriptFinished(UBangoScript* ScriptInstance);
+	
+public:
+	UBangoScriptBlueprint* GetBangoScriptBlueprintObj();
+	
+	const UBangoScriptBlueprint* GetBangoScriptBlueprintObj() const;
 	
 protected:
 	// Copied from Editor.h

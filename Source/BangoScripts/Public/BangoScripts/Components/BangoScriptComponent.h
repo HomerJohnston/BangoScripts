@@ -4,6 +4,7 @@
 #include "InputCoreTypes.h"
 #include "Components/ActorComponent.h"
 #include "BangoScripts/Debug/BangoDebugDrawServiceBase.h"
+#include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
 
 #include "BangoScriptComponent.generated.h"
 
@@ -21,12 +22,9 @@ enum class EBangoScriptComponent_ThisArg : uint8
 */
 
 UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = ("Activation", "AssetUserData", "Cooking", "Navigation", "Tags"))
-class BANGOSCRIPTS_API UBangoScriptComponent : public UActorComponent
+class BANGOSCRIPTS_API UBangoScriptComponent : public UActorComponent, public IBangoScriptHolderInterface
 {
 	GENERATED_BODY()
-	
-	friend class UBangoLevelScriptsEditorSubsystem;
-	friend class UBangoScriptBlueprint;
 	
 public:
 	UBangoScriptComponent();
@@ -89,7 +87,6 @@ public:
 #if WITH_EDITOR
 public:
 	
-	
 	UBangoScriptBlueprint* GetScriptBlueprint(bool bForceLoad = false) const;
 	
 	void SetScriptBlueprint(UBangoScriptBlueprint* Blueprint); 
@@ -112,8 +109,16 @@ public:
 	
 	bool GetRunOnBeginPlay() const { return bRunOnBeginPlay; }
 	
+	FBangoScriptContainer& GetScriptContainer() override { return ScriptContainer; }
+	
 	const FBangoScriptContainer& GetScriptContainer() const { return ScriptContainer; }
 	
+	const FVector& GetDebugDrawOrigin() const override { return GetBillboardOffset(); }
+	
 	const FVector& GetBillboardOffset() const { return BillboardOffset; }
+	
+	IBangoScriptHolderInterface& AsScriptHolder() { return *Cast<IBangoScriptHolderInterface>(this); }
 #endif
+	
+	
 };

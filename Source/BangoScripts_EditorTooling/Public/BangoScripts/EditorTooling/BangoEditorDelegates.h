@@ -5,6 +5,7 @@
 #include "Misc/Guid.h"
 #include "UObject/SoftObjectPtr.h"
 
+class IBangoScriptHolderInterface;
 class UObject;
 struct FBangoScriptContainer;
 class UBangoScriptBlueprint;
@@ -16,19 +17,13 @@ struct FBangoDebugDrawCanvas;
 struct FBangoEditorDelegates
 {
 	// 
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UObject* Outer, FBangoScriptContainer* ScriptContainer, FString Name)> OnScriptContainerCreated;
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder, FString RequestedBlueprintName)> OnScriptContainerCreated;
 	
 	// 
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UObject* Outer, FBangoScriptContainer* ScriptContainer, FString Name)> OnScriptContainerDuplicated;
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> OnScriptContainerDuplicated;
 	
 	// 
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UObject* Outer, FBangoScriptContainer* ScriptContainer)> OnScriptContainerDestroyed;
-	
-	// 
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UObject* Outer, TSoftClassPtr<UBangoScript> ScriptContainer)> OnScriptContainerUnregisteredDuringTransaction;
-	
-	// 
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(FGuid ScriptID, UBangoScriptBlueprint*& FoundBlueprint)> OnBangoActorComponentUndoDelete;
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> OnScriptContainerDestroyed;
 	
 	// 
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(AActor* Actor)> RequestNewID;

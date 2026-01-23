@@ -5,7 +5,7 @@
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 
 #if WITH_EDITOR
-bool Bango::Editor::IsComponentInEditedLevel(UActorComponent* Component, EBangoAllowInvalid AllowInvalid)
+bool Bango::Editor::IsComponentInEditedLevel(UObject* Object, EBangoAllowInvalid AllowInvalid)
 {
 	if (!GEditor)
 		return false;
@@ -13,7 +13,7 @@ bool Bango::Editor::IsComponentInEditedLevel(UActorComponent* Component, EBangoA
 	if (GIsPlayInEditorWorld)
 		return false;
 	
-	UWorld* World = Component->GetWorld();
+	UWorld* World = Object->GetWorld();
 	
 	if (!World)
 		return false;
@@ -24,51 +24,54 @@ bool Bango::Editor::IsComponentInEditedLevel(UActorComponent* Component, EBangoA
 	if (World->bIsTearingDown)
 		return false;
 
-	if (Component->HasAnyFlags(RF_Transient | RF_ClassDefaultObject | RF_DefaultSubObject))
+	if (Object->HasAnyFlags(RF_Transient | RF_ClassDefaultObject | RF_DefaultSubObject))
 		return false;
 	
 	if (AllowInvalid == RequireValid)
 	{
-		if (Component->HasAnyFlags(RF_MirroredGarbage | RF_BeginDestroyed | RF_FinishDestroyed))
+		if (Object->HasAnyFlags(RF_MirroredGarbage | RF_BeginDestroyed | RF_FinishDestroyed))
 			return false;
 	}
 	
-	if (Component->GetPackage() == GetTransientPackage())
+	if (Object->GetPackage() == GetTransientPackage())
 		return false;
 	
-	AActor* Actor = Component->GetOwner();
-	
-	if (!Actor || Actor->IsTemplate())
-		return false;
-		
-	if (Actor->HasAnyFlags(RF_Transient))
-		return false;
-	
-	//if (Actor->HasAnyFlags(RF_MirroredGarbage))
-	//	return false;
-	
-	if (Component->IsDefaultSubobject())
+	// Additional checks if the thing is an actor component
+	if (UActorComponent* Component = Cast<UActorComponent>(Object))
 	{
-		if (World->IsPlayInEditor())
+		AActor* Actor = Component->GetOwner();
+	
+		if (!Actor || Actor->IsTemplate())
 			return false;
 		
-		return true;
+		if (Actor->HasAnyFlags(RF_Transient))
+			return false;
+	
+		if (Component->IsDefaultSubobject())
+		{
+			if (World->IsPlayInEditor())
+				return false;
+		
+			return true;
+		}
+		else
+		{
+			ULevel* Level = Component->GetComponentLevel();
+	
+			if (!Level)
+				return false;
+	
+			if (Level->GetPackage() == GetTransientPackage())
+				return false;
+	
+			if (Component->GetComponentLevel() == nullptr)
+				return false;
+	
+			return true;
+		}
 	}
-	else
-	{
-		ULevel* Level = Component->GetComponentLevel();
 	
-		if (!Level)
-			return false;
-	
-		if (Level->GetPackage() == GetTransientPackage())
-			return false;
-	
-		if (Component->GetComponentLevel() == nullptr)
-			return false;
-	
-		return true;
-	}
+	return true;
 }
 
 /*

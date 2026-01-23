@@ -14,17 +14,16 @@ namespace Bango
 {
 	struct FScriptContainerKey
 	{
-		FScriptContainerKey(TWeakObjectPtr<UObject> InScriptOuter, FBangoScriptContainer* InScriptContainer)
-			: ScriptOuter(InScriptOuter)
-			, ScriptContainer(InScriptContainer)
+		FScriptContainerKey(IBangoScriptHolderInterface& ScriptHolder)
+			: Outer(ScriptHolder._getUObject())
+			, ScriptContainer(&ScriptHolder.GetScriptContainer())
 		{
 			Script = ScriptContainer->GetScriptClass();
-			UObject* Outer = InScriptOuter.Get(true);
 		}
 		
 		// ----------------------------
 		
-		TWeakObjectPtr<UObject> ScriptOuter;
+		TWeakObjectPtr<UObject> Outer;
 		FString OuterObjectPath;
 		FBangoScriptContainer* ScriptContainer;
 		TSoftClassPtr<UBangoScript> Script;
@@ -35,7 +34,7 @@ namespace Bango
 		{
 			if (ScriptContainer->GetScriptClass().IsNull())
 			{
-				return ScriptOuter == Other.ScriptOuter && ScriptContainer == Other.ScriptContainer;
+				return Outer == Other.Outer && ScriptContainer == Other.ScriptContainer;
 			}
 			
 			return ScriptContainer->GetScriptClass() == Other.ScriptContainer->GetScriptClass();
@@ -47,7 +46,7 @@ namespace Bango
 		{
 			if (ScriptContainerKey.ScriptContainer->GetScriptClass().IsNull())
 			{
-				return HashCombine(ScriptContainerKey.ScriptOuter.GetWeakPtrTypeHash(), GetTypeHash(ScriptContainerKey.ScriptContainer));
+				return HashCombine(ScriptContainerKey.Outer.GetWeakPtrTypeHash(), GetTypeHash(ScriptContainerKey.ScriptContainer));
 			}
 
 			return GetTypeHash(ScriptContainerKey.ScriptContainer->GetScriptClass().ToString());
@@ -95,18 +94,18 @@ public:
 	
 	static TSharedPtr<IContentBrowserHideFolderIfEmptyFilter> Filter;	
 	
-	void OnLevelScriptContainerCreated(UObject* Outer, FBangoScriptContainer* ScriptContainer, FString BlueprintName = "");
+	void OnLevelScriptContainerCreated(IBangoScriptHolderInterface& ScriptHolder, FString BlueprintName = "");
 
-	void OnLevelScriptContainerDestroyed(UObject* Outer, FBangoScriptContainer* ScriptContainer);
+	void OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder);
 
-	void OnLevelScriptContainerDuplicated(UObject* Outer, FBangoScriptContainer* ScriptContainer, FString BlueprintName = "");
+	void OnLevelScriptContainerDuplicated(IBangoScriptHolderInterface& ScriptHolder);
 	
 	// ------------------------------------------
 	// Level script creation functions
 private:
-	void EnqueueCreatedScriptContainer(UObject* Owner, FBangoScriptContainer* ScriptContainer);
+	void EnqueueCreatedScriptContainer(IBangoScriptHolderInterface& ScriptHolder);
 	
-	void EnqueueDestroyedScriptContainer(UObject* Owner, FBangoScriptContainer* ScriptContainer);
+	void EnqueueDestroyedScriptContainer(IBangoScriptHolderInterface& ScriptHolder);
 
 	void RequestScriptQueueProcessing();
 	
@@ -116,9 +115,9 @@ private:
 	// Script creation methods
 	void ProcessCreatedScriptRequest(TWeakObjectPtr<UObject> Owner, FBangoScriptContainer* ScriptContainer);
 	
-	void CreateLevelScript(UObject* Outer, FBangoScriptContainer* ScriptContainer);
+	void CreateLevelScript(IBangoScriptHolderInterface& ScriptHolder);
 	
-	void DuplicateLevelScript(UObject* Outer, FBangoScriptContainer* ScriptContainer);
+	void DuplicateLevelScript(IBangoScriptHolderInterface& ScriptHolder);
 	
 	void TryUndeleteScript(FSoftObjectPath ScriptClassSoft, FBangoScriptContainer* ScriptContainer);
 	

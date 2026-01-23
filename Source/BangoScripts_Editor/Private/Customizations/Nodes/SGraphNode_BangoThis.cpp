@@ -355,9 +355,9 @@ FText SGraphNode_BangoThis::Text_ActorLabel() const
 
 	UBangoScriptBlueprint* Blueprint = Node->GetBangoScriptBlueprint();
 	
-	if (Blueprint && Blueprint->GetActor().IsValid())
+	if (Blueprint && Blueprint->GetOwnerActor().IsValid())
 	{
-		return FText::FromString(Blueprint->GetActor()->GetActorLabel());
+		return FText::FromString(Blueprint->GetOwnerActor()->GetActorLabel());
 	}
 	else
 	{
@@ -376,7 +376,7 @@ FSlateColor SGraphNode_BangoThis::ColorAndOpacity_ActorLabel() const
 
 	UBangoScriptBlueprint* Blueprint = Node->GetBangoScriptBlueprint();
 	
-	if (Blueprint && Blueprint->GetActor().IsValid())
+	if (Blueprint && Blueprint->GetOwnerActor().IsValid())
 	{
 		return Bango::Colors::Gray;
 	}

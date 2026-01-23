@@ -1,8 +1,10 @@
 ﻿#include "BangoScripts_EditorTooling.h"
 
+#include "BangoScripts/EditorTooling/BangoDebugUtility.h"
+
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
-TCustomShowFlag<EShowFlagShippingValue::ForceDisabled> FBangoScripts_EditorToolingModule::BangoScriptsShowFlag(TEXT("BangoScriptsShowFlag"), true, EShowFlagGroup::SFG_Developer, FText(INVTEXT("Bango Scripts")));
+TCustomShowFlag<EShowFlagShippingValue::ForceDisabled> FBangoScripts_EditorToolingModule::BangoScriptsShowFlag( Bango::Debug::ScriptsShowFlagName(), true, EShowFlagGroup::SFG_Developer, FText(INVTEXT("Bango Scripts")));
 
 void FBangoScripts_EditorToolingModule::StartupModule()
 {

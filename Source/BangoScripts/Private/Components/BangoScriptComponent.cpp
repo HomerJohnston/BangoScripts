@@ -64,7 +64,7 @@ void UBangoScriptComponent::OnRegister()
 	if (Bango::Editor::IsComponentInEditedLevel(this))
 	{
 		FString ScriptName = GetName(); // We will use the component name for the script name
-		FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
+		FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(AsScriptHolder(), ScriptName);
 	}
 	
     if (IsTemplate())
@@ -130,7 +130,7 @@ void UBangoScriptComponent::OnUnregister()
 	
 	FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this);
 
-	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(this, &ScriptContainer);
+	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
 		
 	if (Billboard)
 	{
@@ -161,11 +161,11 @@ void UBangoScriptComponent::OnComponentCreated()
 	
 			if (ScriptContainer.GetGuid().IsValid())
 			{
-				FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(this, &ScriptContainer, ScriptName);
+				FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 			}
 			else
 			{
-				FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(this, &ScriptContainer, ScriptName);
+				FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(AsScriptHolder(), ScriptName);
 			}	
 		}
 	
@@ -192,7 +192,7 @@ void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 	if (!ScriptClass.IsNull())
 	{
 		// Moves handling over to an editor module to handle more complicated package deletion/undo management
-		FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(this, &ScriptContainer);
+		FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
 	}
 }
 
@@ -240,7 +240,7 @@ void UBangoScriptComponent::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 		Bango::Debug::PrintComponentState(this, "PostDuplicate_Instance");
 		
 		// Component was added to an actor in the level; this case is very easy to handle, PostDuplicate is only called on real human-initiated duplications
-		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(this, &ScriptContainer, GetName());
+		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 	}
 	else
 	{
@@ -249,7 +249,7 @@ void UBangoScriptComponent::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 		// Component is part of a blueprint, only run duplication code if it's in a level already
 		//if (GetOwner()->HasAnyFlags(RF_WasLoaded))
 		//{
-			FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(this, &ScriptContainer, GetName());
+			FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 		//}
 	}
 }
