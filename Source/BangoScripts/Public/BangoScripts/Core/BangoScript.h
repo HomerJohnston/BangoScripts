@@ -108,6 +108,8 @@ protected:
 
     UPROPERTY(Transient)
     TMap<int32, FOnLatentActionTick> SleepTickDelegates;
+    
+	UPROPERTY(Transient)
     TMap<int32, FOnLatentActionCompleted> SleepCancelDelegates;
 
     UFUNCTION(BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", LatentInfo="LatentInfo", Duration="1.23", Keywords="sleep"))

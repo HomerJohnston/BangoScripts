@@ -523,7 +523,11 @@ void UBangoLevelScriptsEditorSubsystem::CreateLevelScript(IBangoScriptHolderInte
 		(void)ScriptPackage->MarkPackageDirty();
 	
 		// Tells FBangoScript property type customizations to regenerate their view
-		OnScriptGenerated.Broadcast();	
+		OnScriptGenerated.Broadcast();
+		
+		// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
+		FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
+		Outer->PostEditChangeProperty(NewScriptDummyChangedEvent);
 	}
 }
 

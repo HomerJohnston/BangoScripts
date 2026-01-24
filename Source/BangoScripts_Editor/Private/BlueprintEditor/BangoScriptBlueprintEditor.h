@@ -40,6 +40,8 @@ public:
 	
 	FDelegateHandle DebugDrawHandle; 
 		
+	bool bSlateThrottlingDisabled = false;
+	
 	void SetWarningText(const FText& InText);
 	
 	void InitBangoBlueprintEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost >& InitToolkitHost, const TArray<UBlueprint*>& InBlueprints, bool bShouldOpenInDefaultsMode);

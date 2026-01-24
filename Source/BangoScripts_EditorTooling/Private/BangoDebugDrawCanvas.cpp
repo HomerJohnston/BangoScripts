@@ -38,6 +38,12 @@ float FBangoDebugDrawCanvas::GetAlpha(const FVector& WorldLocation, bool bPIE) c
 	GetCameraPos(CameraPos);
 	
     float MaxDistance = UBangoScriptsDeveloperSettings::GetPIEDisplayDistance();
+	
+	if (MaxDistance <= 0.0f)
+	{
+		return 1.0f;
+	}
+	
     float FadeStartDistance = 0.9f * MaxDistance;
     
 	float MinDistanceSq = FMath::Square(FadeStartDistance);

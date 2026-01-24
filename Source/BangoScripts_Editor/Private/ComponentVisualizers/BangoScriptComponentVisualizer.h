@@ -4,7 +4,6 @@
 
 class FBangoScriptComponentVisualizer : public FComponentVisualizer
 {
-	
 	void OnRegister() override;
 	
 	void DrawVisualization(const UActorComponent* Component, const FSceneView* View, FPrimitiveDrawInterface* PDI) override;
@@ -14,4 +13,6 @@ class FBangoScriptComponentVisualizer : public FComponentVisualizer
 	bool GetActorScreenPos(const FSceneView* View, FCanvas* Canvas, const AActor* Actor, FVector& OutWorldPosition, FVector& OutScreenPosition);
 	
 	bool GetScreenPos(const FSceneView* View, const FVector& WorldPos, FVector2D& ScreenPos);
+	
+	bool VisProxyHandleClick(FEditorViewportClient* InViewportClient, HComponentVisProxy* VisProxy, const FViewportClick& Click) override;
 };

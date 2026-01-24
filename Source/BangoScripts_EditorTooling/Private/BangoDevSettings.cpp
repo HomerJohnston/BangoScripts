@@ -9,6 +9,11 @@ static TAutoConsoleVariable<bool> CVarBangoShowEventsInGame(
 	false,
 	TEXT("TODO Test"));
 
+bool UBangoScriptsDeveloperSettings::GetPreventSlateThrottlingOverrides()
+{
+	return Get().bPreventSlateThrottlingOverrides;
+}
+
 /*
 void UBangoScriptsDeveloperSettings::PostCDOContruct()
 {
@@ -52,16 +57,15 @@ void UBangoScriptsDeveloperSettings::OnCvarChange()
 	}
 }
 
-#if WITH_EDITOR
-void UBangoScriptsDeveloperSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	if (PropertyChangedEvent.Property->GetFName() == "bShowEventsInGame")
-	{
-		static const auto ShowEventsInGame = IConsoleManager::Get().FindConsoleVariable(TEXT("Bango.ShowEventsInGame"));
-		ShowEventsInGame->Set(GetShowEventsInGame());
-	}
-}
-#endif
 */
+float UBangoScriptsDeveloperSettings::GetPIEDisplayDistance()
+{
+	const TOptional<float>& Val = Get().ScriptIconPIEDisplayDistance;
+		
+	if (Val.IsSet())
+	{
+		return Val.GetValue();
+	}
+		
+	return -1.0f;
+}

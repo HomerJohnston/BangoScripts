@@ -33,6 +33,7 @@ public:
 	
 #if WITH_EDITOR
 public:
+	UFUNCTION()
 	void OnRegister() override;
 	
 	void OnUnregister() override;
@@ -57,11 +58,8 @@ public:
 #endif
 	
 protected:
-	/** Use this to run the script automatically upon BeginPlay. */
-	UPROPERTY(Category = "Bango", EditAnywhere, DisplayName = "Autoplay")
-	bool bRunOnBeginPlay = false;
-	
 #if WITH_EDITORONLY_DATA
+	/** Moves the billboard representer around if needed. */
 	UPROPERTY(Category = "Bango", EditAnywhere)
 	FVector BillboardOffset;
 #endif
@@ -69,6 +67,10 @@ protected:
 	/** The actual script instance. */
 	UPROPERTY(Category = "Bango", EditInstanceOnly)
 	FBangoScriptContainer ScriptContainer;
+	
+	/** Use this to run the script automatically upon BeginPlay. */
+	UPROPERTY(Category = "Bango", EditAnywhere, DisplayName = "Autoplay")
+	bool bRunOnBeginPlay = false;
 	
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(Transient)
@@ -118,6 +120,9 @@ public:
 	const FVector& GetBillboardOffset() const { return BillboardOffset; }
 	
 	IBangoScriptHolderInterface& AsScriptHolder() { return *Cast<IBangoScriptHolderInterface>(this); }
+	
+protected:
+	void UpdateBillboard();
 #endif
 	
 	

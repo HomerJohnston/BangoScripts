@@ -3,9 +3,11 @@
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Literal.h"
 #include "SBlueprintEditorToolbar.h"
+#include "Application/ThrottleManager.h"
 #include "BangoScripts/Components/BangoScriptComponent.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
 #include "BangoScripts/EditorTooling/BangoDebugUtility.h"
+#include "BangoScripts/EditorTooling/BangoDevSettings.h"
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Private/BangoEditorStyle.h"
@@ -28,7 +30,15 @@ FBangoScriptBlueprintEditor::FBangoScriptBlueprintEditor() : FBlueprintEditor()
 	FBangoEditorDelegates::OnBangoScriptFinished.AddRaw(this, &FBangoScriptBlueprintEditor::OnBangoScriptFinished);
 
 	DebugDrawHandle = UDebugDrawService::Register(Bango::Debug::ScriptsShowFlagName(), FDebugDrawDelegate::CreateStatic(Bango::Editor::DebugDrawBlueprintToViewport, this));
+	
+	if (!UBangoScriptsDeveloperSettings::GetPreventSlateThrottlingOverrides())
+	{
+		FSlateThrottleManager::Get().DisableThrottle(true);
+		bSlateThrottlingDisabled = true;	
+	}
 }
+
+// ----------------------------------------------
 
 FBangoScriptBlueprintEditor::~FBangoScriptBlueprintEditor()
 {
@@ -39,7 +49,14 @@ FBangoScriptBlueprintEditor::~FBangoScriptBlueprintEditor()
 	{
 		UDebugDrawService::Unregister(DebugDrawHandle);
 	}
+	
+	if (bSlateThrottlingDisabled)
+	{
+		FSlateThrottleManager::Get().DisableThrottle(false);
+	}
 }
+
+// ----------------------------------------------
 
 void FBangoScriptBlueprintEditor::SetupGraphEditorEvents(UEdGraph* InGraph, SGraphEditor::FGraphEditorEvents& InEvents)
 {
@@ -644,9 +661,9 @@ void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, con
 	{
 		const FString Format = TEXT
 		(
-			"Begin Object Class={0}\n" // {/Script/BangoUncooked.K2Node_BangoFindActor}
-				"CastTo={1}\n" // "/Script/Engine.BlueprintGeneratedClass'/Game/TestThings/BP_StreetLamp.BP_StreetLamp_C'"
-				"TargetActor={2}\n" // "/Game/Test3.Test3:PersistentLevel.BP_StreetLamp_C_UAID_B04F13D324A438B102_1405045264"
+			"Begin Object Class={0}\n"	// {/Script/BangoUncooked.K2Node_BangoFindActor}
+				"CastTo={1}\n"			// "/Script/Engine.BlueprintGeneratedClass'/Game/TestThings/BP_StreetLamp.BP_StreetLamp_C'"
+				"TargetActor={2}\n"		// "/Game/Test3.Test3:PersistentLevel.BP_StreetLamp_C_UAID_B04F13D324A438B102_1405045264"
 			"End Object\n\n"
 		);
 
@@ -704,8 +721,7 @@ void FBangoScriptBlueprintEditor::OnBangoScriptRan(UBangoScript* ScriptInstance)
 
 void FBangoScriptBlueprintEditor::OnBangoScriptFinished(UBangoScript* ScriptInstance)
 {
-	// UBangoScriptBlueprint* RunningBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(TSoftClassPtr<UBangoScript>(ScriptInstance->GetClass()));
-	// UBangoScriptBlueprint* ThisBlueprint = Cast<UBangoScriptBlueprint>(GetEditingObject());
+	
 }
 
 UBangoScriptBlueprint* FBangoScriptBlueprintEditor::GetBangoScriptBlueprintObj()

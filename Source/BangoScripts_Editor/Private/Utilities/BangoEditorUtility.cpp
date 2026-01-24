@@ -227,7 +227,7 @@ void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerControl
 		return;
 	}
 	
-	const UBangoScriptBlueprint* Blueprint = ScriptBlueprintEditor->GetBangoScriptBlueprintObj();
+	UBangoScriptBlueprint* Blueprint = ScriptBlueprintEditor->GetBangoScriptBlueprintObj();
 
 	if (!Blueprint)
 	{
@@ -344,7 +344,7 @@ void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerControl
 	*/
 }
 
-void Bango::Editor::DebugDrawActorConnections(const UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View,	FCanvas& Canvas)
+void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View,	FCanvas& Canvas)
 {
 	const IBangoScriptHolderInterface* ScriptHolder = ScriptBlueprint.GetScriptHolder();
 	
@@ -428,7 +428,7 @@ void Bango::Editor::DebugDrawActorConnections(const UBangoScriptBlueprint& Scrip
 				// Draw connection line
 				FVector Delta = ActorNode.Actor->GetActorLocation() - DrawOrigin;
 				
-				const float StartDrawDistance = 50.0f;
+				const float StartDrawDistance = 30.0f;
 				
 				if (Delta.SizeSquared() > FMath::Square(StartDrawDistance))
 				{

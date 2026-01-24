@@ -222,7 +222,7 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 	
 	// We kill the graph widgets immediately to avoid garbage collection and file access issues
 	FEditorDelegates::OnMapLoad.AddSP(this, &FBangoScriptContainerCustomization::OnMapLoad);
-	FBangoEditorDelegates::OnScriptContainerDestroyed.AddSP(this, &FBangoScriptContainerCustomization::OnScriptContainerDestroyed);
+	// FBangoEditorDelegates::OnScriptContainerDestroyed.AddSP(this, &FBangoScriptContainerCustomization::OnScriptContainerDestroyed);
 }
 
 // ----------------------------------------------
@@ -806,8 +806,8 @@ TSharedRef<SWidget> FBangoScriptContainerCustomization::GetPopoutGraphEditor(FVe
 				})
 				[
 					SNew(SImage)
-					.DesiredSizeOverride(FVector2D(24, 24))
-					.Image(FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript)) // TODO custom icon
+					.DesiredSizeOverride(FVector2D(32, 32))
+					.Image(FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript))
 				]
 			]
 			+ SOverlay::Slot()

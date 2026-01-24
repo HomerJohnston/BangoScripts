@@ -1,5 +1,6 @@
 ﻿#include "BangoScriptComponentVisualizer.h"
 
+#include "LevelEditor.h"
 #include "SceneView.h"
 #include "BangoScripts/Components/BangoScriptComponent.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
@@ -41,7 +42,7 @@ void FBangoScriptComponentVisualizer::DrawVisualizationHUD(const UActorComponent
 		return;
 	}
 	
-	const UBangoScriptBlueprint* Blueprint = ScriptComponent->GetScriptBlueprint();
+	UBangoScriptBlueprint* Blueprint = ScriptComponent->GetScriptBlueprint();
 	if (!Blueprint)
 	{
 		return;
@@ -169,6 +170,11 @@ bool FBangoScriptComponentVisualizer::GetScreenPos(const FSceneView* View, const
 	FVector4 ScreenPoint = View->WorldToScreen(WorldPos);
 
 	return View->ScreenToPixel(ScreenPoint, ScreenPos);
+}
+
+bool FBangoScriptComponentVisualizer::VisProxyHandleClick(FEditorViewportClient* InViewportClient, HComponentVisProxy* VisProxy, const FViewportClick& Click)
+{
+	return FComponentVisualizer::VisProxyHandleClick(InViewportClient, VisProxy, Click);
 }
 
 // ----------------------------------------------

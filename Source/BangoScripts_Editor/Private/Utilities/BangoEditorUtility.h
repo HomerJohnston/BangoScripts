@@ -43,7 +43,7 @@ namespace Bango::Editor
 
 	void DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerController* ALWAYS_NULL, FBangoScriptBlueprintEditor* ScriptBlueprintEditor);
 	
-	void DebugDrawActorConnections(const UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View, FCanvas& Canvas);
+	void DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View, FCanvas& Canvas);
 	
 	// Varints for UDebugDrawService
 	void DrawCircle_ScreenSpace(UCanvas& Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color);

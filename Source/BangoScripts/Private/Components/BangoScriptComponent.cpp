@@ -117,6 +117,8 @@ void UBangoScriptComponent::OnRegister()
 		Billboard->SetRelativeLocation(BillboardOffset);
     }
 	
+	UpdateBillboard();
+	
 	Bango::Debug::PrintComponentState(this, "OnRegister_Late");
 }
 #endif
@@ -260,10 +262,7 @@ void UBangoScriptComponent::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 #if WITH_EDITOR
 void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
-	if (Billboard)
-	{
-		Billboard->SetRelativeLocation(BillboardOffset);
-	}
+	UpdateBillboard();
 	
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
@@ -352,30 +351,6 @@ void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 #if WITH_EDITOR
 void UBangoScriptComponent::PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE)
 {
-	// Update the billboard sprite
-	if (Billboard)
-	{
-		int32 BillboardSize = Bango::Debug::GetScriptBillboardSprite()->GetSizeX();
-		const int32 SpriteSize = BillboardSize / 2;
-
-		int32 U = 0;
-		int32 V = 0;
-		int32 UL = SpriteSize;
-		int32 VL = SpriteSize;
-		
-		if (!ScriptContainer.GetScriptClass().IsNull())
-		{
-			U = SpriteSize;
-		}
-		
-		if (bRunOnBeginPlay)
-		{
-			V = SpriteSize;
-		}
-		
-		Billboard->SetUV(U, UL, V, VL);
-	}
-	
 	// We delegate these requests over to the editor module to make it easier to build in editor functionality
 	// See UBangoDebugDraw_ScriptComponent
 	
@@ -409,6 +384,38 @@ void UBangoScriptComponent::PostEditUndo(TSharedPtr<ITransactionObjectAnnotation
 	Super::Super::PostEditUndo(TransactionAnnotation);
 	
 	Bango::Debug::PrintComponentState(this, "PostEditUndo");
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void UBangoScriptComponent::UpdateBillboard()
+{
+	if (Billboard)
+	{
+		Billboard->SetRelativeLocation(BillboardOffset);
+		
+		int32 BillboardSize = Bango::Debug::GetScriptBillboardSprite()->GetSizeX();
+		const int32 SpriteSize = BillboardSize / 2;
+
+		int32 U = 0;
+		int32 V = 0;
+		int32 UL = SpriteSize;
+		int32 VL = SpriteSize;
+		
+		if (!ScriptContainer.GetScriptClass().IsNull())
+		{
+			U = SpriteSize;
+		}
+		
+		if (bRunOnBeginPlay)
+		{
+			V = SpriteSize;
+		}
+		
+		Billboard->SetUV(U, UL, V, VL);		
+	}
 }
 #endif
 
