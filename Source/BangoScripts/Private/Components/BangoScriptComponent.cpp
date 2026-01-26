@@ -93,18 +93,20 @@ void UBangoScriptComponent::OnRegister()
         }
 		
         BillboardInstance->SetupAttachment(GetOwner()->GetRootComponent());
+        BillboardInstance->SetIsVisualizationComponent(true);
+		BillboardInstance->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
         BillboardInstance->bHiddenInGame = true;
 		BillboardInstance->bIsScreenSizeScaled = true;
         BillboardInstance->Mobility = EComponentMobility::Movable;
         BillboardInstance->AlwaysLoadOnClient = false;
-        BillboardInstance->SetIsVisualizationComponent(true);
 		BillboardInstance->bIsEditorOnly = true;
         BillboardInstance->SpriteInfo.Category = TEXT("Misc");
         BillboardInstance->SpriteInfo.DisplayName = NSLOCTEXT("SpriteCategory", "Misc", "Misc");
         BillboardInstance->CreationMethod = CreationMethod;
         BillboardInstance->bUseInEditorScaling = true;
         BillboardInstance->OpacityMaskRefVal = .1f;
-        BillboardInstance->RegisterComponent();
+
+	    BillboardInstance->RegisterComponent();
     }
 	
 	UpdateBillboard();

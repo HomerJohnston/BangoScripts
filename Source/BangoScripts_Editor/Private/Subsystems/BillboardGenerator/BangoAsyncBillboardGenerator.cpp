@@ -69,8 +69,10 @@ void FBangoAsyncBillboardGenerator::OnOverlayLoaded()
 	Result->SRGB = true;
 	
 	TStrongObjectPtr<UTexture2D> ResultStrong(Result);
+    
+    bool bOverlaySRGB = OverlayTexture->SRGB;
 	
-	GenerationTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [SharedThis, OverlayParsedImage, Base, ResultStrong]
+	GenerationTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [SharedThis, OverlayParsedImage, Base, ResultStrong, bOverlaySRGB]
 	{
 		FTaskTagScope Scope(ETaskTag::EParallelRenderingThread);
 		
@@ -160,7 +162,7 @@ void FBangoAsyncBillboardGenerator::OnOverlayLoaded()
 						FVector4f P2 = OverlayParsedImage.GetPixel(OverlayTexX, OverlayTexY);
 
 						// Auto-convert overlay texture to sRGB if needed (maybe I should not do this?)
-						// P2 = FLinearColor(FLinearColor(P2).ToFColor(bSRGB).ReinterpretAsLinear());
+						P2 = FLinearColor(FLinearColor(P2).ToFColor(bOverlaySRGB).ReinterpretAsLinear());
 						
 						float a2 = P2[3];
 						float a1 = P1[3];
