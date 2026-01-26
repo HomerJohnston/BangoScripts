@@ -28,6 +28,10 @@ public:
 	const FBangoScriptContainer& GetScriptContainer() const;
 
 	// Should be in relative local space to an owning actor
-	virtual const FVector& GetDebugDrawOrigin() const;
+	virtual FVector GetDebugDrawOrigin() const;
+	
+	virtual const FString& GetStartEventComment() const;
+	
+	virtual void UpdateBillboard() {};
 #endif
 };

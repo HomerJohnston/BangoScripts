@@ -8,7 +8,6 @@
 #include "TutorialMetaData.h"
 #include "BangoScripts/Components/BangoActorIDComponent.h"
 #include "BangoScripts/Utility/BangoUtility.h"
-#include "BangoScripts/EditorTooling/BangoEditorUtility.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
 #include "Styling/SlateIconFinder.h"

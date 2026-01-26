@@ -11,17 +11,36 @@
 class UBlueprint;
 class UBangoScript;
 
-// TODO think more whether I want this. I currently just set 'This' to the closest owner actor.
-/*
-UENUM(BlueprintType)
-enum class EBangoScriptComponent_ThisArg : uint8
+USTRUCT()
+struct FBangoScriptComponent_BillboardSettings
 {
-	OwnerActor,
-	ScriptComponent,
+	GENERATED_BODY()
+	
+	/** Disables display of the billboard entirely. Has no effect on other things (use viewport Developer showflag "Bango Scripts" to hide other debug elements).*/
+	UPROPERTY(Category = "Bango", EditAnywhere)
+	bool bDisable = false;
+	
+	/** Moves the billboard representer around if needed. */
+	UPROPERTY(Category = "Bango", EditAnywhere)
+	FVector BillboardOffset = FVector(0.0f, 0.0f, 100.0f);
+	
+	/** If set, overrides the default "scroll" billboard sprite. */
+	UPROPERTY(Category = "Bango", EditAnywhere)
+	TSoftObjectPtr<UTexture2D> CustomBillboard = nullptr; 
+	
+	/** 
+	 * If set, custom billboard uses a 2x2 sprite layout:
+	 * NW = no script assigned, Autoplay FALSE
+	 * NE = script assigned, Autoplay FALSE
+	 * SW = no script assigned, Autoplay TRUE
+	 * SE = script assigned, Autoplay TRUE
+	 */
+	UPROPERTY(Category = "Bango", EditDefaultsOnly, meta = (EditCondition = "CustomBillboard != nullptr", EditConditionHides))
+	bool bUse2x2Sprite = false;
+	
 };
-*/
 
-UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = ("Activation", "AssetUserData", "Cooking", "Navigation", "Tags"))
+UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = ("Activation", "AssetUserData", "Cooking", "Navigation", "Tags", "ComponentTick", "Sockets", "ComponentReplication", "Replication"))
 class BANGOSCRIPTS_API UBangoScriptComponent : public UActorComponent, public IBangoScriptHolderInterface
 {
 	GENERATED_BODY()
@@ -59,9 +78,12 @@ public:
 	
 protected:
 #if WITH_EDITORONLY_DATA
-	/** Moves the billboard representer around if needed. */
-	UPROPERTY(Category = "Bango", EditAnywhere)
-	FVector BillboardOffset;
+	UPROPERTY(Category = "Bango", DisplayName = "Billboard", EditAnywhere)
+	FBangoScriptComponent_BillboardSettings BillboardSettings;
+	
+	/** If set, will apply a comment onto the start node when a script is created. */
+	UPROPERTY(Category = "Bango", EditDefaultsOnly)
+	FString StartNodeComment;
 #endif
 	
 	/** The actual script instance. */
@@ -75,10 +97,9 @@ protected:
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(Transient)
 	FBangoScriptHandle RunningHandle;
-	
-	// I am toying with using a standard billboard component to represent the script instead of debugdraw, not sure yet.
+
     UPROPERTY(Transient)
-    TObjectPtr<UBillboardComponent> Billboard;
+    TObjectPtr<UBillboardComponent> BillboardInstance;
 #endif
 	
 public:
@@ -105,7 +126,7 @@ public:
 
 	void PostEditUndo(TSharedPtr<ITransactionObjectAnnotation> TransactionAnnotation) override;
 	
-	UBillboardComponent* GetBillboard() const { return Billboard; }
+	UBillboardComponent* GetBillboard() const { return BillboardInstance; }
 	
 	const FBangoScriptHandle& GetRunningHandle() const { return RunningHandle; }
 	
@@ -115,14 +136,15 @@ public:
 	
 	const FBangoScriptContainer& GetScriptContainer() const { return ScriptContainer; }
 	
-	const FVector& GetDebugDrawOrigin() const override { return GetBillboardOffset(); }
-	
-	const FVector& GetBillboardOffset() const { return BillboardOffset; }
+	FVector GetDebugDrawOrigin() const override;
+
+	const FVector& GetBillboardOffset() const { return BillboardSettings.BillboardOffset; }
 	
 	IBangoScriptHolderInterface& AsScriptHolder() { return *Cast<IBangoScriptHolderInterface>(this); }
 	
+	const FString& GetStartEventComment() const override { return StartNodeComment; }
 protected:
-	void UpdateBillboard();
+	void UpdateBillboard() override;
 #endif
 	
 	

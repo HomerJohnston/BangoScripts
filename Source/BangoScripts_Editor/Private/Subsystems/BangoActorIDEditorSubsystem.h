@@ -4,6 +4,8 @@
 
 #include "BangoActorIDEditorSubsystem.generated.h"
 
+// TODO should this be deprecated? I have created soft object pointer nodes instead
+
 /**
  * This subsystem is responsible for managing Actor ID components. 
  */

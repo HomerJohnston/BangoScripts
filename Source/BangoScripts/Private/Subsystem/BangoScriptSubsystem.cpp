@@ -276,6 +276,7 @@ void UBangoScriptSubsystem::LaunchQueuedScripts()
 			TSubclassOf<UBangoScript> ScriptClass = QueuedScript.ScriptClass.Get();
 			check(ScriptClass);
 			
+			// TODO I should create these async, as part of the load process
 			UBangoScript* NewScriptInstance = NewObject<UBangoScript>(Runner, ScriptClass);
 			NewScriptInstance->Handle = QueuedScript.Handle;
 			NewScriptInstance->This = Runner;

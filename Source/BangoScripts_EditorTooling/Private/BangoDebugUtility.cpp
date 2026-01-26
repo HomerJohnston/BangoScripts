@@ -6,6 +6,9 @@
 #include "IImageWrapperModule.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
+#include "AssetUtils/Texture2DBuilder.h"
+#include "AssetUtils/Texture2DUtil.h"
+#include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "Components/ActorComponent.h"
 #include "Engine/Texture2D.h"
@@ -17,6 +20,8 @@
 #include "Misc/FileHelper.h"
 #include "Modules/ModuleManager.h"
 #include "UObject/Package.h"
+
+TMap<TSoftObjectPtr<UTexture2D>, TStrongObjectPtr<UTexture2D>> FBangoScriptBillboards::GeneratedBillboards;
 
 // ----------------------------------------------
 
@@ -44,20 +49,52 @@ UTexture2D* Bango::Debug::GetScriptPIESprite()
 
 // ----------------------------------------------
 
-UTexture2D* Bango::Debug::GetScriptBillboardSprite()
+UTexture2D* Bango::Debug::GetScriptBillboardSprite(IBangoScriptHolderInterface* Requester, TSoftObjectPtr<UTexture2D> OverlaySoft)
 {
-    static TStrongObjectPtr<UTexture2D> IconTexture = nullptr;
+	// !!! TODO reinstate cache
+	//GeneratedScriptBillboards.Empty();
+	// !!! TODO 
+	
+	// !!! TODO implement async generation
+	
+	if (OverlaySoft.IsNull())
+	{
+		return GetDefaultScriptBillboardSprite();
+	}
+	
+	// Return cached result
+	TStrongObjectPtr<UTexture2D>& CachedBillboardStrong = FBangoScriptBillboards::GeneratedBillboards.FindOrAdd(OverlaySoft);
+	
+	if (CachedBillboardStrong.IsValid())
+	{
+		return CachedBillboardStrong.Get();
+	}
+
+	// UBangoScriptBillboardGenerator will be listening on this delegate
+	FBangoEditorDelegates::OnCustomBillboardRequested.Broadcast(Requester, OverlaySoft);
+	
+	// While we wait for the generator to run, use the default
+	return GetDefaultScriptBillboardSprite();
+}
+
+// ----------------------------------------------
+
+UTexture2D* Bango::Debug::GetDefaultScriptBillboardSprite()
+{
+	static TStrongObjectPtr<UTexture2D> IconTexture = nullptr;
     
-    static bool bLoaded = false;
+	static bool bLoaded = false;
     
-    if (!bLoaded)
-    {
-        // Only attempt to load it once
-        LoadIcon(IconTexture, "ViewportIcons/Icon_Script_BillboardSprite.png");
-        bLoaded = true;
-    }
+	if (!bLoaded)
+	{
+		// Only attempt to load it once
+		LoadIcon(IconTexture, "ViewportIcons/Icon_Script_BillboardSprite.png");
+		bLoaded = true;
+	}
     
-    return IconTexture.Get();
+	check(IconTexture.IsValid());
+	
+	return IconTexture.Get();
 }
 
 // ----------------------------------------------
@@ -84,24 +121,27 @@ void Bango::Debug::LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FSt
            PF_B8G8R8A8
        );
 
-    TArray<uint8> RawData;
-    ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData);
+	if (Texture)
+	{
+		TArray<uint8> RawData;
+		ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData);
     
-	Texture->MipGenSettings = TMGS_NoMipmaps;
-	Texture->AddressX = TA_Clamp;
-	Texture->AddressY = TA_Clamp;
-	Texture->CompressionNone = true;
-	Texture->LODGroup = TEXTUREGROUP_UI;
-	Texture->Filter = TF_Nearest;
-    Texture->SRGB = true;
+		Texture->MipGenSettings = TMGS_NoMipmaps;
+		Texture->AddressX = TA_Clamp;
+		Texture->AddressY = TA_Clamp;
+		Texture->CompressionNone = true;
+		Texture->LODGroup = TEXTUREGROUP_UI;
+		Texture->Filter = TF_Bilinear;
+		Texture->SRGB = true;
     
-    void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-    FMemory::Memcpy(TextureData, RawData.GetData(), RawData.Num());
-    Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
+		void* TextureData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+		FMemory::Memcpy(TextureData, RawData.GetData(), RawData.Num());
+		Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
     
-    Texture->UpdateResource();
+		Texture->UpdateResource();
     
-    Destination = TStrongObjectPtr<UTexture2D>(Texture);
+		Destination = TStrongObjectPtr<UTexture2D>(Texture);
+	}
 }
 
 // ----------------------------------------------

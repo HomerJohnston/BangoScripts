@@ -22,3 +22,5 @@ TMulticastDelegate<void(UBangoScript* ScriptClass)> FBangoEditorDelegates::OnBan
 
 TMulticastDelegate<void(UBangoScript* ScriptClass)> FBangoEditorDelegates::OnBangoScriptFinished;
 
+TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjectPtr<UTexture2D>& OverlayTexture)> FBangoEditorDelegates::OnCustomBillboardRequested;
+

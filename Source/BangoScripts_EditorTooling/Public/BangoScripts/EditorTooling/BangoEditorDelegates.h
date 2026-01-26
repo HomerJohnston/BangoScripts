@@ -5,6 +5,7 @@
 #include "Misc/Guid.h"
 #include "UObject/SoftObjectPtr.h"
 
+class UTexture2D;
 class IBangoScriptHolderInterface;
 class UObject;
 struct FBangoScriptContainer;
@@ -42,5 +43,8 @@ struct FBangoEditorDelegates
 	
 	// Used by FBangoBlueprintEditor
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UBangoScript* ScriptClass)> OnBangoScriptFinished;
+	
+	// 
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjectPtr<UTexture2D>& OverlayTexture)> OnCustomBillboardRequested;
 };
 #endif

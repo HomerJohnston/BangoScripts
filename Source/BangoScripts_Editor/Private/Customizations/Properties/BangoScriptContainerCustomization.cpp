@@ -859,7 +859,11 @@ void FBangoScriptContainerCustomization::UpdateBox()
 	UObject* Outer;
 	FBangoScriptContainer* ScriptContainer;
 	GetScriptContainerAndOuter(Outer, ScriptContainer);
-	check(Outer && ScriptContainer);
+	
+	if (!Outer)
+	{
+		return;
+	}
 	
 	TSharedRef<SGraphEditor> GraphEditor = SNew(SGraphEditor)
 	.GraphToEdit(GetPrimaryEventGraph())
@@ -1006,8 +1010,13 @@ void FBangoScriptContainerCustomization::OnMapLoad(const FString& String, FCanLo
 
 void FBangoScriptContainerCustomization::GetScriptContainerAndOuter(UObject*& Outer, FBangoScriptContainer*& ScriptContainer) const
 {
+	// TODO URGENT I am sometimes getting a crash here when I delete a script or an Outer??
 	Outer = GetOuter();
-	check(Outer);
+	
+	if (!Outer)
+	{
+		return;
+	}
 	
 	void* ScriptContainerPtr = nullptr;
 	

@@ -4,13 +4,9 @@
 #include "SceneView.h"
 #include "BangoScripts/Components/BangoScriptComponent.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
-#include "BangoScripts/EditorTooling/BangoColors.h"
-#include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
-#include "BangoScripts/EditorTooling/BangoEditorUtility.h"
 #include "Components/BillboardComponent.h"
 #include "Components/Viewport.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Unsorted/BangoActorNodeDraw.h"
 #include "Utilities/BangoEditorUtility.h"
 
 // ----------------------------------------------

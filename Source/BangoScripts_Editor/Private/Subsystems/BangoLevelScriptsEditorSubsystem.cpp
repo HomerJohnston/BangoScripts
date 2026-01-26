@@ -3,6 +3,7 @@
 #include "ContentBrowserDataSubsystem.h"
 #include "IContentBrowserDataModule.h"
 #include "ISourceControlModule.h"
+#include "K2Node_CustomEvent.h"
 #include "ObjectTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
@@ -18,8 +19,10 @@
 #include "Private/Utilities/BangoFolderUtility.h"
 #include "Private/Unsorted/BangoHideScriptFolderFilter.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
+#include "EdGraph/EdGraph.h"
 #include "Factories/Factory.h"
 #include "Misc/TransactionObjectEvent.h"
+#include "Settings/EditorStyleSettings.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "Subsystems/EditorAssetSubsystem.h"
 #include "UObject/ObjectSaveContext.h"
@@ -518,6 +521,12 @@ void UBangoLevelScriptsEditorSubsystem::CreateLevelScript(IBangoScriptHolderInte
 		ScriptContainer.SetGuid(NewScriptGuid);
 		ScriptContainer.SetScriptClass(Blueprint->GeneratedClass);
 	
+		UEdGraph* EventGraph = Blueprint->UbergraphPages[0].Get();
+		for (UEdGraphNode* Node : EventGraph->Nodes)
+		{
+			Node->NodeComment = ScriptHolder.GetStartEventComment();
+		}
+		
 		FKismetEditorUtilities::CompileBlueprint(Blueprint);
 		FAssetRegistryModule::AssetCreated(Blueprint);
 		(void)ScriptPackage->MarkPackageDirty();

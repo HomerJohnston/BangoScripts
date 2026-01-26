@@ -28,9 +28,15 @@ const FBangoScriptContainer& IBangoScriptHolderInterface::GetScriptContainer() c
 // ----------------------------------------------
 
 #if WITH_EDITOR
-const FVector& IBangoScriptHolderInterface::GetDebugDrawOrigin() const
+FVector IBangoScriptHolderInterface::GetDebugDrawOrigin() const
 {
 	return FVector::ZeroVector;
+}
+
+const FString& IBangoScriptHolderInterface::GetStartEventComment() const
+{
+	static const FString DefaultComment = "";
+	return DefaultComment;
 }
 #endif
 

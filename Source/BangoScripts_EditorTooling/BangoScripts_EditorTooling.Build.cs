@@ -26,7 +26,8 @@ public class BangoScripts_EditorTooling : ModuleRules
                 "SlateCore",
 				"UnrealEd",
 				"Projects",
-				"DeveloperSettings",
+				"DeveloperSettings", 
+				"ModelingComponents",
             }
         );
         

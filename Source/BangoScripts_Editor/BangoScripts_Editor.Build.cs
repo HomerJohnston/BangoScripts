@@ -49,7 +49,8 @@ public class BangoScripts_Editor : ModuleRules
 				"EditorWidgets", 
 				"GameProjectGeneration",
 				"AssetRegistry",
-				"RenderCore"
+				"RenderCore", 
+				"ModelingComponents"
             }
         );
         
