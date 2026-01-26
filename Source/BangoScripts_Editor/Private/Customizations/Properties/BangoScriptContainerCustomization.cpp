@@ -437,11 +437,16 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 				IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
 				FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 
-				ScriptHolder._getUObject()->Modify();
+				UObject* Object = ScriptHolder._getUObject();
+				Object->Modify();
 
 				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(ScriptHolder);
 				
 				ScriptContainer.Unset();
+				
+				// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
+				FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
+				Object->PostEditChangeProperty(NewScriptDummyChangedEvent);
 			}
 
 			return FReply::Handled();				
@@ -461,19 +466,22 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 					Outer->Modify();
 					ScriptContainer->Unset();
 				}
-
-				return FReply::Handled();
 			}
 			else
 			{
 				Outer->Modify();
 				ScriptContainer->Unset();
 				
-				return FReply::Handled();
 			}	
+			
+			// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
+			FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
+			Outer->PostEditChangeProperty(NewScriptDummyChangedEvent);
+			
+			return FReply::Handled();
 		}
 	}
-	
+		
 	return FReply::Handled();
 }
 

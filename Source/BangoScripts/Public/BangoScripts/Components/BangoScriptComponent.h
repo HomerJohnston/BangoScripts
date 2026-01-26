@@ -27,17 +27,6 @@ struct FBangoScriptComponent_BillboardSettings
 	/** If set, overrides the default "scroll" billboard sprite. */
 	UPROPERTY(Category = "Bango", EditAnywhere)
 	TSoftObjectPtr<UTexture2D> CustomBillboard = nullptr; 
-	
-	/** 
-	 * If set, custom billboard uses a 2x2 sprite layout:
-	 * NW = no script assigned, Autoplay FALSE
-	 * NE = script assigned, Autoplay FALSE
-	 * SW = no script assigned, Autoplay TRUE
-	 * SE = script assigned, Autoplay TRUE
-	 */
-	UPROPERTY(Category = "Bango", EditDefaultsOnly, meta = (EditCondition = "CustomBillboard != nullptr", EditConditionHides))
-	bool bUse2x2Sprite = false;
-	
 };
 
 UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = ("Activation", "AssetUserData", "Cooking", "Navigation", "Tags", "ComponentTick", "Sockets", "ComponentReplication", "Replication"))

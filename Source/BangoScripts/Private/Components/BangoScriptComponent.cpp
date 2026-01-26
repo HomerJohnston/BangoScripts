@@ -124,11 +124,6 @@ void UBangoScriptComponent::OnUnregister()
 
 	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
 		
-	if (BillboardInstance)
-	{
-		
-	}
-	
 	Super::OnUnregister();
 	
 	Bango::Debug::PrintComponentState(this, "OnUnregister_Late");	
