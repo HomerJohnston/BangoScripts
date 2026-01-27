@@ -16,6 +16,7 @@
 #include "Engine/Texture2D.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Kismet2/DebuggerCommands.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -42,6 +43,8 @@ void FBangoDebugDraw_ScriptComponentHover::Reset()
 		
 	FSlateApplication::Get().DismissMenu(ActiveMenu);
 	ActiveMenu = nullptr;
+	
+	FSlateThrottleManager::Get().DisableThrottle(false);
 }
 
 bool FBangoDebugDraw_ScriptComponentHover::Try(const UBangoScriptComponent* Contender, float MouseDistanceToBillboard)
@@ -78,6 +81,7 @@ void FBangoDebugDraw_ScriptComponentHover::SwitchFocus(const UBangoScriptCompone
 {
 	FocusedComponent = NewFocus;
 	StartFocusTime = NewFocus->GetWorld()->GetRealTimeSeconds();
+	FSlateThrottleManager::Get().DisableThrottle(true);
 }
 
 UBangoDebugDraw_ScriptComponent::UBangoDebugDraw_ScriptComponent()
@@ -262,28 +266,47 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 	}
 	
 	BillboardScreenPos.Z = 0.0f;
+	FVector2D BillboardScreenPos2D(BillboardScreenPos);
 	
 	// ------------------------------------------
 	// Check if mouse is over this component
+
 	FIntPoint MousePoint;
 	bool bMouseOver = false;
 	float MouseDistSqrd = -1;
-	if (Canvas.GetMousePosInLevelViewport(MousePoint))
-	{
-		FVector MousePos(MousePoint.X, MousePoint.Y, 0.0f);
-		MouseDistSqrd = FVector::DistSquared(MousePos, BillboardScreenPos);
-	}
 	
 	DebugDrawPIEImpl(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
-	
 	FWorldContext* Context = GEngine->GetWorldContextFromWorld(ScriptComponent->GetWorld());
-
-	// NOTE: bIsSimulatingInEditor is SUPPOSED to be deprecated since 4.25 but the "Eject" button still uses it.
-	//if (GEditor->IsSimulateInEditorInProgress() || GEditor->bIsSimulatingInEditor)
-
-	if (Context && Context->GameViewport && Context->GameViewport->IsSimulateInEditorViewport())
+	UGameViewportClient* GameViewport = Context ? Context->GameViewport : nullptr;
+	
+	if (GameViewport)
 	{
-		DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+		TSharedPtr<SViewport> ViewportWidget = GameViewport->GetGameViewportWidget();
+		
+		if (ViewportWidget)
+		{
+			if (GameViewport->GetGameViewportWidget()->HasAnyUserFocus())
+			{
+				// When the viewport is focused, we only draw extra debug widgets in Simulate mode
+				if (GameViewport->IsSimulateInEditorViewport() && Canvas.GetMousePosInLevelViewport(MousePoint))
+				{
+					FVector2D MousePos(MousePoint.X, MousePoint.Y);
+					MouseDistSqrd = FVector2D::DistSquared(MousePos, BillboardScreenPos2D);
+			
+					DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+				}
+			}
+			else
+			{
+				// Shift+F1 was pressed, viewport is not focused
+				FVector2D GlobalMousePos = FSlateApplication::Get().GetCursorPos();
+				FVector2D RelativeMousePos = GlobalMousePos - ViewportWidget->GetCachedGeometry().GetAbsolutePosition();
+				
+				MouseDistSqrd = FVector2D::DistSquared(RelativeMousePos, BillboardScreenPos2D);
+				
+				DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+			}
+		}
 	}
 }
 
