@@ -72,8 +72,6 @@ void FBangoAsyncBillboardGenerator::OnOverlayLoaded()
 	
 	TStrongObjectPtr<UTexture2D> ResultStrong(Result);
     
-    bool bOverlaySRGB = OverlayTexture->SRGB;
-	
 	GenerationTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [SharedThis, OverlayParsedImage, Base, ResultStrong, bOverlaySRGB]
 	{
 		FTaskTagScope Scope(ETaskTag::EParallelRenderingThread);
