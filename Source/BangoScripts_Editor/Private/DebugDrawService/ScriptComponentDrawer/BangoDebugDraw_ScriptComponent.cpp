@@ -356,7 +356,6 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 
 void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos)
 {
-	static TSharedPtr<SWidget> PopupWidget = nullptr;
 	const float MouseThreshold = 2500.0f;
 	
 	if (MouseDistSqrd < MouseThreshold)
@@ -374,17 +373,42 @@ void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCa
 				{
 					TWeakObjectPtr<UBangoScriptComponent> WeakScriptComponent = ScriptComponent;
 					
-					TSharedRef<SWidget> HoverWidget = SNew(SButton)
-						.Text(INVTEXT("Run"))
-						.OnClicked_Lambda([WeakScriptComponent]()
-						{
-							if (WeakScriptComponent.IsValid())
-							{
-								WeakScriptComponent->Run();
-							}
-							
-							return FReply::Handled();
-						});
+					TSharedRef<SWidget> HoverWidget = SNew(SVerticalBox)
+					    + SVerticalBox::Slot()
+					    .AutoHeight()
+					    .Padding(2, 2, 2, 2)
+					    [
+                            SNew(SButton)
+                            .Text(INVTEXT("Edit"))
+                            .OnClicked_Lambda([WeakScriptComponent]()
+                            {
+                                if (WeakScriptComponent.IsValid())
+                                {
+                                    UBangoScriptBlueprint* Blueprint = WeakScriptComponent->GetScriptBlueprint();
+                                    if (Blueprint)
+                                    {
+    				                    GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Blueprint);
+                                    }
+                                }
+                                return FReply::Handled();
+                            })
+					    ]
+					    + SVerticalBox::Slot()
+					    .Padding(2, 2, 2, 2)
+					    .AutoHeight()
+					    [
+					        SNew(SButton)
+                            .Text(INVTEXT("Run"))
+                            .OnClicked_Lambda([WeakScriptComponent]()
+                            {
+                                if (WeakScriptComponent.IsValid())
+                                {
+                                    WeakScriptComponent->Run();
+                                }
+                                return FReply::Handled();
+                            })
+					    ];
+					    
 					
 					FVector2f ViewportPosition = LevelViewport->GetCachedGeometry().GetAbsolutePosition();
 					FVector2f BillboardAbsPos = ViewportPosition + FVector2f(BillboardScreenPos.X, BillboardScreenPos.Y);
