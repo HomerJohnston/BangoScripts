@@ -37,14 +37,21 @@ struct FBangoActorNodeDraw
 
 void FBangoDebugDraw_ScriptComponentHover::Reset()
 {
-	FocusedComponent.Reset();
-	ScreenDistance = -1.0f;
-	StartFocusTime = -1.0f;
+    if (FocusedComponent.IsValid())
+    {
+	    FocusedComponent.Reset();
+	    ScreenDistance = -1.0f;
+	    StartFocusTime = -1.0f;
 		
-	FSlateApplication::Get().DismissMenu(ActiveMenu);
-	ActiveMenu = nullptr;
-	
-	FSlateThrottleManager::Get().DisableThrottle(false);
+	    FSlateApplication::Get().DismissMenu(ActiveMenu);
+	    ActiveMenu = nullptr;
+	    
+        if (bSlateThrottle)
+        {
+	        FSlateThrottleManager::Get().DisableThrottle(false);
+            bSlateThrottle = false;    
+        }
+    }
 }
 
 bool FBangoDebugDraw_ScriptComponentHover::Try(const UBangoScriptComponent* Contender, float MouseDistanceToBillboard)
@@ -81,7 +88,12 @@ void FBangoDebugDraw_ScriptComponentHover::SwitchFocus(const UBangoScriptCompone
 {
 	FocusedComponent = NewFocus;
 	StartFocusTime = NewFocus->GetWorld()->GetRealTimeSeconds();
-	FSlateThrottleManager::Get().DisableThrottle(true);
+
+    if (!bSlateThrottle)
+    {
+        FSlateThrottleManager::Get().DisableThrottle(true);
+        bSlateThrottle = true;    
+    }
 }
 
 UBangoDebugDraw_ScriptComponent::UBangoDebugDraw_ScriptComponent()
@@ -294,6 +306,7 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 					MouseDistSqrd = FVector2D::DistSquared(MousePos, BillboardScreenPos2D);
 			
 					DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+			        return;				    
 				}
 			}
 			else
@@ -305,9 +318,13 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 				MouseDistSqrd = FVector2D::DistSquared(RelativeMousePos, BillboardScreenPos2D);
 				
 				DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+			    return;
 			}
 		}
 	}
+
+    // Always make sure we don't get left with a rogue popup
+    HoverInfo.Reset();
 }
 
 void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos)
@@ -384,7 +401,7 @@ void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCa
                             {
                                 if (WeakScriptComponent.IsValid())
                                 {
-                                    UBangoScriptBlueprint* Blueprint = WeakScriptComponent->GetScriptBlueprint();
+                                    UBangoScriptBlueprint* Blueprint = WeakScriptComponent->GetScriptBlueprint(true);
                                     if (Blueprint)
                                     {
     				                    GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Blueprint);

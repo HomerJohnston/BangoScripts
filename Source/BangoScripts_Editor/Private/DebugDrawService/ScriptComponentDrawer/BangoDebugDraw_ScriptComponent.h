@@ -18,8 +18,10 @@ struct FBangoDebugDraw_ScriptComponentHover
 	TWeakObjectPtr<const UBangoScriptComponent> FocusedComponent = nullptr;
 	float ScreenDistance;	
 	float StartFocusTime;
-
-	//FVector CameraPos;
+    
+    bool bSlateThrottle = false;
+	
+    //FVector CameraPos;
 	//FVector CameraDir;
 	
 	TSharedPtr<IMenu> ActiveMenu;

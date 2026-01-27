@@ -288,7 +288,7 @@ UBangoScriptBlueprint* UBangoScriptComponent::GetScriptBlueprint(bool bForceLoad
 	
 	if (ScriptClass.IsPending() && bForceLoad)
 	{
-		TSubclassOf<UBangoScript> LoadedScriptClass = ScriptClass.Get();
+		TSubclassOf<UBangoScript> LoadedScriptClass = ScriptClass.LoadSynchronous();
 		return Cast<UBangoScriptBlueprint>(UBlueprint::GetBlueprintFromClass(LoadedScriptClass));
 	}
 
