@@ -9,11 +9,13 @@
 #include "BangoScripts/EditorTooling/BangoDebugUtility.h"
 #include "BangoScripts/EditorTooling/BangoDevSettings.h"
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
+#include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Private/BangoEditorStyle.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
 #include "Debug/DebugDrawService.h"
 #include "HAL/PlatformApplicationMisc.h"
+#include "Internationalization/Regex.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/DebuggerCommands.h"
 #include "Utilities/BangoEditorUtility.h"
@@ -608,6 +610,46 @@ void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, con
 					
 					if (FPackageName::ParseExportTextPath(ExportPath, &ObjectClassName, &TargetActor))
 					{
+						// TODO: see if the engine has an existing function for this
+						auto UnfixPIE = [] (const FString& PIEPath) -> FString
+						{
+							if (!GEditor->IsPlaySessionInProgress())
+							{
+								// Do nothing if we're not in PIE
+								return PIEPath;
+							}
+						
+							FString CorrectPath = PIEPath;
+							
+							FRegexPattern UEDPIEPattern(FString("^/Memory/UEDPIE_(\\d+)_"));
+							FRegexMatcher UEDPIEMatcher(UEDPIEPattern, PIEPath);
+						
+							FRegexPattern GuidPattern(FString("_[a-zA-Z0-9]*\\."));
+							FRegexMatcher GuidMatcher(GuidPattern, PIEPath);
+						
+							if (UEDPIEMatcher.FindNext() && GuidMatcher.FindNext())
+							{
+								int32 PIEBegin = UEDPIEMatcher.GetMatchBeginning();
+								check(PIEBegin == 0);
+							
+								int32 PIEEnd = UEDPIEMatcher.GetMatchEnding();
+								int32 PIERemoved = PIEEnd - PIEBegin;
+								
+								int32 GuidBegin =  GuidMatcher.GetMatchBeginning() - PIERemoved;
+								int32 GuidEnd = GuidMatcher.GetMatchEnding() - PIERemoved;
+								
+								CorrectPath = CorrectPath.RightChop(PIEEnd);
+								CorrectPath = CorrectPath.Left(GuidBegin) + TEXT(".") + CorrectPath.RightChop(GuidEnd);
+								CorrectPath = TEXT("/Game/") + CorrectPath;
+								
+								return CorrectPath;
+							}
+
+							return PIEPath;	
+						};
+					
+						TargetActor = UnfixPIE(TargetActor);
+						
 						FString CastTo;
 						if (ObjectClassName.EndsWith(TEXT("_C")))
 						{
@@ -619,6 +661,8 @@ void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, con
 						}
 						
 						CastTo = FString::Format(TEXT("{0}'{1}'"), { CastTo, ObjectClassName } );
+						
+						UE_LOG(LogBangoEditor, Display, TEXT("CastTo: %s    ObjectClassName: %s"), *CastTo, *ObjectClassName);
 						
 						CopiedActors.Add( {CastTo, TargetActor} );
 					}

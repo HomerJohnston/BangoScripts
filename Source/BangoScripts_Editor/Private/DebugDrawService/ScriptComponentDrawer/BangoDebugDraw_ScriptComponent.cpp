@@ -12,11 +12,14 @@
 #include "BlueprintEditor/BangoScriptBlueprintEditor.h"
 #include "Modules/ModuleManager.h"
 #include "Components/BillboardComponent.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
+
+FBangoDebugDraw_ScriptComponentHover UBangoDebugDraw_ScriptComponent::HoverInfo;
 
 struct FBangoActorNodeDraw
 {
@@ -30,6 +33,52 @@ struct FBangoActorNodeDraw
 		return GetTypeHash(Struct.Actor);
 	}
 };
+
+void FBangoDebugDraw_ScriptComponentHover::Reset()
+{
+	FocusedComponent.Reset();
+	ScreenDistance = -1.0f;
+	StartFocusTime = -1.0f;
+		
+	FSlateApplication::Get().DismissMenu(ActiveMenu);
+	ActiveMenu = nullptr;
+}
+
+bool FBangoDebugDraw_ScriptComponentHover::Try(const UBangoScriptComponent* Contender, float MouseDistanceToBillboard)
+{
+	// Always succeed if we're the only contender
+	if (!FocusedComponent.IsValid())
+	{
+		SwitchFocus(Contender);
+		ScreenDistance = MouseDistanceToBillboard;
+		return true;
+	}
+
+	// If this is the current contender, just update our mouse to billboard distance 
+	if (FocusedComponent == Contender)
+	{
+		ScreenDistance = MouseDistanceToBillboard;
+		return false;
+	}
+		
+	// If this is a new contender with a better distance, select it
+	if (MouseDistanceToBillboard < ScreenDistance)
+	{
+		if (FocusedComponent != Contender)
+		{
+			SwitchFocus(Contender);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void FBangoDebugDraw_ScriptComponentHover::SwitchFocus(const UBangoScriptComponent* NewFocus)
+{
+	FocusedComponent = NewFocus;
+	StartFocusTime = NewFocus->GetWorld()->GetRealTimeSeconds();
+}
 
 UBangoDebugDraw_ScriptComponent::UBangoDebugDraw_ScriptComponent()
 {
@@ -179,7 +228,7 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas&
 	}
 }
 
-void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)
+void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)
 {
 	if (!ScriptComponent)
 	{
@@ -214,10 +263,31 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 	
 	BillboardScreenPos.Z = 0.0f;
 	
-	DebugDrawPIEImpl(Canvas, ScriptComponent, Alpha, BillboardScreenPos);
+	// ------------------------------------------
+	// Check if mouse is over this component
+	FIntPoint MousePoint;
+	bool bMouseOver = false;
+	float MouseDistSqrd = -1;
+	if (Canvas.GetMousePosInLevelViewport(MousePoint))
+	{
+		FVector MousePos(MousePoint.X, MousePoint.Y, 0.0f);
+		MouseDistSqrd = FVector::DistSquared(MousePos, BillboardScreenPos);
+	}
+	
+	DebugDrawPIEImpl(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+	
+	FWorldContext* Context = GEngine->GetWorldContextFromWorld(ScriptComponent->GetWorld());
+
+	// NOTE: bIsSimulatingInEditor is SUPPOSED to be deprecated since 4.25 but the "Eject" button still uses it.
+	//if (GEditor->IsSimulateInEditorInProgress() || GEditor->bIsSimulatingInEditor)
+
+	if (Context && Context->GameViewport && Context->GameViewport->IsSimulateInEditorViewport())
+	{
+		DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+	}
 }
 
-void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent, float Alpha, const FVector& BillboardScreenPos)
+void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos)
 {
 	FLinearColor TagColor = Bango::Colors::White;
 	
@@ -226,10 +296,9 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 	int32 UL = 64;
 	int32 VL = 64;
 		
-	if (!ScriptComponent->GetScriptContainer().GetScriptClass().IsNull())
+	if (ScriptComponent->GetScriptContainer().GetScriptClass().IsNull())
 	{
-		U = 64;
-		V = 0;
+		return;
 	}
 	
 	const FBangoScriptHandle& RunningHandle = ScriptComponent->GetRunningHandle();
@@ -245,89 +314,78 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 		V = 64;
 	}
 
-	/*
-	FText LabelText = FText::FromString(ScriptComponent->GetScriptContainer().GetDescription());
-	
-	if (LabelText.IsEmpty())
-	{
-		LabelText = FText::FromString(ScriptComponent->GetName());
-	}
-	*/
-	
-	FVector2D TextSize = FVector2D::ZeroVector;
-	UFont* Font = GEngine->GetLargeFont();
-	
 	TagColor.A *= Alpha;
 	
 	float IconRawSize = 64.0f;
 	float IconScale = 0.5f;
-	
 	float IconSize = IconRawSize * IconScale;
-	float Padding = 4.0f;
-	float Border = 2.0f;
-	float IconPadding = -4.0f;
-	
-	/*
-	if (!LabelText.IsEmpty())
-	{
-		const TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
-		TextSize = FontMeasureService->Measure(LabelText.ToString(), Font->GetLegacySlateFontInfo());
-	}
-	*/
-	
-	float TotalWidth = IconSize;
-	float TotalHeight = FMath::Max(IconSize, IconSize);
-	
-	if (TextSize.X > KINDA_SMALL_NUMBER)
-	{
-		TotalWidth += IconPadding + TextSize.X;
-	}
-	
-	/*
-	{
-		// Background
-		float X = BillboardScreenPos.X - 0.5f * TotalWidth - Padding;
-		float Y = BillboardScreenPos.Y - 0.5f * TotalHeight - Padding;
-		float XL = TotalWidth + 2.0f * Padding;
-		float YL = TotalHeight + 2.0f * Padding;
-		
-		FVector4f UV(0.0f, 0.0f, 1.0f, 1.0f);
-	
-		UTexture* BackgroundTex = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture"));
-		
-		// Larger whitish rectangle
-		Canvas->SetDrawColor(FColor(150, 150, 150, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X - Border, Y - Border, XL + 2.0 * Border, YL + 2.0 * Border, UV.X, UV.Y, UV.Z, UV.Z);
-		
-		// Darker background
-		Canvas->SetDrawColor(FColor(20, 20, 20, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X, Y, XL, YL, UV.X, UV.Y, UV.Z, UV.Z);
-	}
-	*/
 	
 	{
 		// Script Icon
-		float X = BillboardScreenPos.X - 0.5f * TotalWidth;
+		float X = BillboardScreenPos.X - 0.5f * IconSize;
 		float Y = BillboardScreenPos.Y - 0.5f * IconSize;
 		
-		//FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptDebugDrawIcon(), U, V, UL, VL);
 		FCanvasIcon Icon = UCanvas::MakeIcon(Bango::Debug::GetScriptPIESprite(), U, V, UL, VL);
 		Canvas->SetDrawColor(TagColor.ToFColor(false));
 		Canvas->DrawIcon(Icon, X, Y, IconScale);
 	}
+}
+
+void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos)
+{
+	static TSharedPtr<SWidget> PopupWidget = nullptr;
+	const float MouseThreshold = 2500.0f;
 	
-	/*
-	if (!LabelText.IsEmpty())
+	if (MouseDistSqrd < MouseThreshold)
 	{
-		// Text
-		float X = BillboardScreenPos.X - 0.5f * TotalWidth + 0.5f * IconSize + 0.5f * IconPadding;
-		float Y = BillboardScreenPos.Y;
-		
-		FCanvasTextItem Text(FVector2D(X + 0.5f * IconSize + IconPadding, Y), LabelText, Font, Alpha * Bango::Colors::White);
-		Text.bCentreY = true;
-		Canvas->DrawItem(Text);
+		// We are hovering over this billboard! If it was not focused, *try* to focus on it. Focus will fail if it is already focused by something closer to the mouse.
+		if (HoverInfo.Try(ScriptComponent, MouseDistSqrd))
+		{
+			FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+			TSharedPtr<ILevelEditor> LevelEditor = LevelEditorModule.GetFirstLevelEditor();
+			if (LevelEditor.IsValid())
+			{
+				TSharedPtr<SLevelViewport> LevelViewport = LevelEditor->GetActiveViewportInterface();
+					
+				if (LevelViewport)
+				{
+					TWeakObjectPtr<UBangoScriptComponent> WeakScriptComponent = ScriptComponent;
+					
+					TSharedRef<SWidget> HoverWidget = SNew(SButton)
+						.Text(INVTEXT("Run"))
+						.OnClicked_Lambda([WeakScriptComponent]()
+						{
+							if (WeakScriptComponent.IsValid())
+							{
+								WeakScriptComponent->Run();
+							}
+							
+							return FReply::Handled();
+						});
+					
+					FVector2f ViewportPosition = LevelViewport->GetCachedGeometry().GetAbsolutePosition();
+					FVector2f BillboardAbsPos = ViewportPosition + FVector2f(BillboardScreenPos.X, BillboardScreenPos.Y);
+					
+					HoverInfo.ActiveMenu = FSlateApplication::Get().PushMenu(
+						LevelViewport.ToSharedRef(),
+						FWidgetPath(),
+						HoverWidget,
+						BillboardAbsPos,
+						FPopupTransitionEffect(FPopupTransitionEffect::TypeInPopup), 
+						false);
+				}
+			}
+		}
 	}
-	*/
+	else
+	{
+		// We are NOT hovering over this billboard. If it was focused, unfocus it.
+		if (HoverInfo.FocusedComponent == ScriptComponent)
+		{
+			HoverInfo.Reset();
+			return;
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

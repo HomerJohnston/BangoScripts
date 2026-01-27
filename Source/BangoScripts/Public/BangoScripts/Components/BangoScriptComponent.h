@@ -109,7 +109,8 @@ public:
 	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	
-	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawPIE;
+	// This one is non-const because during PIE/Simulate we have the option of dynamically running the script. UBangoScriptComponent::Run() is mutable.
+	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> OnDebugDrawPIE;
 	
 	void PreEditUndo() override;
 
