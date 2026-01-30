@@ -6,6 +6,8 @@
 
 class AActor;
 class UCanvas;
+class FCanvas;
+class FViewport;
 class USceneComponent;
 
 struct BANGOSCRIPTS_EDITORTOOLING_API FBangoDebugDrawCanvas
@@ -16,7 +18,7 @@ struct BANGOSCRIPTS_EDITORTOOLING_API FBangoDebugDrawCanvas
 		uint32 LineIndex = 0;
 	};
 	
-	friend class UBangoDebugDrawService;
+	friend class UBangoScriptsDebugDrawService;
 	
 	// CONSTRUCTOR
 private:
@@ -33,7 +35,8 @@ public:
 private:
 	// The canvas we're drawing on, access via -> overload
 	UCanvas* Canvas = nullptr;
-	
+	FViewport* Viewport = nullptr;
+	FCanvas* RawCanvas = nullptr;
 	// 
 	TMap<AActor*, FCanvasDrawLocation> DrawLocations;
 	

@@ -87,7 +87,6 @@ void FBangoDebugDrawCanvas::GetCameraPos(FVector& CameraPos, FVector& CameraDir)
 bool FBangoDebugDrawCanvas::GetScreenLocation(const FVector& WorldPos, FVector& OutScreenPos)
 {
 	OutScreenPos = Canvas->Project(WorldPos, false);
-	
 	return OutScreenPos.Z > 0;
 }
 

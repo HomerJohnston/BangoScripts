@@ -5,6 +5,7 @@
 #include "UnrealEdGlobals.h"
 #include "BangoScripts/Subsystem/BangoActorIDSubsystem.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
+#include "BangoScripts/EditorTooling/BangoHelpers.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder.h"
 #include "Editor/UnrealEdEngine.h"
 #include "WorldPartition/ActorDescContainerInstance.h"
@@ -304,7 +305,12 @@ void UK2Node_BangoFindActor::ExpandNode_ManualName(class FKismetCompilerContext&
 
 void UK2Node_BangoFindActor::SetActor(AActor* Actor)
 {
-	TargetActor = Actor;
+	TSoftObjectPtr<AActor> ActorPath = Actor;
+	
+	ActorPath = Bango::Editor::UnfixPIEActorPath(ActorPath.ToString());
+	
+	TargetActor = ActorPath;
+	
 	CastTo = Actor->GetClass();
 
 	// Manual name is unused with a target actor

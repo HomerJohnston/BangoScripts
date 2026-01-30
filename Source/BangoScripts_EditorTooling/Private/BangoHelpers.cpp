@@ -3,8 +3,8 @@
 #include "Editor.h"
 #include "Components/ActorComponent.h"
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
+#include "Internationalization/Regex.h"
 
-#if WITH_EDITOR
 bool Bango::Editor::IsComponentInEditedLevel(UObject* Object, EBangoAllowInvalid AllowInvalid)
 {
 	if (!GEditor)
@@ -105,4 +105,43 @@ FName Bango::Editor::GetBangoName(AActor* Actor)
 	return IDComponent ? IDComponent->GetBangoName() : NAME_None;
 }
 */
-#endif
+
+FString Bango::Editor::UnfixPIEActorPath(const FString& PIEPath)
+{
+	if (!GEditor->IsPlaySessionInProgress())
+	{
+		// Do nothing if we're not in PIE
+		return PIEPath;
+	}
+					
+	FString CorrectPath = PIEPath;
+						
+	FRegexPattern UEDPIEPattern(FString("^/Memory/UEDPIE_(\\d+)_"));
+	FRegexMatcher UEDPIEMatcher(UEDPIEPattern, PIEPath);
+					
+	FRegexPattern GuidPattern(FString("_[a-zA-Z0-9]*\\."));
+	FRegexMatcher GuidMatcher(GuidPattern, PIEPath);
+					
+	if (UEDPIEMatcher.FindNext() && GuidMatcher.FindNext())
+	{
+		int32 PIEBegin = UEDPIEMatcher.GetMatchBeginning();
+		check(PIEBegin == 0);
+						
+		int32 PIEEnd = UEDPIEMatcher.GetMatchEnding();
+		int32 PIERemoved = PIEEnd - PIEBegin;
+							
+		int32 GuidBegin =  GuidMatcher.GetMatchBeginning() - PIERemoved;
+		int32 GuidEnd = GuidMatcher.GetMatchEnding() - PIERemoved;
+							
+		CorrectPath = CorrectPath.RightChop(PIEEnd);
+		CorrectPath = CorrectPath.Left(GuidBegin) + TEXT(".") + CorrectPath.RightChop(GuidEnd);
+		CorrectPath = TEXT("/Game/") + CorrectPath;
+							
+		return CorrectPath;
+	}
+
+	return PIEPath;	
+}
+
+
+

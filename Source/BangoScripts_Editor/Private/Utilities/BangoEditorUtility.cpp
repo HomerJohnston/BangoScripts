@@ -1,9 +1,7 @@
 ﻿#include "BangoEditorUtility.h"
 
 #include "ExternalPackageHelper.h"
-#include "GlobalRenderResources.h"
 #include "ObjectTools.h"
-#include "PropertyHandle.h"
 #include "SceneView.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
 #include "BangoScripts/Core/BangoScript.h"
@@ -591,5 +589,3 @@ bool Bango::Editor::GetScreenPos(const FSceneView& View, const FVector& WorldPos
 
 	return View.ScreenToPixel(ScreenPoint, ScreenPos);
 }
-
-

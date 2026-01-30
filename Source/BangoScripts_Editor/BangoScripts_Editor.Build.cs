@@ -50,7 +50,8 @@ public class BangoScripts_Editor : ModuleRules
 				"GameProjectGeneration",
 				"AssetRegistry",
 				"RenderCore", 
-				"ModelingComponents"
+				"ModelingComponents",
+				"LevelEditor"
             }
         );
         

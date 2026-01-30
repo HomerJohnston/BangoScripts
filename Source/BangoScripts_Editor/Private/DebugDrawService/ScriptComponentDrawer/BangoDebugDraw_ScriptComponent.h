@@ -1,8 +1,10 @@
 ﻿#pragma once
+
+#if 0
 #include "Components/BillboardComponent.h"
 #include "Engine/World.h"
 
-#include "BangoDebugDraw_ScriptComponent.generated.h"
+// #include "BangoDebugDraw_ScriptComponent.generated.h"
 
 class AActor;
 class APlayerController;
@@ -34,7 +36,8 @@ struct FBangoDebugDraw_ScriptComponentHover
 	void SwitchFocus(const UBangoScriptComponent* NewFocus);
 };
 
-UCLASS(Abstract, NotBlueprintable)
+// TODO DEPRECATED, DELETE ME
+// UCLASS(Abstract, NotBlueprintable)
 class UBangoDebugDraw_ScriptComponent : public UObject
 {
 	GENERATED_BODY()
@@ -43,16 +46,15 @@ public:
 	UBangoDebugDraw_ScriptComponent();
 
 protected:
-	static void DebugDrawEditor(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent);
-	
-	static void DebugDrawEditorImpl(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent, float Alpha, const FVector& BillboardScreenPos);
-	
 	static void DebugDrawPIE(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent);
 	
 	static void DebugDrawPIEImpl(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos);
 	
-	static void DrawRunScriptInPIEWidget(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos);
+	static void DrawViewportHoverControls(UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos, bool bPIE);
 	
 private:
 	static FBangoDebugDraw_ScriptComponentHover HoverInfo;
+	
+	static FText GetLabelText(const UBangoScriptComponent& ScriptComponent);
 };
+#endif

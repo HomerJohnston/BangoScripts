@@ -14,6 +14,12 @@ class UBangoScript;
 class UBangoScriptComponent;
 struct FBangoDebugDrawCanvas;
 
+enum class EBangoScriptComponentRegisterStatus : uint8
+{
+	Registered,
+	Unregistered
+};
+
 #if WITH_EDITOR
 struct FBangoEditorDelegates
 {
@@ -46,5 +52,8 @@ struct FBangoEditorDelegates
 	
 	// 
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjectPtr<UTexture2D>& OverlayTexture)> OnCustomBillboardRequested;
+	
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent, EBangoScriptComponentRegisterStatus RegistrationStatus)> ScriptComponentRegistered;
+	
 };
 #endif

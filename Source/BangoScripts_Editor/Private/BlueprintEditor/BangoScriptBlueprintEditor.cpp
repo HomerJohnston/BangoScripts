@@ -129,8 +129,6 @@ void FBangoScriptBlueprintEditor::Tick(float DeltaTime)
 
 void FBangoScriptBlueprintEditor::OnDropActors(const TArray<TWeakObjectPtr<AActor>>& Actors, UEdGraph* Graph, const UE::Math::TVector2<float>& DropLocation) const
 {
-	UE_LOG(LogBango, Display, TEXT("Test 2"));
-	
 	FDeprecateSlateVector2D NodeLocation = DropLocation;
 	
 	for (int32 i = 0; i < Actors.Num(); i++)
@@ -610,45 +608,7 @@ void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, con
 					
 					if (FPackageName::ParseExportTextPath(ExportPath, &ObjectClassName, &TargetActor))
 					{
-						// TODO: see if the engine has an existing function for this
-						auto UnfixPIE = [] (const FString& PIEPath) -> FString
-						{
-							if (!GEditor->IsPlaySessionInProgress())
-							{
-								// Do nothing if we're not in PIE
-								return PIEPath;
-							}
-						
-							FString CorrectPath = PIEPath;
-							
-							FRegexPattern UEDPIEPattern(FString("^/Memory/UEDPIE_(\\d+)_"));
-							FRegexMatcher UEDPIEMatcher(UEDPIEPattern, PIEPath);
-						
-							FRegexPattern GuidPattern(FString("_[a-zA-Z0-9]*\\."));
-							FRegexMatcher GuidMatcher(GuidPattern, PIEPath);
-						
-							if (UEDPIEMatcher.FindNext() && GuidMatcher.FindNext())
-							{
-								int32 PIEBegin = UEDPIEMatcher.GetMatchBeginning();
-								check(PIEBegin == 0);
-							
-								int32 PIEEnd = UEDPIEMatcher.GetMatchEnding();
-								int32 PIERemoved = PIEEnd - PIEBegin;
-								
-								int32 GuidBegin =  GuidMatcher.GetMatchBeginning() - PIERemoved;
-								int32 GuidEnd = GuidMatcher.GetMatchEnding() - PIERemoved;
-								
-								CorrectPath = CorrectPath.RightChop(PIEEnd);
-								CorrectPath = CorrectPath.Left(GuidBegin) + TEXT(".") + CorrectPath.RightChop(GuidEnd);
-								CorrectPath = TEXT("/Game/") + CorrectPath;
-								
-								return CorrectPath;
-							}
-
-							return PIEPath;	
-						};
-					
-						TargetActor = UnfixPIE(TargetActor);
+						TargetActor = Bango::Editor::UnfixPIEActorPath(TargetActor);
 						
 						FString CastTo;
 						if (ObjectClassName.EndsWith(TEXT("_C")))

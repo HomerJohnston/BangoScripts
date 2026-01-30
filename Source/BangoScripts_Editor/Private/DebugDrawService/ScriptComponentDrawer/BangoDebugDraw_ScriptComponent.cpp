@@ -1,5 +1,7 @@
 ﻿#include "BangoDebugDraw_ScriptComponent.h"
 
+#if 0
+
 #include "EditorViewportClient.h"
 #include "LevelEditor.h"
 #include "SceneView.h"
@@ -16,11 +18,29 @@
 #include "Engine/Texture2D.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Kismet2/DebuggerCommands.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
 FBangoDebugDraw_ScriptComponentHover UBangoDebugDraw_ScriptComponent::HoverInfo;
+
+FText UBangoDebugDraw_ScriptComponent::GetLabelText(const UBangoScriptComponent& ScriptComponent)
+{
+	FText LabelText = FText::FromString(ScriptComponent.GetScriptContainer().GetDescription());
+	
+	if (LabelText.IsEmpty())
+	{
+		if (!ScriptComponent.GetScriptContainer().GetScriptClass().IsNull())
+		{
+			LabelText = FText::FromString(ScriptComponent.GetName());
+		}
+		else
+		{
+			LabelText = LOCTEXT("DebugDrawPopup_NoScript", "No script"); 
+		}
+	}
+	
+	return LabelText;
+}
 
 struct FBangoActorNodeDraw
 {
@@ -100,12 +120,12 @@ UBangoDebugDraw_ScriptComponent::UBangoDebugDraw_ScriptComponent()
 {
 	if (IsTemplate())
 	{
-		UBangoScriptComponent::OnDebugDrawEditor.AddStatic(&ThisClass::DebugDrawEditor);
 		UBangoScriptComponent::OnDebugDrawPIE.AddStatic(&ThisClass::DebugDrawPIE);
 	}
 }
 
-void UBangoDebugDraw_ScriptComponent::DebugDrawEditor(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)
+/*
+void UBangoDebugDraw_ScriptComponent::DebugDrawEditor(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)
 {
 	if (!ScriptComponent)
 	{
@@ -137,112 +157,40 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawEditor(FBangoDebugDrawCanvas& Can
 		return;
 	}
 	
-	FVector MousePos(MousePoint.X, MousePoint.Y, 0.0f);
 	BillboardScreenPos.Z = 0.0f;
+	FVector2D BillboardScreenPos2D(BillboardScreenPos);
 	
-	if (FVector::DistSquared(MousePos, BillboardScreenPos) > 2500.0f)
-	{
-		return;
-	}
-	
-	DebugDrawEditorImpl(Canvas, ScriptComponent, Alpha, BillboardScreenPos);
-}
+	// ------------------------------------------
+	// Check if mouse is over this component
 
-void UBangoDebugDraw_ScriptComponent::DebugDrawEditorImpl(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent, float Alpha, const FVector& BillboardScreenPos)
-{
-	FLinearColor TagColor = Bango::Colors::White;
-
-	const FBangoScriptHandle& RunningHandle = ScriptComponent->GetRunningHandle();
+	float MouseDistSqrd;
 	
-	if (ScriptComponent->GetWorld()->IsGameWorld())
+	FViewport* Viewport = GEditor->GetActiveViewport();
+	
+	if (Viewport)
 	{
-		if (RunningHandle.IsNull())
+		// When the viewport is focused, we only draw extra debug widgets in Simulate mode
+		if (Canvas.GetMousePosInLevelViewport(MousePoint))
 		{
-			TagColor = FLinearColor::Black;
+			FVector2D MousePos(MousePoint.X, MousePoint.Y);
+			MouseDistSqrd = FVector2D::DistSquared(MousePos, BillboardScreenPos2D);
+	
+			DrawViewportHoverControls(ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos, false);
+			return;				    
 		}
-	}
-	else
-	{
-		if (ScriptComponent->GetRunOnBeginPlay())
-		{
-			TagColor = Bango::Colors::Green;
-		}
-	}
-	
-	FText LabelText = FText::FromString(ScriptComponent->GetScriptContainer().GetDescription());
-	
-	if (LabelText.IsEmpty())
-	{
-		if (!ScriptComponent->GetScriptContainer().GetScriptClass().IsNull())
-		{
-			LabelText = FText::FromString(ScriptComponent->GetName());
-		}
-		else
-		{
-			LabelText = LOCTEXT("DebugDrawPopup_NoScript", "No script"); 
-		}
-	}
-	
-	FVector2D TextSize = FVector2D::ZeroVector;
-	UFont* Font = GEngine->GetLargeFont();
-	
-	TagColor.A *= Alpha;
-	
-	float Padding = 4.0f;
-	float Border = 2.0f;
-	// float IconPadding = 4.0f;
-	
-	if (!LabelText.IsEmpty())
-	{
-		const TSharedRef<FSlateFontMeasure> FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
-		TextSize = FontMeasureService->Measure(LabelText.ToString(), Font->GetLegacySlateFontInfo());
 	}
 
-	float TotalWidth = 0;
-	float TotalHeight = 16;
+	// TODO if a hover is active, and somehow the user turns off the debug showflag, this won't execute anymore we we could be left with a rogue popup?
+	// ^^^ This should be impossible but... who knows. If it can break, it will.
 	
-	if (TextSize.X > KINDA_SMALL_NUMBER)
+	// Always make sure we don't get left with a rogue popup
+	if (HoverInfo.FocusedComponent == ScriptComponent)
 	{
-		TotalWidth += TextSize.X;
-	}
-	
-    float WidgetCenterX = BillboardScreenPos.X;
-    float WidgetCenterY = BillboardScreenPos.Y;// + 2.0f * TotalHeight;
-    
-    float RightOffset = 25.0f;
-    
-	{
-		// Background
-		float X = WidgetCenterX + RightOffset; // - 0.5f * TotalWidth - Padding;
-		float Y = WidgetCenterY - 0.5f * TotalHeight - Padding;
-		float XL = TotalWidth + 2.0f * Padding;
-		float YL = TotalHeight + 2.0f * Padding;
-		
-		FVector4f UV(0.0f, 0.0f, 1.0f, 1.0f);
-	
-		UTexture* BackgroundTex = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture"));
-		
-		// Larger whitish rectangle
-		Canvas->SetDrawColor(FColor(150, 150, 150, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X - Border, Y - Border, XL + 2.0 * Border, YL + 2.0 * Border, UV.X, UV.Y, UV.Z, UV.Z);
-		
-		// Darker background
-		Canvas->SetDrawColor(FColor(20, 20, 20, 150 * Alpha));
-		Canvas->DrawTile(BackgroundTex, X, Y, XL, YL, UV.X, UV.Y, UV.Z, UV.Z);
-	}
-	
-	if (!LabelText.IsEmpty())
-	{
-		// Text
-		float X = WidgetCenterX + RightOffset + Padding;// + 0.5f * TotalWidth;
-		float Y = WidgetCenterY;
-		
-		FCanvasTextItem Text(FVector2D(X, Y), LabelText, Font, Alpha * Bango::Colors::White);
-        //Text.bCentreX = true;
-	    Text.bCentreY = true;
-		Canvas->DrawItem(Text);
+		HoverInfo.Reset();
 	}
 }
+*/
+
 
 void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)
 {
@@ -284,7 +232,6 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 	// Check if mouse is over this component
 
 	FIntPoint MousePoint;
-	bool bMouseOver = false;
 	float MouseDistSqrd = -1;
 	
 	DebugDrawPIEImpl(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
@@ -305,7 +252,7 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 					FVector2D MousePos(MousePoint.X, MousePoint.Y);
 					MouseDistSqrd = FVector2D::DistSquared(MousePos, BillboardScreenPos2D);
 			
-					DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+					DrawViewportHoverControls(ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos, true);
 			        return;				    
 				}
 			}
@@ -317,14 +264,20 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIE(FBangoDebugDrawCanvas& Canvas
 				
 				MouseDistSqrd = FVector2D::DistSquared(RelativeMousePos, BillboardScreenPos2D);
 				
-				DrawRunScriptInPIEWidget(Canvas, ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos);
+				DrawViewportHoverControls(ScriptComponent, Alpha, MouseDistSqrd, BillboardScreenPos, true);
 			    return;
 			}
 		}
 	}
 
+	// TODO if a hover is active, and somehow the user turns off the debug showflag, this won't execute anymore we we could be left with a rogue popup?
+	// ^^^ This should be impossible but... who knows. If it can break, it will.
+	
     // Always make sure we don't get left with a rogue popup
-    HoverInfo.Reset();
+    if (HoverInfo.FocusedComponent == ScriptComponent)
+    {
+	    HoverInfo.Reset();
+    }
 }
 
 void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos)
@@ -371,8 +324,13 @@ void UBangoDebugDraw_ScriptComponent::DebugDrawPIEImpl(FBangoDebugDrawCanvas& Ca
 	}
 }
 
-void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos)
+void UBangoDebugDraw_ScriptComponent::DrawViewportHoverControls(UBangoScriptComponent* ScriptComponent, float Alpha, float MouseDistSqrd, const FVector& BillboardScreenPos, bool bPIE)
 {
+	if (!IsValid(ScriptComponent))
+	{
+		return;
+	}
+	
 	const float MouseThreshold = 2500.0f;
 	
 	if (MouseDistSqrd < MouseThreshold)
@@ -390,52 +348,67 @@ void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCa
 				{
 					TWeakObjectPtr<UBangoScriptComponent> WeakScriptComponent = ScriptComponent;
 					
-					TSharedRef<SWidget> HoverWidget = SNew(SVerticalBox)
-					    + SVerticalBox::Slot()
-					    .AutoHeight()
-					    .Padding(2, 2, 2, 2)
-					    [
-                            SNew(SButton)
-                            .Text(INVTEXT("Edit"))
-                            .OnClicked_Lambda([WeakScriptComponent]()
-                            {
-                                if (WeakScriptComponent.IsValid())
-                                {
-                                    UBangoScriptBlueprint* Blueprint = WeakScriptComponent->GetScriptBlueprint(true);
-                                    if (Blueprint)
-                                    {
-    				                    GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Blueprint);
-                                    }
-                                }
-                                return FReply::Handled();
-                            })
-					    ]
-					    + SVerticalBox::Slot()
-					    .Padding(2, 2, 2, 2)
-					    .AutoHeight()
-					    [
-					        SNew(SButton)
-                            .Text(INVTEXT("Run"))
-                            .OnClicked_Lambda([WeakScriptComponent]()
-                            {
-                                if (WeakScriptComponent.IsValid())
-                                {
-                                    WeakScriptComponent->Run();
-                                }
-                                return FReply::Handled();
-                            })
-					    ];
-					    
+					FText LabelText = GetLabelText(*ScriptComponent);
 					
+					TSharedRef<SVerticalBox> HoverWidgetVerticalBox = SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(2, 2, 2, 2)
+					[
+						SNew(STextBlock)
+						.Text(LabelText)
+						.TextStyle(FAppStyle::Get(), "SmallText")
+					]
+				    + SVerticalBox::Slot()
+				    .AutoHeight()
+				    .Padding(2, 2, 2, 2)
+				    [
+                        SNew(SButton)
+                        .Text(INVTEXT("Edit"))
+						.TextStyle(FAppStyle::Get(), "SmallText")
+                        .OnClicked_Lambda([WeakScriptComponent]()
+                        {
+                            if (WeakScriptComponent.IsValid())
+                            {
+                                UBangoScriptBlueprint* Blueprint = WeakScriptComponent->GetScriptBlueprint(true);
+                                if (Blueprint)
+                                {
+    			                    GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Blueprint);
+                                }
+                            }
+                            return FReply::Handled();
+                        })
+				    ];
+					
+					if (bPIE)
+					{
+						HoverWidgetVerticalBox->AddSlot()
+						.Padding(2, 2, 2, 2)
+						.AutoHeight()
+						[
+							SNew(SButton)
+							.Text(INVTEXT("Run"))
+							.TextStyle(FAppStyle::Get(), "SmallText")
+							.OnClicked_Lambda([WeakScriptComponent]()
+							{
+								if (WeakScriptComponent.IsValid())
+								{
+									WeakScriptComponent->Run();
+								}
+								return FReply::Handled();
+							})
+						];
+					}
+
 					FVector2f ViewportPosition = LevelViewport->GetCachedGeometry().GetAbsolutePosition();
 					FVector2f BillboardAbsPos = ViewportPosition + FVector2f(BillboardScreenPos.X, BillboardScreenPos.Y);
 					
 					HoverInfo.ActiveMenu = FSlateApplication::Get().PushMenu(
 						LevelViewport.ToSharedRef(),
 						FWidgetPath(),
-						HoverWidget,
+						HoverWidgetVerticalBox,
 						BillboardAbsPos,
-						FPopupTransitionEffect(FPopupTransitionEffect::TypeInPopup), 
+						FPopupTransitionEffect(FPopupTransitionEffect::SubMenu), 
 						false);
 				}
 			}
@@ -453,3 +426,5 @@ void UBangoDebugDraw_ScriptComponent::DrawRunScriptInPIEWidget(FBangoDebugDrawCa
 }
 
 #undef LOCTEXT_NAMESPACE
+
+#endif

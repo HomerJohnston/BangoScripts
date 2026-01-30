@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include "BangoScripts/Debug/BangoDebugDrawServiceBase.h"
 #include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
+#include "Math/GenericOctreePublic.h"
 
 #include "BangoScriptComponent.generated.h"
 
@@ -62,6 +63,8 @@ public:
 
 	void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
+	void InvalidateLightingCacheDetailed(bool bInvalidateBuildEnqueuedLighting, bool bTranslationOnly) override;
+	
 	//void OnRename();
 #endif
 	
@@ -89,6 +92,9 @@ protected:
 
     UPROPERTY(Transient)
     TObjectPtr<UBillboardComponent> BillboardInstance;
+	
+public:
+	FOctreeElementId2 DebugElementId;
 #endif
 	
 public:
@@ -105,9 +111,7 @@ public:
 	
 	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
 	
-	void PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE);
-	
-	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
+	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	
 	// This one is non-const because during PIE/Simulate we have the option of dynamically running the script. UBangoScriptComponent::Run() is mutable.
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> OnDebugDrawPIE;
@@ -128,11 +132,16 @@ public:
 	
 	FVector GetDebugDrawOrigin() const override;
 
+	FVector GetBillboardPosition() const;
+	
 	const FVector& GetBillboardOffset() const { return BillboardSettings.BillboardOffset; }
 	
 	IBangoScriptHolderInterface& AsScriptHolder() { return *Cast<IBangoScriptHolderInterface>(this); }
 	
 	const FString& GetStartEventComment() const override { return StartNodeComment; }
+	
+	bool HasValidScript() const;
+	
 protected:
 	void UpdateBillboard() override;
 #endif

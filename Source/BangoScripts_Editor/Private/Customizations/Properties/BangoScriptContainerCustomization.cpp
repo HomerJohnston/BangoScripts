@@ -28,7 +28,7 @@
 
 class FWidgetBlueprintEditor;
 
-// ==============================================
+// ================================================================================================
 
 FBangoScriptContainerCustomization::FBangoScriptContainerCustomization()
 {
@@ -102,8 +102,6 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 		return;
 	}
 	
-	// PropertyHandle->SetExpanded(true);
-	
 	// Setup
 	ScriptContainerProperty = PropertyHandle;
 	ScriptClassProperty = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, ScriptClass));
@@ -131,30 +129,6 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 			.MetaClass(UBangoScript::StaticClass())
 			.SelectedClass(this, &FBangoScriptContainerCustomization::SelectedClass_ScriptClass)
 			.OnSetClass(this, &FBangoScriptContainerCustomization::OnSetClass_ScriptClass)
-			/*
-			SNew(SButton)
-			.Text(INVTEXT("Pick Script"))
-			.OnClicked_Lambda([]()
-			{
-				FClassViewerInitializationOptions Options;
-				//Options.ClassFilters.Add(MakeShared<FNewNodeClassFilter>(UDataAsset::StaticClass()));
-				UClass* ScriptClass = nullptr;
-				
-				SBangoScriptPickerDialog::PickClass(INVTEXT("Test"), Options, ScriptClass, UBangoScript::StaticClass());
-				
-				return FReply::Handled();
-			})
-			*/
-			/*
-			SNew(SClassPropertyEntryBox)
-			.MetaClass(UBangoScript::StaticClass())
-			.AllowNone(true)
-			//.ClassViewerFilters(BangoScriptClassViewerFilters)
-			.AllowAbstract(false)
-			.OnSetClass(this, &FBangoScriptContainerCustomization::OnSetClass_ScriptClass)
-			.SelectedClass(this, &FBangoScriptContainerCustomization::SelectedClass_ScriptClass)
-			.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_ScriptClassPicker)
-			*/
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
@@ -168,22 +142,7 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Center)
 			.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton)
-		]/*
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.Padding(0, 0, 6, 0)
-		[
-			SNew(SBox)
-			.MinDesiredWidth(80.0f)
-			[
-				SNew(SButton)
-				.Text(LOCTEXT("ScriptContainerCustomization_EditScriptButtonLabel", "Edit"))
-				.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
-				.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_EditScript)
-				.VAlign(VAlign_Center)
-				.HAlign(HAlign_Center)
-			]
-		]*/
+		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		.VAlign(VAlign_Fill)
@@ -315,15 +274,21 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 	UpdateBox();
 }
 
+// ----------------------------------------------
+
 EVisibility FBangoScriptContainerCustomization::Visibility_HasValidGraph() const
 {
 	return GetPrimaryEventGraph() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
+// ----------------------------------------------
+
 EVisibility FBangoScriptContainerCustomization::Visibility_HasNoValidGraph() const
 {
 	return GetPrimaryEventGraph() ? EVisibility::Collapsed : EVisibility::Visible;
 }
+
+// ----------------------------------------------
 
 EVisibility FBangoScriptContainerCustomization::Visibility_HasScriptInputs() const
 {
@@ -393,6 +358,8 @@ FReply FBangoScriptContainerCustomization::OnClicked_CreateScript()
 	
 	return FReply::Handled();
 }
+
+// ----------------------------------------------
 
 FText FBangoScriptContainerCustomization::Text_UnsetDeleteScript() const
 {
@@ -485,10 +452,14 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 	return FReply::Handled();
 }
 
+// ----------------------------------------------
+
 bool FBangoScriptContainerCustomization::IsEnabled_DeleteUnsetButton() const
 {
 	return !!GetScriptClass();
 }
+
+// ----------------------------------------------
 
 bool FBangoScriptContainerCustomization::IsEnabled_ScriptClassPicker() const
 {
@@ -512,16 +483,22 @@ bool FBangoScriptContainerCustomization::IsEnabled_ScriptClassPicker() const
 	return true;
 }
 
+// ----------------------------------------------
+
 bool FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton() const
 {
 	// If there is already a script assigned, we can't create a level script
 	return !GetScriptClass();
 }
 
+// ----------------------------------------------
+
 void FBangoScriptContainerCustomization::OnSetClass_ScriptClass(const UClass* Class) const
 {
 	ScriptClassProperty->SetValue(Class);
 }
+
+// ----------------------------------------------
 
 const UClass* FBangoScriptContainerCustomization::SelectedClass_ScriptClass() const
 {
@@ -600,10 +577,14 @@ FReply FBangoScriptContainerCustomization::OnClicked_EnlargeGraphView() const
 #endif
 }
 
+// ----------------------------------------------
+
 FReply FBangoScriptContainerCustomization::OnClicked_RenameScript() const
 {
 	return FReply::Handled();
 }
+
+// ----------------------------------------------
 
 FText FBangoScriptContainerCustomization::Text_RefreshScriptInputs() const
 {
@@ -619,6 +600,8 @@ FText FBangoScriptContainerCustomization::Text_RefreshScriptInputs() const
 	return LOCTEXT("ScriptContainerCustomization_RefreshScriptInputs_UpToDate", "Up-to-date");
 }
 
+// ----------------------------------------------
+
 bool FBangoScriptContainerCustomization::IsEnabled_RefreshScriptInputs() const
 {
 	UObject* Outer;
@@ -627,6 +610,8 @@ bool FBangoScriptContainerCustomization::IsEnabled_RefreshScriptInputs() const
 	
 	return ScriptContainer->AreScriptInputsOutDated();
 }
+
+// ----------------------------------------------
 
 FSlateColor FBangoScriptContainerCustomization::ButtonColorAndOpacity_RefreshScriptInputs() const
 {
@@ -642,6 +627,8 @@ FSlateColor FBangoScriptContainerCustomization::ButtonColorAndOpacity_RefreshScr
 	return FSlateColor::UseStyle();
 }
 
+// ----------------------------------------------
+
 FReply FBangoScriptContainerCustomization::OnClicked_RefreshScriptInputs() const
 {
 	UObject* Outer;
@@ -654,16 +641,22 @@ FReply FBangoScriptContainerCustomization::OnClicked_RefreshScriptInputs() const
 	return FReply::Handled();
 }
 
+// ----------------------------------------------
+
 void FBangoScriptContainerCustomization::OnTextChanged_ScriptNameEditableText(const FText& Text)
 {
 	SetProposedScriptName(Text);
 }
+
+// ----------------------------------------------
 
 void FBangoScriptContainerCustomization::SetProposedScriptName(const FText& Text)
 {
 	ScriptNameText = Text;
 	ProposedNameStatus = GetProposedNameStatus();
 }
+
+// ----------------------------------------------
 
 EBangoScriptRenameStatus FBangoScriptContainerCustomization::GetProposedNameStatus()
 {
@@ -717,10 +710,14 @@ EBangoScriptRenameStatus FBangoScriptContainerCustomization::GetProposedNameStat
 	return EBangoScriptRenameStatus::InvalidNewName;
 }
 
+// ----------------------------------------------
+
 FSlateColor FBangoScriptContainerCustomization::ForegroundColor_ScriptNameEditableText() const
 {
 	return FocusedForegroundColor_ScriptNameEditableText().GetSpecifiedColor().Desaturate(0.25f);
 }
+
+// ----------------------------------------------
 
 FSlateColor FBangoScriptContainerCustomization::FocusedForegroundColor_ScriptNameEditableText() const
 {
@@ -744,6 +741,8 @@ FSlateColor FBangoScriptContainerCustomization::FocusedForegroundColor_ScriptNam
 		}
 	}
 }
+
+// ----------------------------------------------
 
 bool FBangoScriptContainerCustomization::IsEnabled_RenameScriptButton() const
 {
@@ -839,6 +838,8 @@ TSharedRef<SWidget> FBangoScriptContainerCustomization::GetPopoutGraphEditor(FVe
 	];
 }
 
+// ----------------------------------------------
+
 void FBangoScriptContainerCustomization::OnPostScriptCreatedOrRenamed()
 {
 	CurrentGraph = GetPrimaryEventGraph();
@@ -846,12 +847,16 @@ void FBangoScriptContainerCustomization::OnPostScriptCreatedOrRenamed()
 	UpdateBox();	
 }
 
+// ----------------------------------------------
+
 void FBangoScriptContainerCustomization::OnPreScriptDeleted()
 {
 	CurrentGraph = nullptr;
 	
 	UpdateBox();
 }
+
+// ----------------------------------------------
 
 void FBangoScriptContainerCustomization::UpdateBox()
 {
@@ -951,6 +956,8 @@ AActor* FBangoScriptContainerCustomization::GetOwnerActor() const
 	return nullptr;
 }
 
+// ----------------------------------------------
+
 UObject* FBangoScriptContainerCustomization::GetOuter() const
 {
 	TArray<UObject*> OuterObjects;
@@ -1004,10 +1011,14 @@ TSubclassOf<UBangoScript> FBangoScriptContainerCustomization::GetScriptClass() c
 	return nullptr;
 }
 
+// ----------------------------------------------
+
 void FBangoScriptContainerCustomization::OnScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder)
 {
 	OnPreScriptDeleted();
 }
+
+// ----------------------------------------------
 
 void FBangoScriptContainerCustomization::OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap)
 {
@@ -1015,6 +1026,8 @@ void FBangoScriptContainerCustomization::OnMapLoad(const FString& String, FCanLo
 	Box->ClearChildren();
 	CurrentGraph = nullptr;
 }
+
+// ----------------------------------------------
 
 void FBangoScriptContainerCustomization::GetScriptContainerAndOuter(UObject*& Outer, FBangoScriptContainer*& ScriptContainer) const
 {
@@ -1038,6 +1051,8 @@ void FBangoScriptContainerCustomization::GetScriptContainerAndOuter(UObject*& Ou
 	ScriptContainer = reinterpret_cast<FBangoScriptContainer*>(ScriptContainerPtr);
 }
 
+// ----------------------------------------------
+
 IBangoScriptHolderInterface& FBangoScriptContainerCustomization::GetScriptHolder() const
 {
 	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(GetOuter());
@@ -1045,6 +1060,8 @@ IBangoScriptHolderInterface& FBangoScriptContainerCustomization::GetScriptHolder
 	
 	return *ScriptHolder;
 }
+
+// ----------------------------------------------
 
 EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const
 {
@@ -1062,8 +1079,6 @@ EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const
 	
 	return EBangoScriptType::ContentAssetScript;
 }
-
-// ----------------------------------------------
 
 // ----------------------------------------------
 

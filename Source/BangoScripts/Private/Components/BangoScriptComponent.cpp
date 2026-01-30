@@ -27,7 +27,7 @@
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
 #if WITH_EDITOR
-TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, const UBangoScriptComponent* ScriptComponent)> UBangoScriptComponent::OnDebugDrawEditor;
+TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> UBangoScriptComponent::OnDebugDrawEditor;
 TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> UBangoScriptComponent::OnDebugDrawPIE;
 #endif
 
@@ -74,13 +74,18 @@ void UBangoScriptComponent::OnRegister()
 	if (GetWorld()->IsEditorWorld())
     {
 		// Unregister the editor instance from DebugDraw prior to starting PIE
-		FEditorDelegates::PreBeginPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this); } );
+		// FEditorDelegates::PreBeginPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this); } );
 		
 		// Re-register the editor instance to DebugDraw when PIE ends
-		FEditorDelegates::EndPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate); });
+		//FEditorDelegates::EndPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate); });
 		
 		// Start registered
-	    FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate);
+	    // FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate);
+		 
+		FEditorDelegates::PreBeginPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Unregistered); } );
+		FEditorDelegates::EndPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered); });
+		
+		FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered);
     }
 	
 	if (!BillboardInstance && GetOwner() && !GetWorld()->IsGameWorld())
@@ -122,7 +127,7 @@ void UBangoScriptComponent::OnUnregister()
 {
 	Bango::Debug::PrintComponentState(this, "OnUnregister_Early");
 	
-	FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this);
+	//FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this);
 
 	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
 		
@@ -248,6 +253,11 @@ void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent&
 	
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
+
+void UBangoScriptComponent::InvalidateLightingCacheDetailed(bool bInvalidateBuildEnqueuedLighting, bool bTranslationOnly)
+{
+	Super::InvalidateLightingCacheDetailed(bInvalidateBuildEnqueuedLighting, bTranslationOnly);
+}
 #endif
 
 // ----------------------------------------------
@@ -331,25 +341,6 @@ void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 // ----------------------------------------------
 
 #if WITH_EDITOR
-void UBangoScriptComponent::PerformDebugDrawUpdate(FBangoDebugDrawCanvas& Canvas, bool bPIE)
-{
-	// We delegate these requests over to the editor module to make it easier to build in editor functionality
-	// See UBangoDebugDraw_ScriptComponent
-	
-	if (bPIE)
-	{
-		OnDebugDrawPIE.Broadcast(Canvas, this);
-	}
-	else
-	{
-		OnDebugDrawEditor.Broadcast(Canvas, this);
-	}
-}
-#endif
-
-// ----------------------------------------------
-
-#if WITH_EDITOR
 void UBangoScriptComponent::PreEditUndo()
 {
 	Super::PreEditUndo();
@@ -386,6 +377,27 @@ FVector UBangoScriptComponent::GetDebugDrawOrigin() const
 // ----------------------------------------------
 
 #if WITH_EDITOR
+FVector UBangoScriptComponent::GetBillboardPosition() const
+{
+	FVector OwnerPosition = GetOwner()->GetActorLocation();
+	FVector CorrectedBillboardOffset = GetOwner()->GetTransform().InverseTransformVector(GetBillboardOffset());
+	
+	return OwnerPosition + CorrectedBillboardOffset;
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+bool UBangoScriptComponent::HasValidScript() const
+{
+	return !ScriptContainer.GetScriptClass().IsNull();
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
 void UBangoScriptComponent::UpdateBillboard()
 {
 	if (!BillboardInstance)
@@ -404,7 +416,9 @@ void UBangoScriptComponent::UpdateBillboard()
 	
 	BillboardInstance->SetSprite(BillboardSprite);
 	BillboardInstance->SetVisibility(true);
-	BillboardInstance->SetRelativeLocation(BillboardSettings.BillboardOffset);
+	
+	FVector TransformedOffset = GetOwner()->GetTransform().InverseTransformVector(GetBillboardOffset());
+	BillboardInstance->SetRelativeLocation(TransformedOffset);
 
 	int32 BillboardSize = BillboardSprite->GetSizeX();
 	const int32 SpriteSize = BillboardSize / 2;

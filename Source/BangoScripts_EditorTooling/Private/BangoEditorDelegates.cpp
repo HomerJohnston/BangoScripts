@@ -24,3 +24,4 @@ TMulticastDelegate<void(UBangoScript* ScriptClass)> FBangoEditorDelegates::OnBan
 
 TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjectPtr<UTexture2D>& OverlayTexture)> FBangoEditorDelegates::OnCustomBillboardRequested;
 
+TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent, EBangoScriptComponentRegisterStatus RegistrationStatus)> FBangoEditorDelegates::ScriptComponentRegistered;
