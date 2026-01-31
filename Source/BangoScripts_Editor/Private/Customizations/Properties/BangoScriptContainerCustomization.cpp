@@ -22,7 +22,7 @@
 #include "Utilities/BangoEditorUtility.h"
 #include "Widgets/SBangoScriptClassViewer.h"
 #include "Widgets/SBangoScriptPropertyEditorClass.h"
-#include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/Colors/SColorBlock.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -33,30 +33,18 @@ class FWidgetBlueprintEditor;
 FBangoScriptContainerCustomization::FBangoScriptContainerCustomization()
 {
 	PostScriptCreated.AddRaw(this, &FBangoScriptContainerCustomization::OnPostScriptCreatedOrRenamed);
-	PreScriptDeleted.AddRaw(this, &FBangoScriptContainerCustomization::OnPreScriptDeleted);
+	PreScriptDeleted.AddRaw(this, &FBangoScriptContainerCustomization::OnPreScriptUnsetOrDeleted);
 	
-	UBangoLevelScriptsEditorSubsystem* Subsystem = GEditor->GetEditorSubsystem<UBangoLevelScriptsEditorSubsystem>();
-	
-	if (Subsystem)
-	{
-		Subsystem->OnScriptGenerated.AddRaw(this, &FBangoScriptContainerCustomization::OnPostScriptCreatedOrRenamed);
-	}
-	
-	//BangoScriptClassViewerFilters.Add( MakeShared<FBangoScriptsScriptContainerClassViewerFilter>() );
+	FBangoEditorDelegates::OnScriptGenerated.AddRaw(this, &FBangoScriptContainerCustomization::OnPostScriptCreatedOrRenamed);
+	FEditorDelegates::OnMapLoad.AddRaw(this, &FBangoScriptContainerCustomization::OnMapLoad);
 }
 
 // ----------------------------------------------
 
 FBangoScriptContainerCustomization::~FBangoScriptContainerCustomization()
 {
-	UBangoLevelScriptsEditorSubsystem* Subsystem = GEditor->GetEditorSubsystem<UBangoLevelScriptsEditorSubsystem>();
-	
-	if (Subsystem)
-	{
-		Subsystem->OnScriptGenerated.RemoveAll(this);
-	}
-	
-	FWorldDelegates::OnWorldBeginTearDown.RemoveAll(this);
+	FBangoEditorDelegates::OnScriptGenerated.RemoveAll(this);
+	FEditorDelegates::OnMapLoad.RemoveAll(this);
 }
 
 // ----------------------------------------------
@@ -102,69 +90,22 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 		return;
 	}
 	
-	// Setup
+	// Early Setup
 	ScriptContainerProperty = PropertyHandle;
 	ScriptClassProperty = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, ScriptClass));
-		
 	CurrentGraph = GetPrimaryEventGraph();
-		
+	
+	// Header Row Setup
 	HeaderRow.NameContent()
+	.HAlign(HAlign_Fill)
 	[
-		SNew(STextBlock)
-		.Text(LOCTEXT("ScripContainer_ScriptClassPropertyLabel", "Script"))
-		.TextStyle(FAppStyle::Get(), "SmallText")
+		SAssignNew(HeaderNameContent, SHorizontalBox)
 	];
 	
 	HeaderRow.ValueContent()
 	.HAlign(HAlign_Fill)
 	[
-		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Fill)
-		.Padding(0, 0, 8, 0)
-		[
-			SNew(SBangoScriptPropertyEditorClass)
-			.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton)
-			.MetaClass(UBangoScript::StaticClass())
-			.SelectedClass(this, &FBangoScriptContainerCustomization::SelectedClass_ScriptClass)
-			.OnSetClass(this, &FBangoScriptContainerCustomization::OnSetClass_ScriptClass)
-		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SButton)
-			.Visibility(this, &FBangoScriptContainerCustomization::Visibility_HasNoValidGraph)
-			.Text(LOCTEXT("ScriptContainerCustomization_CreateLevelScriptButtonLabel", "Create Level Script"))
-			.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
-			.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_CreateScript)
-			.VAlign(VAlign_Center)
-			.HAlign(HAlign_Center)
-			.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton)
-		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SButton)
-			.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_DeleteUnsetButton)
-			.Visibility(this, &FBangoScriptContainerCustomization::Visibility_HasValidGraph)
-			.ButtonStyle(FAppStyle::Get(), "FlatButton.Danger")
-			.NormalPaddingOverride(FMargin(8, 0, 8, 0))
-			.PressedPaddingOverride(FMargin(8, 0.5, 8, -0.5))
-			// .ButtonColorAndOpacity(FLinearColor::Gray)
-			.Text(this, &FBangoScriptContainerCustomization::Text_UnsetDeleteScript)
-			.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
-			.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript)
-			.VAlign(VAlign_Center)
-			.HAlign(HAlign_Center)
-		]
-		+ SHorizontalBox::Slot()
-		.FillWidth(1.0f)
-		[
-			SNew(SSpacer)
-		]
+		SAssignNew(HeaderValueContent, SHorizontalBox)
 	];
 	
 	HeaderRow.ResetToDefaultContent()
@@ -172,28 +113,7 @@ void FBangoScriptContainerCustomization::CustomizeHeader(TSharedRef<IPropertyHan
 		SNullWidget::NullWidget	
 	];
 	
-	UBlueprint* Blueprint = GetBlueprint();
-	
-	if (Blueprint)
-	{
-		SetProposedScriptName(FText::FromString(Blueprint->GetName()));
-	}
-	
-	// We kill the graph widgets immediately to avoid garbage collection and file access issues
-	FEditorDelegates::OnMapLoad.AddSP(this, &FBangoScriptContainerCustomization::OnMapLoad);
-	// FBangoEditorDelegates::OnScriptContainerDestroyed.AddSP(this, &FBangoScriptContainerCustomization::OnScriptContainerDestroyed);
-}
-
-// ----------------------------------------------
-
-int FBangoScriptContainerCustomization::WidgetIndex_CreateDeleteScriptButtons() const
-{
-	if (IsValid(GetScriptClass()))
-	{
-		return 1;
-	}
-	
-	return 0;
+	UpdateHeaderRowNameAndValueContent();
 }
 
 // ----------------------------------------------
@@ -205,9 +125,7 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 		return;
 	}
 	
-	auto VisibilityAttribute = TAttribute<EVisibility>::CreateSP(this, &FBangoScriptContainerCustomization::Visibility_HasValidGraph);
-	
-	Box = SNew(SVerticalBox);
+	auto SharedVisibilityAttribute = TAttribute<EVisibility>::CreateSP(this, &FBangoScriptContainerCustomization::Visibility_HasValidGraph);
 	
 	// Description field
 	TSharedPtr<IPropertyHandle> DescriptionProperty = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, Description));
@@ -215,7 +133,7 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 	
 	TSharedPtr<SWidget> DescriptionNameWidget, DescriptionValueWidget;
 	DescriptionPropertyRow.GetDefaultWidgets(DescriptionNameWidget, DescriptionValueWidget);
-	DescriptionPropertyRow.Visibility(VisibilityAttribute);
+	DescriptionPropertyRow.Visibility(SharedVisibilityAttribute);
 	DescriptionPropertyRow.CustomWidget(true)
 	.NameContent()
 	[
@@ -231,10 +149,12 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 	FDetailWidgetRow& GraphRow = ChildBuilder.AddCustomRow(LOCTEXT("BangoScriptHolder_SearchTerm", "Bango"))
 	.ShouldAutoExpand(true)
 	[
-		Box.ToSharedRef()
+		SAssignNew(GraphWidgetBox, SVerticalBox)
 	];
 	
-	GraphRow.Visibility(VisibilityAttribute);
+	GraphRow.Visibility(SharedVisibilityAttribute);
+
+	UpdateGraphWidgetBox();
 	
 	// Script Inputs
 	TSharedPtr<IPropertyHandle> ScriptInputsProperty = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, ScriptInputs));
@@ -269,23 +189,20 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 			.HAlign(HAlign_Center)	
 		]
 	];
-	
-	// Load the graph widget 
-	UpdateBox();
 }
 
 // ----------------------------------------------
 
 EVisibility FBangoScriptContainerCustomization::Visibility_HasValidGraph() const
 {
-	return GetPrimaryEventGraph() ? EVisibility::Visible : EVisibility::Collapsed;
+	return CurrentGraph.IsValid() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 // ----------------------------------------------
 
 EVisibility FBangoScriptContainerCustomization::Visibility_HasNoValidGraph() const
 {
-	return GetPrimaryEventGraph() ? EVisibility::Collapsed : EVisibility::Visible;
+	return CurrentGraph.IsValid() ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
 // ----------------------------------------------
@@ -316,26 +233,9 @@ EVisibility FBangoScriptContainerCustomization::Visibility_HasScriptInputs() con
 
 // ----------------------------------------------
 
-int FBangoScriptContainerCustomization::WidgetIndex_GraphEditor() const
+EVisibility FBangoScriptContainerCustomization::Visibility_DeleteUnsetButton() const
 {
-	switch (GetScriptType())
-	{
-		case EBangoScriptType::Unset:
-		{
-			return 0;
-		}
-		case EBangoScriptType::LevelScript:
-		{
-			return 1;
-		}
-		case EBangoScriptType::ContentAssetScript:
-		{
-			return 0;
-		}
-	}
-	
-	checkNoEntry();
-	return 0;
+	return HasScriptClassAssigned() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 // ----------------------------------------------
@@ -355,7 +255,7 @@ FReply FBangoScriptContainerCustomization::OnClicked_CreateScript()
 	FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(GetScriptHolder(), BlueprintName);
 	
 	ScriptContainerProperty->SetExpanded(true);
-	
+		
 	return FReply::Handled();
 }
 
@@ -365,9 +265,16 @@ FText FBangoScriptContainerCustomization::Text_UnsetDeleteScript() const
 {
 	switch (GetScriptType())
 	{
-		case EBangoScriptType::Unset:
+		case EBangoScriptType::None:
 		{
-			return INVTEXT("Delete");
+			if (HasScriptClassAssigned())
+			{
+				return LOCTEXT("ScriptContainerCustomization_UnsetLevelScript", "Clear");
+			}
+			else
+			{
+				return INVTEXT("---");
+			}
 		}
 		case EBangoScriptType::LevelScript:
 		{			
@@ -380,7 +287,7 @@ FText FBangoScriptContainerCustomization::Text_UnsetDeleteScript() const
 	}
 	
 	checkNoEntry();
-	return INVTEXT("Delete");
+	return INVTEXT("---");
 }
 
 // ----------------------------------------------
@@ -389,9 +296,18 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 {
 	switch (GetScriptType())
 	{
-		case EBangoScriptType::Unset:
+		case EBangoScriptType::None:
 		{
-			return FReply::Handled();
+			IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
+			FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
+
+			UObject* Outer = ScriptHolder._getUObject();
+			Outer->Modify();
+
+			ScriptContainer.Unset();
+			
+			SendDummyPECPEvent(Outer);
+			break;
 		}
 		case EBangoScriptType::LevelScript:
 		{
@@ -404,19 +320,17 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 				IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
 				FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 
-				UObject* Object = ScriptHolder._getUObject();
-				Object->Modify();
+				UObject* Outer = ScriptHolder._getUObject();
+				Outer->Modify();
 
 				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(ScriptHolder);
 				
 				ScriptContainer.Unset();
 				
-				// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
-				FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
-				Object->PostEditChangeProperty(NewScriptDummyChangedEvent);
+				SendDummyPECPEvent(Outer);
 			}
 
-			return FReply::Handled();				
+			break;
 		}
 		case EBangoScriptType::ContentAssetScript:
 		{
@@ -438,17 +352,17 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 			{
 				Outer->Modify();
 				ScriptContainer->Unset();
-				
 			}	
 			
-			// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
-			FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
-			Outer->PostEditChangeProperty(NewScriptDummyChangedEvent);
+			SendDummyPECPEvent(Outer);
 			
-			return FReply::Handled();
+			break;
 		}
 	}
 		
+	UpdateGraphWidgetBox();
+	UpdateHeaderRowNameAndValueContent();
+	
 	return FReply::Handled();
 }
 
@@ -456,7 +370,19 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 
 bool FBangoScriptContainerCustomization::IsEnabled_DeleteUnsetButton() const
 {
-	return !!GetScriptClass();
+	if (GetScriptClass())
+	{
+		// Will display "Delete" or "Unset" depending on the type
+		return true;
+	}
+	
+	if (IsScriptClassStale())
+	{
+		// Will display "Clear"
+		return true;
+	}
+	
+	return false;
 }
 
 // ----------------------------------------------
@@ -465,7 +391,7 @@ bool FBangoScriptContainerCustomization::IsEnabled_ScriptClassPicker() const
 {
 	switch (GetScriptType())
 	{
-		case EBangoScriptType::Unset:
+		case EBangoScriptType::None:
 		{
 			return true;
 		}
@@ -488,7 +414,17 @@ bool FBangoScriptContainerCustomization::IsEnabled_ScriptClassPicker() const
 bool FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton() const
 {
 	// If there is already a script assigned, we can't create a level script
-	return !GetScriptClass();
+	if (GetScriptClass())
+	{
+		return false;
+	}
+	
+	if (IsScriptClassStale())
+	{
+		return false;
+	}
+	
+	return true;
 }
 
 // ----------------------------------------------
@@ -528,18 +464,20 @@ FReply FBangoScriptContainerCustomization::OnClicked_EditScript() const
 
 FReply FBangoScriptContainerCustomization::OnClicked_EnlargeGraphView() const
 {
-#if 1
 	TSharedRef<FBangoScriptBlueprintEditor> NewBlueprintEditor(new FBangoScriptBlueprintEditor());
 
 	const bool bShouldOpenInDefaultsMode = false;
 	TArray<UBlueprint*> Blueprints;
-	Blueprints.Add(GetBlueprint());
 
-	NewBlueprintEditor->InitBlueprintEditor(EToolkitMode::Standalone, nullptr, Blueprints, bShouldOpenInDefaultsMode);
-	//NewBlueprintEditor->InitWidgetBlueprintEditor(EToolkitMode::Standalone, nullptr, Blueprints, bShouldOpenInDefaultsMode);
+	UBlueprint* Blueprint = GetBlueprint();
+	
+	if (Blueprint)
+	{
+		Blueprints.Add(Blueprint);
+		NewBlueprintEditor->InitBlueprintEditor(EToolkitMode::Standalone, nullptr, Blueprints, bShouldOpenInDefaultsMode);
+	}
 	
 	return FReply::Handled();
-#endif 
 
 #if 0
 	FViewport* Viewport = GEditor->GetActiveViewport();
@@ -575,13 +513,6 @@ FReply FBangoScriptContainerCustomization::OnClicked_EnlargeGraphView() const
 	
 	return FReply::Handled();
 #endif
-}
-
-// ----------------------------------------------
-
-FReply FBangoScriptContainerCustomization::OnClicked_RenameScript() const
-{
-	return FReply::Handled();
 }
 
 // ----------------------------------------------
@@ -683,30 +614,22 @@ EBangoScriptRenameStatus FBangoScriptContainerCustomization::GetProposedNameStat
 		
 		for (UObject* Object : Objects)
 		{
-			// I need to make sure we don't cause *any* object name conflicts
-			/*
-			if (!Object->IsA<UBlueprintGeneratedClass>())
-			{
-				continue;
-			}
-			*/
-			
 			if (ProposedBlueprintClassName == Object->GetName())
 			{
 				bMatch = true;
 				break;
 			}
 		}
-				
+		
 		if (bMatch)
 		{
 			return EBangoScriptRenameStatus::MatchesOther;
 		}
-
+		
 		// TODO check for valid chars
 		return EBangoScriptRenameStatus::ValidNewName;
 	}
-
+	
 	return EBangoScriptRenameStatus::InvalidNewName;
 }
 
@@ -842,27 +765,155 @@ TSharedRef<SWidget> FBangoScriptContainerCustomization::GetPopoutGraphEditor(FVe
 
 void FBangoScriptContainerCustomization::OnPostScriptCreatedOrRenamed()
 {
-	CurrentGraph = GetPrimaryEventGraph();
-	
-	UpdateBox();	
+	UpdateGraphWidgetBox();	
 }
 
 // ----------------------------------------------
 
-void FBangoScriptContainerCustomization::OnPreScriptDeleted()
+void FBangoScriptContainerCustomization::OnPreScriptUnsetOrDeleted()
 {
-	CurrentGraph = nullptr;
-	
-	UpdateBox();
+	UpdateGraphWidgetBox();
 }
 
 // ----------------------------------------------
 
-void FBangoScriptContainerCustomization::UpdateBox()
+void FBangoScriptContainerCustomization::UpdateHeaderRowNameAndValueContent()
+{
+	HeaderNameContent->ClearChildren();
+	HeaderValueContent->ClearChildren();
+	
+	HeaderNameContent->AddSlot()
+	.AutoWidth()
+	.VAlign(VAlign_Center)
+	[
+		SNew(STextBlock)
+		.Text(LOCTEXT("ScripContainer_ScriptClassPropertyLabel", "Script"))
+		.TextStyle(FAppStyle::Get(), "SmallText")	
+	];
+	
+	if (IsScriptClassStale())
+	{
+		HeaderNameContent->AddSlot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		.Padding(12, 0, 2, 0)
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SColorBlock)
+				.Color(Bango::Colors::OrangeRed)
+			]
+			+ SOverlay::Slot()
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBox)
+				.Padding(4, 0, 4, 0)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("ScripContainer_ScriptClassMissing", "MISSING"))
+					.ToolTipText(FText::Format(INVTEXT("{0}\n{1}"), FText::FromString(GetScriptClassPath()), LOCTEXT("MissingScriptClass_ToolTipText", "This can happen if you create a level script and do not save it.\nRestore from version control, or press the [Clear] button.") ))
+					.ColorAndOpacity(Bango::Colors::White)
+					.TextStyle(FAppStyle::Get(), "SmallText")	
+				]
+			]
+		];
+	}
+	
+	int32 Count = 0;
+	
+	auto AddColumnTo = [this, &Count] (TSharedPtr<SHorizontalBox> Box, TSharedPtr<SWidget> Widget, float WidthOverride = 0.0f)
+	{
+		if (!Widget.IsValid())
+		{
+			return;
+		}
+		
+		HeaderValueContent->AddSlot()
+		.AutoWidth()
+		.VAlign(VAlign_Fill)
+		.Padding(Count == 0 ? 0 : 3, 0, 0, 0)
+		[
+			SNew(SBox)
+			.VAlign(VAlign_Center)
+			.MinDesiredWidth(WidthOverride > 0.0f ? TOptional<float>(WidthOverride) : NullOpt)
+			[
+				Widget.ToSharedRef()
+			]
+		];
+		
+		Count++;
+	};
+	
+	TSharedPtr<SWidget> ScriptClassDropdown = nullptr;
+	TSharedPtr<SWidget> CreateLevelScriptButton = nullptr;
+	TSharedPtr<SWidget> DeleteOrUnsetButton = nullptr;
+	
+	if (GetScriptType() != EBangoScriptType::LevelScript)
+	{
+		ScriptClassDropdown = SNew(SBangoScriptPropertyEditorClass)
+		.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton)
+		.MetaClass(UBangoScript::StaticClass())
+		.SelectedClass(this, &FBangoScriptContainerCustomization::SelectedClass_ScriptClass)
+		.OnSetClass(this, &FBangoScriptContainerCustomization::OnSetClass_ScriptClass)
+		.ToolTipText(LOCTEXT("ScriptClassSelector_ToolTipText", "Select a content script."));
+	}
+	else
+	{
+		ScriptClassDropdown = SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("ScriptClassSelector_LevelScriptTextPlaceholder", "Level Script"))
+				.TextStyle(FAppStyle::Get(), "SmallText")
+			];
+	}
+	
+	if (!HasScriptClassAssigned())
+	{
+		CreateLevelScriptButton = SNew(SButton)
+		.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
+		.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton)
+		.Text(LOCTEXT("ScriptContainerCustomization_LevelScriptButtonLabel", "Level Script"))
+		.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
+		// .ToolTipText(LOCTEXT("CreateLevelScriptButton_ToolTipText", "Create a new local level script."))
+		.ButtonColorAndOpacity(Bango::Colors::White)
+		.ForegroundColor(Bango::Colors::White)
+		.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_CreateScript)
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center);
+	}
+	
+	DeleteOrUnsetButton = SNew(SButton)
+	.ButtonStyle(FAppStyle::Get(), "FlatButton.Danger")
+	.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_DeleteUnsetButton)
+	.Visibility(this, &FBangoScriptContainerCustomization::Visibility_DeleteUnsetButton)
+	.NormalPaddingOverride(FMargin(8, 0, 8, 0))
+	.PressedPaddingOverride(FMargin(8, 0.5, 8, -0.5))
+	// .ButtonColorAndOpacity(FLinearColor::Gray)
+	.Text(Text_UnsetDeleteScript())
+	.TextStyle(FAppStyle::Get(), "DetailsView.CategoryTextStyle")
+	.ForegroundColor(Bango::Colors::White)
+	.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript)
+	.VAlign(VAlign_Center)
+	.HAlign(HAlign_Center);
+	
+	AddColumnTo(HeaderValueContent, ScriptClassDropdown, 120.0f);
+	AddColumnTo(HeaderValueContent, CreateLevelScriptButton);
+	AddColumnTo(HeaderValueContent, DeleteOrUnsetButton);
+}
+
+// ----------------------------------------------
+
+void FBangoScriptContainerCustomization::UpdateGraphWidgetBox()
 {
 	SGraphEditor::FGraphEditorEvents Events;
 	
-	Box->ClearChildren();
+	GraphWidgetBox->ClearChildren();
+	
+	CurrentGraph = GetPrimaryEventGraph();
 	
 	if (!CurrentGraph.IsValid())
 	{
@@ -877,17 +928,19 @@ void FBangoScriptContainerCustomization::UpdateBox()
 	{
 		return;
 	}
-	
+		
 	TSharedRef<SGraphEditor> GraphEditor = SNew(SGraphEditor)
-	.GraphToEdit(GetPrimaryEventGraph())
+	.GraphToEdit(CurrentGraph.Get())
 	.IsEditable(false)
 	.GraphEvents(Events)
 	.ShowGraphStateOverlay(false);
 	
-	Box->AddSlot()
+	TSharedPtr<SOverlay> GraphOverlayWidget;
+	
+	GraphWidgetBox->AddSlot()
 	.AutoHeight()
 	[
-		SNew(SOverlay)
+		SAssignNew(GraphOverlayWidget, SOverlay)
 		+ SOverlay::Slot()
 		[
 			SNew(SBox)
@@ -910,11 +963,14 @@ void FBangoScriptContainerCustomization::UpdateBox()
 			[
 				SNew(SImage)
 				.Image(FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript))
-				//.Image(FAppStyle::Get().GetBrush("Icons.Fullscreen"))
 				.DesiredSizeOverride(FVector2D(20.0f, 20.0f))
 			]
 		]
-		+ SOverlay::Slot()
+	];
+	
+	if (GetScriptType() == EBangoScriptType::LevelScript)
+	{
+		GraphOverlayWidget->AddSlot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Bottom)
 		.Padding(8-22, 0, 0, 8)
@@ -922,16 +978,17 @@ void FBangoScriptContainerCustomization::UpdateBox()
 			SNew(STextBlock)
 			.Text(FText::Format
 				(
-					INVTEXT("{0}\n{1}\n{2}{3}"),
+					//INVTEXT("{0}\n{1}\n{2}{3}"),
+					INVTEXT("{0}\n{1}{2}"),
 					FText::FromName( GetBlueprint()->GetFName() ),
-					FText::FromString( ScriptContainer->GetGuid().ToString() ),
+					// FText::FromString( ScriptContainer->GetGuid().ToString() ),
 					FText::FromString( FPackageName::GetShortName( GetBlueprint()->GetPackage()->GetPathName() ) ),
 					FText::FromString( GetBlueprint()->GetPackage()->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension())
 				))
 			.Font(FCoreStyle::GetDefaultFontStyle("Normal", 8))
 			.ColorAndOpacity(Bango::Colors::Gray)
-		]
-	];
+		];
+	}
 }
 
 // ----------------------------------------------
@@ -984,7 +1041,7 @@ UBlueprint* FBangoScriptContainerCustomization::GetBlueprint() const
 		if (ScriptClass)
 		{
 			UObject* ScriptClassLoaded = ScriptClass->LoadSynchronous();
-			
+
 			TSubclassOf<UBangoScript> BangoScriptClassLoaded = Cast<UClass>(ScriptClassLoaded);
 			
 			if (UBlueprint* Blueprint = UBlueprint::GetBlueprintFromClass(BangoScriptClassLoaded))
@@ -999,10 +1056,27 @@ UBlueprint* FBangoScriptContainerCustomization::GetBlueprint() const
 
 // ----------------------------------------------
 
+bool FBangoScriptContainerCustomization::HasScriptClassAssigned() const
+{
+	FString StringValue;
+
+	if (ScriptClassProperty->GetValueAsFormattedString(StringValue))
+	{
+		if (StringValue.IsEmpty() || StringValue == FName(NAME_None).ToString())
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// ----------------------------------------------
+
 TSubclassOf<UBangoScript> FBangoScriptContainerCustomization::GetScriptClass() const
 {
 	UObject* ClassObject;
-	
+		
 	if (ScriptClassProperty->GetValue(ClassObject) == FPropertyAccess::Success)
 	{
 		return Cast<UClass>(ClassObject);
@@ -1011,11 +1085,47 @@ TSubclassOf<UBangoScript> FBangoScriptContainerCustomization::GetScriptClass() c
 	return nullptr;
 }
 
-// ----------------------------------------------
-
-void FBangoScriptContainerCustomization::OnScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder)
+bool FBangoScriptContainerCustomization::IsScriptClassStale() const
 {
-	OnPreScriptDeleted();
+	FString StringValue;
+
+	if (ScriptClassProperty->GetValueAsFormattedString(StringValue))
+	{
+		if (StringValue.IsEmpty() || StringValue == FName(NAME_None).ToString())
+		{
+			return false;
+		}
+		
+		FSoftClassPath ClassPath(StringValue);
+		FTopLevelAssetPath AssetPath = ClassPath.GetAssetPath();
+
+		if (FPackageName::DoesPackageExist(AssetPath.GetPackageName().ToString()) || FindObject<UObject>(nullptr, StringValue))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+FString FBangoScriptContainerCustomization::GetScriptClassPath() const
+{
+	FString StringValue;
+
+	if (ScriptClassProperty->GetValueAsFormattedString(StringValue))
+	{
+		if (StringValue.IsEmpty())
+		{
+			return "INVALID";
+		}
+		
+		FSoftClassPath ClassPath(StringValue);
+		FTopLevelAssetPath AssetPath = ClassPath.GetAssetPath();
+		
+		return AssetPath.GetPackageName().ToString();
+	}
+
+	return "INVALID";
 }
 
 // ----------------------------------------------
@@ -1023,7 +1133,7 @@ void FBangoScriptContainerCustomization::OnScriptContainerDestroyed(IBangoScript
 void FBangoScriptContainerCustomization::OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap)
 {
 	// If we don't get rid of the blueprint graph, we get an editor crash when switching maps.
-	Box->ClearChildren();
+	GraphWidgetBox->ClearChildren();
 	CurrentGraph = nullptr;
 }
 
@@ -1061,6 +1171,11 @@ IBangoScriptHolderInterface& FBangoScriptContainerCustomization::GetScriptHolder
 	return *ScriptHolder;
 }
 
+EBangoScriptStatus FBangoScriptContainerCustomization::GetScriptStatus() const
+{
+	return EBangoScriptStatus::None;
+}
+
 // ----------------------------------------------
 
 EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const
@@ -1069,7 +1184,7 @@ EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const
 
 	if (!ScriptClass)
 	{
-		return EBangoScriptType::Unset;
+		return EBangoScriptType::None;
 	}
 	
 	if (ScriptClass->GetName().StartsWith(Bango::Editor::GetLevelScriptNamePrefix()))
@@ -1078,6 +1193,19 @@ EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const
 	}
 	
 	return EBangoScriptType::ContentAssetScript;
+}
+
+void FBangoScriptContainerCustomization::SendDummyPECPEvent(UObject* Object) const
+{
+	if (Object == nullptr)
+	{
+		IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
+		Object = ScriptHolder._getUObject();	
+	}
+	
+	// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
+	FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
+	Object->PostEditChangeProperty(NewScriptDummyChangedEvent);
 }
 
 // ----------------------------------------------

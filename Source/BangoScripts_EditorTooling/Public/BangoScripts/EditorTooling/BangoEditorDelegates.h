@@ -53,7 +53,7 @@ struct FBangoEditorDelegates
 	// 
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjectPtr<UTexture2D>& OverlayTexture)> OnCustomBillboardRequested;
 	
+	//
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent, EBangoScriptComponentRegisterStatus RegistrationStatus)> ScriptComponentRegistered;
-	
 };
 #endif

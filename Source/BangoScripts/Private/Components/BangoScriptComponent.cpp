@@ -195,6 +195,34 @@ void UBangoScriptComponent::PostApplyToComponent()
 	Super::PostApplyToComponent();
 }
 
+void UBangoScriptComponent::PostLoad()
+{
+	Super::PostLoad();
+	
+	TWeakObjectPtr<UBangoScriptComponent> WeakThis = this;
+	
+	auto CheckScriptValidity = [WeakThis] ()
+	{
+		if (WeakThis.IsValid())
+		{
+			TSoftClassPtr<UBangoScript> ScriptClass = WeakThis->ScriptContainer.GetScriptClass();
+		
+			if (!ScriptClass.IsNull())
+			{
+				FName PackageName = ScriptClass.ToSoftObjectPath().GetLongPackageFName();
+			
+				if (!FPackageName::DoesPackageExist(PackageName.ToString()))
+				{
+					WeakThis->Modify();
+					WeakThis->ScriptContainer.Unset();
+				}
+			}	
+		}
+	};
+	
+	// GEditor->GetTimerManager()->SetTimerForNextTick(CheckScriptValidity);
+}
+
 void UBangoScriptComponent::BeginDestroy()
 {
 	Bango::Debug::PrintComponentState(this, "BeginDestroy_Early");

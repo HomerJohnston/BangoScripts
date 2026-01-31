@@ -54,6 +54,8 @@ public:
 	
 	void PostApplyToComponent() override;
 	
+	void PostLoad() override;
+	
 	void BeginDestroy() override;
 	
 	void FinishDestroy() override;

@@ -5,6 +5,7 @@
 #include "Input/Reply.h"
 #include "Layout/Visibility.h"
 
+class SHorizontalBox;
 class IClassViewerFilter;
 struct FCanLoadMap;
 class SVerticalBox;
@@ -20,9 +21,16 @@ enum class EBangoScriptRenameStatus : uint8
 
 enum class EBangoScriptType : uint8
 {
-	Unset,
+	None,
 	ContentAssetScript,
 	LevelScript,
+};
+
+enum class EBangoScriptStatus : uint8
+{
+	None,
+	Saved,
+	Unsaved
 };
 
 class FBangoScriptContainerCustomization : public IPropertyTypeCustomization
@@ -42,7 +50,9 @@ protected:
 	TSharedPtr<IPropertyHandle> GuidProperty;
 	TWeakObjectPtr<UEdGraph> CurrentGraph;
 
-	TSharedPtr<SVerticalBox> Box;
+	TSharedPtr<SHorizontalBox> HeaderNameContent;
+	TSharedPtr<SHorizontalBox> HeaderValueContent;
+	TSharedPtr<SVerticalBox> GraphWidgetBox;
 	
 	TMulticastDelegate<void()> PostScriptCreated;
 	TMulticastDelegate<void()> PreScriptDeleted;
@@ -52,15 +62,13 @@ protected:
 	EBangoScriptRenameStatus ProposedNameStatus;
 
 	TArray<TSharedRef<IClassViewerFilter>> BangoScriptClassViewerFilters;
-
+	
 	// ------------------------------------------
 
 	void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 
-	int WidgetIndex_CreateDeleteScriptButtons() const;
-	
 	FReply OnClicked_CreateScript();
-	
+
 	FText Text_UnsetDeleteScript() const;
 	
 	FReply OnClicked_UnsetDeleteScript();
@@ -85,13 +93,11 @@ protected:
 	
 	EVisibility Visibility_HasScriptInputs() const;
 	
-	int WidgetIndex_GraphEditor() const;
+	EVisibility Visibility_DeleteUnsetButton() const;
 	
 	FReply OnClicked_EditScript() const;
 	
 	FReply OnClicked_EnlargeGraphView() const;
-	
-	FReply OnClicked_RenameScript() const;
 	
 	FText Text_RefreshScriptInputs() const;
 	
@@ -119,9 +125,11 @@ protected:
 
 	void OnPostScriptCreatedOrRenamed();
 
-	void OnPreScriptDeleted();	
+	void OnPreScriptUnsetOrDeleted();	
 
-	void UpdateBox();
+	void UpdateHeaderRowNameAndValueContent();
+	
+	void UpdateGraphWidgetBox();
 	
 	// ------------------------------------------
 
@@ -133,11 +141,15 @@ protected:
 	
 	UEdGraph* GetPrimaryEventGraph() const;
 	
+	bool HasScriptClassAssigned() const;
+	
 	TSubclassOf<UBangoScript> GetScriptClass() const;
 	
-	// ------------------------------------------
+	bool IsScriptClassStale() const;
 	
-	void OnScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder);
+	FString GetScriptClassPath() const;
+	
+	// ------------------------------------------
 	
 	void OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap);
 	
@@ -145,5 +157,9 @@ protected:
 	
 	IBangoScriptHolderInterface& GetScriptHolder() const;
 	
+	EBangoScriptStatus GetScriptStatus() const;
+	
 	EBangoScriptType GetScriptType() const;
+	
+	void SendDummyPECPEvent(UObject* Object = nullptr) const;
 };

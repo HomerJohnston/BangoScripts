@@ -76,10 +76,6 @@ protected:
 	bool bDuplicatingActors = false;
 
 public:
-	// Simple solution to force any active FBangoScriptContainerCustomization instances to redraw
-	TMulticastDelegate<void()> OnScriptGenerated;
-	
-public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 	void Deinitialize() override;

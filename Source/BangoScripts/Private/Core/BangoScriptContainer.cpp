@@ -41,6 +41,8 @@ void FBangoScriptContainer::Unset()
 #if WITH_EDITOR
 void FBangoScriptContainer::SetScriptClass(TSubclassOf<UObject> NewScriptClass)
 {
+	check(NewScriptClass);
+	
 	ScriptClass = NewScriptClass;
 }
 #endif

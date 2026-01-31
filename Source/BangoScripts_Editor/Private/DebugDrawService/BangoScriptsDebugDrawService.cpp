@@ -737,15 +737,16 @@ TSharedPtr<SWidget> UBangoScriptsDebugDrawService::CreateEditButton(UBangoScript
 	return SNew(SButton)
 	.Text(LOCTEXT("EditScriptButton_Text", "Edit"))
 	.TextStyle(FAppStyle::Get(), "SmallText")
+	.HAlign(HAlign_Center)
 	.OnClicked_Lambda( [WeakScriptComponent] ()
 	{
 		if (WeakScriptComponent.IsValid())
 		{
 			UBangoScriptBlueprint* Blueprint = WeakScriptComponent->GetScriptBlueprint(true);
-			if (Blueprint)
-			{
+			//if (Blueprint)
+			//{
 				GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Blueprint);
-			}
+			//}
 		}
 		
 		return FReply::Handled();

@@ -199,7 +199,7 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, 
 				ScriptHolder->GetScriptContainer().SetScriptClass(Blueprint->GeneratedClass);
 				
 				// Tell details panels / script component customization to refresh
-				This->OnScriptGenerated.Broadcast();
+				FBangoEditorDelegates::OnScriptGenerated.Broadcast();
 			}
 		}
 	};
@@ -532,7 +532,7 @@ void UBangoLevelScriptsEditorSubsystem::CreateLevelScript(IBangoScriptHolderInte
 		(void)ScriptPackage->MarkPackageDirty();
 	
 		// Tells FBangoScript property type customizations to regenerate their view
-		OnScriptGenerated.Broadcast();
+		FBangoEditorDelegates::OnScriptGenerated.Broadcast();
 		
 		// Throw a dummy property change event. UBangoScriptComponent will use this to update its billboard.
 		FPropertyChangedEvent NewScriptDummyChangedEvent(nullptr, EPropertyChangeType::Unspecified, {});
@@ -594,7 +594,7 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 	(void)NewScriptPackage->MarkPackageDirty();
 	
 	// Tells FBangoScript property type customizations to regenerate
-	OnScriptGenerated.Broadcast();	
+	FBangoEditorDelegates::OnScriptGenerated.Broadcast();
 }
 
 // ----------------------------------------------
