@@ -1099,7 +1099,7 @@ bool FBangoScriptContainerCustomization::IsScriptClassStale() const
 		FSoftClassPath ClassPath(StringValue);
 		FTopLevelAssetPath AssetPath = ClassPath.GetAssetPath();
 
-		if (FPackageName::DoesPackageExist(AssetPath.GetPackageName().ToString()) || FindObject<UObject>(nullptr, StringValue))
+		if (FPackageName::DoesPackageExist(AssetPath.GetPackageName().ToString()) || FindObject<UObject>(nullptr, *StringValue))
 		{
 			return false;
 		}

@@ -1,6 +1,4 @@
-﻿#include "BlueprintCompilationManager.h"
-#include "BlueprintCompilerExtension.h"
-#include "BangoScripts_Uncooked.h"
+﻿#include "BangoScripts_Uncooked.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
