@@ -4,9 +4,11 @@ public class BangoScripts_Editor : ModuleRules
 {
     public BangoScripts_Editor(ReadOnlyTargetRules Target) : base(Target)
     {
-	    PCHUsage = ModuleRules.PCHUsageMode.NoPCHs;
-		
-	    bUseUnity = false;
+	    PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+	    bUseUnity = true;
+
+	    // PCHUsage = ModuleRules.PCHUsageMode.NoPCHs;
+	    // bUseUnity = false;
 
         PublicDependencyModuleNames.AddRange(
             new string[]
