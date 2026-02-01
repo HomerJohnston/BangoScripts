@@ -191,10 +191,7 @@ void UBangoScriptsDebugDrawService::Initialize(FSubsystemCollectionBase& Collect
 	DebugDrawHandle = UDebugDrawService::Register(TEXT("BangoScriptsShowFlag"), FDebugDrawDelegate::CreateUObject(this, &ThisClass::DebugDraw));
 	FBangoEditorDelegates::ScriptComponentRegistered.AddUObject(this, &ThisClass::OnBangoScriptRegistrationChange);
 	
-	// TODO this should not be needed! I should be able to subscribe to TransformUpdated of the actor's root component, but I can't. See header for more notes.
 	GEngine->OnActorMoved().AddUObject(this, &ThisClass::OnGlobalActorMoved);
-	
-	FEditorDelegates::OnMapLoad.AddWeakLambda(this, [this] (const FString&, FCanLoadMap&) { ScriptOwners.Empty(); ScriptComponentTree.Destroy(); } );
 }
 
 // ----------------------------------------------
@@ -450,7 +447,7 @@ void UBangoScriptsDebugDrawService::OnBangoScriptRegistrationChange(UBangoScript
 	FBangoScriptOctreeElement Element(ScriptComponent);
 	
 	static int AddCount;
-	
+		
 	if (RegistrationStatus == EBangoScriptComponentRegisterStatus::Registered)
 	{
 		AddElement(Element);

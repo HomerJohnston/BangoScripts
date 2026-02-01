@@ -122,7 +122,7 @@ class UBangoScriptsDebugDrawService : public UEditorSubsystem, public FTickableE
 	bool bShowFlagEnabled;
 
 	uint64 DebugDrawFrame;
-
+	
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 	void Deinitialize() override;
