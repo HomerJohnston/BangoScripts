@@ -141,6 +141,8 @@ public:
 	
 	const FVector& GetBillboardOffset() const { return BillboardSettings.BillboardOffset; }
 	
+	const bool IsBillboardEnabled() const { return !BillboardSettings.bDisable; }
+	
 	IBangoScriptHolderInterface& AsScriptHolder() { return *Cast<IBangoScriptHolderInterface>(this); }
 	
 	const FString& GetStartEventComment() const override { return StartNodeComment; }

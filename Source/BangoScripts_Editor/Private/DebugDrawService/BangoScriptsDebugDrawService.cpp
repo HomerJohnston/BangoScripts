@@ -362,6 +362,11 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		
 		auto FrustumTest = [this, CullingFrustum, PlayerController, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
 		{
+			if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
+			{
+				return;
+			}
+			
 			if (ScriptElement.ScriptComponent.IsValid() && CullingFrustum.IntersectPoint(ScriptElement.Position) && ScriptElement.ScriptComponent->HasValidScript())
 			{
 				FVector2D ScriptScreenPos;
@@ -407,6 +412,11 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		
 		auto FrustumTest = [this, CullingFrustum, SceneView, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
 		{
+			if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
+			{
+				return;
+			}
+			
 			if (ScriptElement.ScriptComponent.IsValid() && CullingFrustum.IntersectPoint(ScriptElement.Position) /*&& ScriptElement.ScriptComponent->HasValidScript()*/)
 			{
 				FVector2D PixelLocation;

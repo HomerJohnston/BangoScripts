@@ -1,6 +1,7 @@
 ﻿#include "BangoEditorUtility.h"
 
 #include "ExternalPackageHelper.h"
+#include "LineTypes.h"
 #include "ObjectTools.h"
 #include "SceneView.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
@@ -233,113 +234,6 @@ void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerControl
 	}
 	
 	DebugDrawActorConnections(*Blueprint, *Canvas->SceneView, *Canvas->Canvas);
-	
-	/*
-	const TSoftObjectPtr<const AActor> OwnerActor = Blueprint->GetOwnerActor();
-	const IBangoScriptHolderInterface* ScripHolder = Blueprint->GetScriptHolder(); 
-
-	UEdGraph* FocusedGraph = ScriptBlueprintEditor->GetFocusedGraph();
-	
-	if (!FocusedGraph)
-	{
-		return;
-	}
-
-	if (!OwnerActor.IsValid())
-	{
-		return;
-	}
-	
-	const AActor* Actor = OwnerActor.Get();
-	
-	TOptional<FVector> RepresentingPosition = NullOpt;
-	
-	if (ScripHolder)
-	{
-		RepresentingPosition = Actor->GetActorLocation() + ScripHolder->GetDebugDrawOrigin();
-	}
-	else if (Actor)
-	{
-		// TODO this should actually never happen, not sure how I should handle it though. 
-		RepresentingPosition = Actor->GetActorLocation();
-	}
-	else
-	{
-		checkNoEntry();
-	}
-	
-	if (!RepresentingPosition.IsSet())
-	{
-		return;
-	}
-		
-	TArray<UK2Node_BangoFindActor*> FindActorNodes;
-	FocusedGraph->GetNodesOfClass(FindActorNodes);
-
-	TSet<FBangoActorNodeDraw> VisitedActors;
-
-	// TODO this should be a cvar/ini setting
-	const int32 MaxActorVisualizationCount = 100;
-	
-	// This is kind of arbitrary but if some nutjob builds a script with 1000000 actor nodes I don't want to choke the system to a crawl.
-	if (FindActorNodes.Num() <= MaxActorVisualizationCount)
-	{
-		VisitedActors.Reserve(FindActorNodes.Num());
-		
-		// First we iterate over the whole list to find all actors to draw
-		for (const UK2Node_BangoFindActor* Node : FindActorNodes)
-		{
-			const TSoftObjectPtr<AActor> TargetActor = Node->GetTargetActor();
-		
-			if (Actor)
-			{
-				FBangoActorNodeDraw DrawRecord;
-				DrawRecord.Actor = TargetActor;
-				
-				bool bAlreadyInSet;
-				FBangoActorNodeDraw& Draw = VisitedActors.FindOrAddByHash(GetTypeHash(Actor), DrawRecord, &bAlreadyInSet);
-				Draw.bFocused = Draw.bFocused || (GFrameCounter - Node->LastSelectedFrame < 3);
-			}
-		}
-		
-		float Radius = 0.005 * Canvas->SizeY;
-
-		// Now we draw
-		for (const FBangoActorNodeDraw& ActorNode : VisitedActors)// int32 i = 0; i < VisitedActors FindActorNodes.Num(); ++i)
-		{
-			if (!ActorNode.Actor.IsValid())
-			{
-				continue;
-			}
-				
-			const AActor& Actor = *ActorNode.Actor.Get();
-			
-			float Saturation = ActorNode.bFocused ? 1.0f : 0.8f;
-			float Luminosity = ActorNode.bFocused ? 1.0f : 0.8f;
-			float Thickness = ActorNode.bFocused ? 3.0f : 1.5f;
-			FLinearColor Color = Bango::Colors::Funcs::GetHashedColor(GetTypeHash(ActorNode.Actor), Saturation, Luminosity);
-			
-			FVector TargetActorWorldPos;
-			FVector TargetActorScreenPos;
-			
-			if (!GetActorScreenPos(Canvas, ActorNode.Actor.Get(), TargetActorWorldPos, TargetActorScreenPos))
-			{
-				continue;
-			}
-			
-			DrawCircle_ScreenSpace(Canvas, TargetActorScreenPos, Radius, Thickness, Color);		
-			
-			FVector Start = RepresentingPosition.GetValue();
-			FVector End = TargetActorWorldPos;
-			const float StartDrawDistance = 50.0f;
-			DrawLine_WorldSpace(Canvas, Start, End, Thickness, Color, StartDrawDistance, 0.0f);
-		}
-	}
-	else
-	{
-		// TODO fast path - just display count stuff
-	}
-	*/
 }
 
 void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View,	FCanvas& Canvas)
@@ -422,7 +316,7 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 					return;
 				}
 				
-				Bango::Editor::DrawCircle_ScreenSpace(View, Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
+				DrawCircle_ScreenSpace(View, Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
 				
 				// Draw connection line
 				FVector Delta = ActorNode.Actor->GetActorLocation() - DrawOrigin;
@@ -491,36 +385,18 @@ bool Bango::Editor::GetActorScreenPos(const UCanvas& Canvas, const AActor& Actor
 
 void Bango::Editor::DrawCircle_ScreenSpace(const FSceneView& View, FCanvas& Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color)
 {
-	//uint8 NumLineSegments = 24;
-	//static TArray<FVector2D> TempPoints;
-	//TempPoints.Empty(NumLineSegments);
-
-	/*
-	const float NumFloatLineSegments = (float)NumLineSegments;
-	for (uint8 i = 0; i <= NumLineSegments; ++i)
+	if (ScreenPosition.Z <= 0.0f)
 	{
-		const float Angle = (i / NumFloatLineSegments) * TWO_PI;
-
-		FVector2D PointOnCircle;
-		PointOnCircle.X = cosf(Angle) * Radius + ScreenPosition.X;
-		PointOnCircle.Y = sinf(Angle) * Radius + ScreenPosition.Y;
-		TempPoints.Add(PointOnCircle);
+		return;
 	}
-	*/
 	
-	//for (uint8 i = 0; i <= NumLineSegments; ++i)
-	//{
-		Canvas.DrawNGon(FVector2D(ScreenPosition.X, ScreenPosition.Y), Color.ToFColor(true), 16, Radius);
-	//}
+	Canvas.DrawNGon(FVector2D(ScreenPosition.X, ScreenPosition.Y), Color.ToFColor(true), 16, Radius);
 }
 
 // ----------------------------------------------
 
 void Bango::Editor::DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart,	const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
 {
-	FVector2D ScreenStart;
-	FVector2D ScreenEnd;
-	
 	FVector Delta = WorldEnd - WorldStart;
 	if (Delta.SizeSquared() <= FMath::Square(StartCutoff + EndCutoff))
 	{
@@ -532,22 +408,45 @@ void Bango::Editor::DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas,
 	FVector TrueStart = WorldStart + StartCutoff * LineDir;
 	FVector TrueEnd = WorldEnd - EndCutoff * LineDir;
 	
+	FPlane ClipPlane = View.NearClippingPlane;
+	
+	double StartDistance = FVector::PointPlaneDist(TrueStart, ClipPlane.GetOrigin(), ClipPlane.GetNormal());
+	double EndDistance = FVector::PointPlaneDist(TrueEnd, ClipPlane.GetOrigin(), ClipPlane.GetNormal());
+	
+	if (StartDistance >= 0.0f && EndDistance >= 0.0f)
+	{
+		return;
+	}
+	
+	if (StartDistance >= 0.0f)
+	{
+		TrueStart = ClipPlane.GetNormal() + FMath::LinePlaneIntersection(TrueStart, TrueEnd, ClipPlane.GetOrigin(), ClipPlane.GetNormal());
+	}
+
+	if (EndDistance >= 0.0f)
+	{
+		TrueEnd = ClipPlane.GetNormal() + FMath::LinePlaneIntersection(TrueStart, TrueEnd, ClipPlane.GetOrigin(), ClipPlane.GetNormal());
+	}
+	
+	FVector ScreenStart;
+	FVector ScreenEnd;
+	
 	if (!GetScreenPos(View, TrueStart, ScreenStart))
 	{
 		return;
 	}
-	
+
 	if (!GetScreenPos(View, TrueEnd, ScreenEnd))
 	{
 		return;
 	}
-	
+
 	if ((TrueEnd - TrueStart).Dot(LineDir) <= 0.0f)
 	{
 		return;
 	}
-	
-	FCanvasLineItem Line(ScreenStart, ScreenEnd);
+	 
+	FCanvasLineItem Line(FVector2D(ScreenStart.X, ScreenStart.Y), FVector2D(ScreenEnd.X, ScreenEnd.Y));
 	Line.LineThickness = Thickness;
 	Line.SetColor(Color);
 	Canvas.DrawItem(Line);
@@ -559,34 +458,51 @@ bool Bango::Editor::GetActorScreenPos(const FSceneView& View, const AActor& Acto
 {
 	FVector TargetBoxExtents;
 	Actor.GetActorBounds(false, OutWorldPosition, TargetBoxExtents);
-	float TargetSphereRadius = TargetBoxExtents.GetMax() * 0.677f;
 	
-	FVector2D ScreenPos; 
-	if (!GetScreenPos(View, OutWorldPosition, ScreenPos))
+	if (!GetScreenPos(View, OutWorldPosition, OutScreenPosition))
 	{
 		return false;
 	}
 
-	FVector RightView = FVector::UpVector.Cross(View.GetViewDirection());
-	FVector UpView = RightView.Cross(View.GetViewDirection());
-	
-	FVector2D RadiusScreenPos;
-	if (!GetScreenPos(View, OutWorldPosition + TargetSphereRadius * UpView, RadiusScreenPos))
-	{
-		return false;
-	}
-	
-	OutScreenPosition.X = ScreenPos.X;
-	OutScreenPosition.Y = ScreenPos.Y;
-	
 	return true;
 }
 
 // ----------------------------------------------
 
-bool Bango::Editor::GetScreenPos(const FSceneView& View, const FVector& WorldPos, FVector2D& ScreenPos)
+bool Bango::Editor::GetScreenPos(const FSceneView& View, const FVector& WorldPos, FVector& ScreenPos)
 {
 	FVector4 ScreenPoint = View.WorldToScreen(WorldPos);
 
-	return View.ScreenToPixel(ScreenPoint, ScreenPos);
+	FVector2D ScreenPos2D;
+	bool bSuccess = View.ScreenToPixel(ScreenPoint, ScreenPos2D);
+	
+	ScreenPos.X = ScreenPos2D.X;
+	ScreenPos.Y = ScreenPos2D.Y;
+	ScreenPos.Z = ScreenPoint.W;
+	
+	return bSuccess;
 }
+
+// ----------------------------------------------
+
+/*
+bool Bango::Editor::ProjectWorldToScreenAlloWBehind(const FSceneView& View, const FVector& WorldPos, FVector& OutScreenPos)
+{
+	const FMatrix ViewProjectionMatrix = View.ViewMatrices.GetViewProjectionMatrix();
+	
+	FVector4 Clip = ViewProjectionMatrix.TransformFVector4(FVector4(WorldPos, 1.0f));
+
+	float RHW = 1.0f / Clip.W;
+
+	FVector2D NDC(Clip.X * RHW, Clip.Y * RHW);
+	
+	int32 ViewportSizeX = View.UnscaledViewRect.Width();
+	int32 ViewportSizeY = View.UnscaledViewRect.Height();
+	
+	OutScreenPos.X = (NDC.X * 0.5f + 0.5f) * ViewportSizeX;
+	OutScreenPos.Y = (1.0f - (NDC.Y * 0.5f + 0.5f)) * ViewportSizeY;
+	OutScreenPos.Z = Clip.W;
+	
+	return true;
+}
+*/
