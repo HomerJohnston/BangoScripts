@@ -396,7 +396,7 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 				}
 			}
 			
-			const float Radius = 0.005 * View.UnscaledViewRect.Size().Y;// Canvas.GetViewRect().Size().Y;// Viewport.GetSizeXY().Y;
+			const float BaseRadius = 0.005 * View.UnscaledViewRect.Size().Y;// Canvas.GetViewRect().Size().Y;// Viewport.GetSizeXY().Y;
 
 			// Now we draw
 			for (const FBangoActorNodeDraw& ActorNode : UniqueFindActorNodes)// int32 i = 0; i < VisitedActors FindActorNodes.Num(); ++i)
@@ -408,9 +408,10 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 				
 				const AActor& Actor = *ActorNode.Actor.Get();
 				
-				float Saturation = ActorNode.bFocused ? 1.0f : 0.8f;
-				float Luminosity = ActorNode.bFocused ? 1.0f : 0.8f;
-				float Thickness = ActorNode.bFocused ? 3.0f : 1.5f;
+				float Saturation = ActorNode.bFocused ? 1.0f : 0.6f;
+				float Luminosity = ActorNode.bFocused ? 1.0f : 0.6f;
+				float Thickness = ActorNode.bFocused ? 3.0f : 1.0f;
+				float Radius = ActorNode.bFocused ? 2.0f * BaseRadius : BaseRadius; 
 				FLinearColor Color = Bango::Colors::Funcs::GetHashedColor(GetTypeHash(ActorNode.Actor), Saturation, Luminosity);
 				
 				// Draw circle

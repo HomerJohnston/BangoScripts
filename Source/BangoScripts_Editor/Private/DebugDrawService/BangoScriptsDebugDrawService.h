@@ -30,7 +30,7 @@ struct FBangoScriptOctreeElement
 	
 	TWeakObjectPtr<UBangoScriptComponent> ScriptComponent;
 	
-	FOctreeElementId2 ElementId;
+	// FOctreeElementId2 ElementId;
 	
 	// Returns true if position changed
 	bool Update();
@@ -156,9 +156,9 @@ private:
 	
 	void OnScriptComponentMoved(USceneComponent* SceneComponent, EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport, TWeakObjectPtr<UBangoScriptComponent> ScriptComponent);
 	
-	void AddElement(const FBangoScriptOctreeElement& Element);
+	void AddElement(FBangoScriptOctreeElement& Element);
 
-	void RemoveElement(const FBangoScriptOctreeElement& Element);
+	void RemoveElement(FBangoScriptOctreeElement& Element);
 	
 	void OnGlobalActorMoved(AActor* Actor);
 	

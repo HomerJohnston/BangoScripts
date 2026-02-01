@@ -69,19 +69,38 @@ void UBangoScriptComponent::OnRegister()
 	
 	if (GetWorld()->IsEditorWorld())
     {
-		// Unregister the editor instance from DebugDraw prior to starting PIE
-		// FEditorDelegates::PreBeginPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this); } );
+		FEditorDelegates::PreBeginPIE.AddWeakLambda(this, [this] (const bool bIsSimulating)
+		{
+			if (bDebugRegistered)
+			{
+				FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Unregistered);
+				bDebugRegistered = false;				
+			}
+		});
+	
+		FEditorDelegates::EndPIE.AddWeakLambda(this, [this] (const bool bIsSimulating)
+		{
+			if (!bDebugRegistered)
+			{
+				FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered);
+				bDebugRegistered = true;		
+			}
+		});
 		
-		// Re-register the editor instance to DebugDraw when PIE ends
-		//FEditorDelegates::EndPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate); });
-		
-		// Start registered
-	    // FBangoEditorDelegates::DebugDrawRequest.AddUObject(this, &ThisClass::PerformDebugDrawUpdate);
-		 
-		FEditorDelegates::PreBeginPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Unregistered); } );
-		FEditorDelegates::EndPIE.AddWeakLambda(this, [this] (const bool bIsSimulating) { FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered); });
-		
-		FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered);
+		if (!bDebugRegistered)
+		{
+			FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered);
+			bDebugRegistered = true;		
+		}
+    }
+    
+    if (GetWorld()->IsGameWorld())
+    {
+    	if (!bDebugRegistered)
+    	{
+    		FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Registered);
+    		bDebugRegistered = true;		
+    	}
     }
 	
 	if (!BillboardInstance && GetOwner() && !GetWorld()->IsGameWorld())
@@ -123,8 +142,12 @@ void UBangoScriptComponent::OnUnregister()
 {
 	Bango::Debug::PrintComponentState(this, "OnUnregister_Early");
 	
-	//FBangoEditorDelegates::DebugDrawRequest.RemoveAll(this);
-
+	if (bDebugRegistered)
+	{
+		FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Unregistered);
+		bDebugRegistered = false;				
+	}
+	
 	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
 		
 	Super::OnUnregister();

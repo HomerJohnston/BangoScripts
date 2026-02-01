@@ -97,6 +97,9 @@ protected:
 	
 public:
 	FOctreeElementId2 DebugElementId;
+	
+protected:
+	bool bDebugRegistered = false;
 #endif
 	
 public:

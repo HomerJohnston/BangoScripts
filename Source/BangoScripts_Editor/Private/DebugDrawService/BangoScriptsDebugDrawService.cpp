@@ -52,7 +52,7 @@ bool FBangoScriptOctreeElement::Update()
 
 void FBangoScriptOctreeSemantics::SetElementId(const FBangoScriptOctreeElement& Element, FOctreeElementId2 Id)
 {
-	if (Element.ScriptComponent.IsValid())
+	if (Element.ScriptComponent.IsValid(true))
 	{
 		Element.ScriptComponent->DebugElementId = Id;
 	}
@@ -228,7 +228,7 @@ void UBangoScriptsDebugDrawService::DebugDraw(UCanvas* Canvas, APlayerController
 		for (FBangoScripts_NearbyScript& NearbyScript : NearbyScripts)
 		{
 			const UBangoScriptComponent* ScriptComponent = NearbyScript.Component;
-		
+			
 			DrawPIEIcon(Canvas, ScriptComponent, NearbyScript.ScreenPos);
 		}
 	}
@@ -439,19 +439,25 @@ void UBangoScriptsDebugDrawService::OnBangoScriptRegistrationChange(UBangoScript
 {
 	FBangoScriptOctreeElement Element(ScriptComponent);
 	
+	static int AddCount;
+	
 	if (RegistrationStatus == EBangoScriptComponentRegisterStatus::Registered)
 	{
 		AddElement(Element);
+		AddCount++;
 		// TODO this doesn't work. When dragging actor via gizmo handles, it does not fire PostEditChangeProperty of the root component
-		ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.AddUObject(this, &ThisClass::OnScriptComponentMoved, TWeakObjectPtr<UBangoScriptComponent>(ScriptComponent));
+		//ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.AddUObject(this, &ThisClass::OnScriptComponentMoved, TWeakObjectPtr<UBangoScriptComponent>(ScriptComponent));
 		ScriptOwners.Add(ScriptComponent->GetOwner());
 	}
 	else
 	{
 		ScriptOwners.Remove(ScriptComponent->GetOwner());
-		ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.RemoveAll(this);
+		//ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.RemoveAll(this);
 		RemoveElement(Element);
+		AddCount--;
 	}
+	
+	UE_LOG(LogBangoEditor, VeryVerbose, TEXT("ScriptReg: %s, %i"), *ScriptComponent->GetPathName(), AddCount);
 }
 
 // ----------------------------------------------
@@ -462,7 +468,7 @@ void UBangoScriptsDebugDrawService::OnScriptComponentMoved(USceneComponent* Scen
 	{
 		FBangoScriptOctreeElement Element(ScriptComponent.Get());
 	
-		//DrawDebugSphere(Element.ScriptComponent->GetWorld(), SceneComponent->GetComponentLocation(), 30.0f, 12, FColor::Yellow, false, 1.0f);
+		// DrawDebugSphere(Element.ScriptComponent->GetWorld(), SceneComponent->GetComponentLocation(), 30.0f, 12, FColor::Yellow, false, 1.0f);
 		
 		RemoveElement(Element);
 		AddElement(Element);
@@ -471,18 +477,23 @@ void UBangoScriptsDebugDrawService::OnScriptComponentMoved(USceneComponent* Scen
 
 // ----------------------------------------------
 
-void UBangoScriptsDebugDrawService::AddElement(const FBangoScriptOctreeElement& Element)
+void UBangoScriptsDebugDrawService::AddElement(FBangoScriptOctreeElement& Element)
 {
 	ScriptComponentTree.AddElement(Element);
-	//DrawDebugSphere(Element.ScriptComponent->GetWorld(), Element.Position, 50.0f, 12, FColor::Green, false, 1.0f);
+	
+	// DrawDebugSphere(Element.ScriptComponent->GetWorld(), Element.Position, 50.0f, 12, FColor::Green, false, 5.0f);
 }
 
 // ----------------------------------------------
 
-void UBangoScriptsDebugDrawService::RemoveElement(const FBangoScriptOctreeElement& Element)
+void UBangoScriptsDebugDrawService::RemoveElement(FBangoScriptOctreeElement& Element)
 {
-	//DrawDebugSphere(Element.ScriptComponent->GetWorld(), Element.Position, 50.0f, 12, FColor::Red, false, 1.0f);
-	ScriptComponentTree.RemoveElement(Element.ScriptComponent.GetEvenIfUnreachable()->DebugElementId);
+	if (Element.ScriptComponent->DebugElementId.IsValidId())
+	{
+		ScriptComponentTree.RemoveElement(Element.ScriptComponent.GetEvenIfUnreachable()->DebugElementId);
+
+		// DrawDebugSphere(Element.ScriptComponent->GetWorld(), Element.Position, 40.0f, 12, FColor::Red, false, 5.0f);
+	}
 }
 
 // ----------------------------------------------
@@ -601,14 +612,14 @@ bool UBangoScriptsDebugDrawService::DrawViewportHoverControls(UBangoScriptCompon
 		WidgetSize *= ScaleDPI;
 		
 		FVector2f ViewportPosition = Viewport.Pin()->GetCachedGeometry().GetAbsolutePosition();
-		FVector2f BillboardAbsPos = ViewportPosition + FVector2f(BillboardScreenPos.X - 0.5f * WidgetSize.X, BillboardScreenPos.Y - 0.5f * WidgetSize.Y);
+		FVector2f WidgetAbsPos = ViewportPosition + FVector2f(BillboardScreenPos.X - 0.5f * WidgetSize.X, BillboardScreenPos.Y + 4.0f);
 		
 		TSharedPtr<IMenu> Menu = FSlateApplication::Get().PushMenu(
 			LevelViewport.ToSharedRef(),
 			FWidgetPath(),
 			MenuWidget,
 			//MousePos, 
-			BillboardAbsPos,
+			WidgetAbsPos,
 			FPopupTransitionEffect(FPopupTransitionEffect::None), 
 			false);
 		
@@ -766,6 +777,7 @@ TSharedPtr<SWidget> UBangoScriptsDebugDrawService::CreateNewButton(UBangoScriptC
 	
 	return SNew(SButton)
 	.Text(LOCTEXT("NewScriptButton_Text", "New Script"))
+	.HAlign(HAlign_Center)
 	.TextStyle(FAppStyle::Get(), "SmallText")
 	.OnClicked_Lambda( [WeakThis, WeakScriptComponent] ()
 	{
@@ -799,6 +811,7 @@ TSharedPtr<SWidget> UBangoScriptsDebugDrawService::CreateRunButton(UBangoScriptC
 	
 	return SNew(SButton)
 	.Text(INVTEXT("Run"))
+	.HAlign(HAlign_Center)
 	.TextStyle(FAppStyle::Get(), "SmallText")
 	.OnClicked_Lambda([WeakScriptComponent]()
 	{

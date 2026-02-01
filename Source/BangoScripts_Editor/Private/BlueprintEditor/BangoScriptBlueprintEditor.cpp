@@ -622,8 +622,6 @@ void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, con
 						
 						CastTo = FString::Format(TEXT("{0}'{1}'"), { CastTo, ObjectClassName } );
 						
-						UE_LOG(LogBangoEditor, Display, TEXT("CastTo: %s    ObjectClassName: %s"), *CastTo, *ObjectClassName);
-						
 						CopiedActors.Add( {CastTo, TargetActor} );
 					}
 				}

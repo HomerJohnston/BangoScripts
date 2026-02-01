@@ -67,7 +67,22 @@ UBangoScriptSubsystem* UBangoScriptSubsystem::Get(UObject* WorldContext)
 {
 	if (IsValid(WorldContext))
 	{
-		return WorldContext->GetWorld()->GetSubsystem<UBangoScriptSubsystem>();
+		UWorld* World = WorldContext->GetWorld();
+
+		if (!World)
+		{
+			return nullptr;
+		}
+		
+#if WITH_EDITOR
+		if (!World->IsGameWorld())
+		{
+			checkNoEntry(); 
+			return nullptr;
+		}
+#endif
+
+		return World->GetSubsystem<UBangoScriptSubsystem>();
 	}
 
 	return nullptr;
@@ -127,7 +142,13 @@ FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScri
 	check(Runner);
 	
 	UBangoScriptSubsystem* Subsystem = Get(Runner);
+	
 	check(Subsystem);
+	if (!Subsystem)
+	{
+		UE_LOG(LogBango, Error, TEXT("Could not find script subsystem; EnqueueScript failure, runner: %s"), *Runner->GetPathName());
+		return FBangoScriptHandle::GetNullHandle();
+	}
 	
 	FBangoScriptHandle NewHandle = FBangoScriptHandle::NewHandle();
 	
