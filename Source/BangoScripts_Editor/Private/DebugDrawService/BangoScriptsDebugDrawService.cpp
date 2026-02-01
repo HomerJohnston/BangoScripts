@@ -592,8 +592,14 @@ bool UBangoScriptsDebugDrawService::DrawViewportHoverControls(UBangoScriptCompon
 	{
 		TSharedRef<SWidget> MenuWidget = GetHoverMenuWidget(ScriptComponent, bPIE);
 		MenuWidget->SlatePrepass();
-		
+
 		FVector2D WidgetSize = MenuWidget->GetDesiredSize();
+		
+		// The widget draw size needs to be multiplied by DPI to obtain the size the widget would have on screen.
+		const TSharedPtr<SWindow> TopLevelWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
+		const float ScaleDPI = TopLevelWindow ? TopLevelWindow->GetDPIScaleFactor() : 1.f;
+		WidgetSize *= ScaleDPI;
+		
 		FVector2f ViewportPosition = Viewport.Pin()->GetCachedGeometry().GetAbsolutePosition();
 		FVector2f BillboardAbsPos = ViewportPosition + FVector2f(BillboardScreenPos.X - 0.5f * WidgetSize.X, BillboardScreenPos.Y - 0.5f * WidgetSize.Y);
 		
