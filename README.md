@@ -8,17 +8,17 @@ Imagine if you could write a short blueprint event directly onto an actor in a l
 
 You can create completely bespoke "level scripts" for individual actors in a level, or you can create re-usable "content scripts" in your Content folder to use in multiple places, complete with input variables configurable on each instance.
 
-### Plugin Summary
-- A level scripting engine for UE5, using blueprint graphs.
-- Intended to execute small, short-lived scripted events.
-- Supported on: UE5.6 - UE5.7
-- Current status: ⚠️**Experimental**⚠️ *some crashes and possible data loss; do not use in a real project!*
-- Dependencies: None
-- Pairs with: Other Bango plugins in development (Bango Facts, Bango Triggers; both pre-alpha and unavailable at this time)
+### Summary Info
+> [!NOTE]
+> - Intended to execute small, short-lived scripted events.
+> - Supported on: UE5.6 - UE5.7
+> - Current status: ⚠️**Experimental**⚠️ *some crashes and possible data loss; do not use in a real project!*
+> - Dependencies: None
+> - Pairs with: Other Bango plugins in development (Bango Facts, Bango Triggers; both pre-alpha and unavailable at this time)
  
-### Limitations
-- Runtime serialization: Bango does *not* use custom graphs; this is ordinary Blueprint Graph code, using the normal Blueprint VM. Blueprint execution state is not serializable; you cannot natively save/restore a script back to its middle of operation (you might want to use a different system for that, like Flow Graph).
-- Untested in multiplayer: this plugin is currently being used by the author for single-player projects; although it just uses normal blueprints, and should follow any normal rules of blueprint, so it may work fine.
+> [!WARNING]
+> - *Runtime serialization*: Bango does *not* use custom graphs; this is ordinary Blueprint Graph code, using the normal Blueprint VM. Blueprint execution state is not serializable; you cannot natively save/restore a script back to its middle of operation (you might want to use a different system for that, like Flow Graph).
+> - *Untested in multiplayer*: this plugin is currently being used by the author for single-player projects; although it just uses normal blueprints, and should follow any normal rules of blueprint, so it may work fine.
 
 &nbsp;
 
