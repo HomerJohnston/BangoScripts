@@ -290,6 +290,8 @@ void FBangoEditorStyle::SetupStyles()
 
 	//StyleInstance->Set("RichTextBlock.BoldHighlight", FTextBlockStyle(TextStyle_Normal));
 
+	const FVector2D Icon64x64(64.0f, 64.0f);
+	
 	{
 		const FString BangoScriptComponentIconPropName = FString::Printf(TEXT("ClassIcon.%s"), *UBangoScriptComponent::StaticClass()->GetName());
 		StyleInstance->Set(*BangoScriptComponentIconPropName, new FSlateVectorImageBrush(StyleInstance->RootToContentDir("ClassIcons/Icon_Script", L".svg"), FVector2f(20, 20), Bango::Colors::Yellow));
@@ -297,6 +299,10 @@ void FBangoEditorStyle::SetupStyles()
 	{
 		const FString BangoActorIDComponentIconPropName = FString::Printf(TEXT("ClassIcon.%s"), *UBangoActorIDComponent::StaticClass()->GetName());
 		StyleInstance->Set(*BangoActorIDComponentIconPropName, new FSlateVectorImageBrush(StyleInstance->RootToContentDir("ClassIcons/Icon_ActorID", L".svg"), FVector2f(20, 20), Bango::Colors::Yellow));
+	}
+	{
+		const FString BangoScriptClassName = FString::Printf(TEXT("ClassThumbnail.%s"), *UBangoScript::StaticClass()->GetName());
+		StyleInstance->Set(*BangoScriptClassName, new FSlateImageBrush(StyleInstance->RootToContentDir("ContentThumbnails/Icon_BangoScript", L".png"), Icon64x64));
 	}
 	
 	// ============================================================================================

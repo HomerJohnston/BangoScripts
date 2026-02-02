@@ -1,5 +1,6 @@
 ﻿#include "AssetDefinition_BangoScript.h"
 
+#include "BangoEditorStyle.h"
 #include "BangoScripts_Editor.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
@@ -21,13 +22,25 @@ TConstArrayView<FAssetCategoryPath> UAssetDefinition_BangoScript::GetAssetCatego
 
 TSoftClassPtr<UObject> UAssetDefinition_BangoScript::GetAssetClass() const
 {
-	return UBangoScriptBlueprint::StaticClass();
+	return UBangoScript::StaticClass();
 }
+
+// ----------------------------------------------
 
 FLinearColor UAssetDefinition_BangoScript::GetAssetColor() const
 {
 	// TODO
 	return FLinearColor::Black;
+}
+
+const FSlateBrush* UAssetDefinition_BangoScript::GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const
+{
+	return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript);// Super::GetIconBrush(InAssetData, InClassName);
+}
+
+const FSlateBrush* UAssetDefinition_BangoScript::GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const
+{
+	return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript);// Super::GetIconBrush(InAssetData, InClassName);
 }
 
 // ----------------------------------------------
@@ -36,6 +49,8 @@ FText UAssetDefinition_BangoScript::GetAssetDescription(const FAssetData& AssetD
 {
 	return LOCTEXT("BangoScriptBlueprint_AssetDescription", "A re-usable script asset, to be used by the actor component UBangoScriptCompoent, or in other places.");
 }
+
+// ----------------------------------------------
 
 FText UAssetDefinition_BangoScript::GetAssetDisplayName() const
 {
@@ -71,7 +86,7 @@ EAssetCommandResult UAssetDefinition_BangoScript::OpenAssets(const FAssetOpenArg
 
 UFactory_BangoScript::UFactory_BangoScript()
 {
-	SupportedClass = UBangoScriptBlueprint::StaticClass();
+	SupportedClass = UBangoScript::StaticClass();
 	bCreateNew = true;
 	bEditorImport = false;
 	bEditAfterNew = true;

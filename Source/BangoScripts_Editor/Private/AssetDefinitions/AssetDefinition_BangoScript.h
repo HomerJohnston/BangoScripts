@@ -16,6 +16,10 @@ public:
 	
 	FLinearColor GetAssetColor() const override;
 	
+	const FSlateBrush* GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+	
+	const FSlateBrush* GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+	
 	FText GetAssetDescription(const FAssetData& AssetData) const override;
 	
 	FText GetAssetDisplayName() const override;
