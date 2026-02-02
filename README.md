@@ -1,10 +1,12 @@
 # Bango Scripts
 
-Have you ever placed a door, and a button, and wondered *"how do I make that button open that door?"* 
+Have you ever placed a door actor, and a button actor, and wondered *"how do I make that button open that door?"* 
 
-Have you ever placed a trigger volume after a door and wondered *"how can I conditionally spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds?"*
+Have you ever placed a trigger volume and wondered *"how can I conditionally spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds?"*
 
-This plugin effectively creates and embeds small "script" blueprints onto level actors. These blueprints simply contain a `Start` event node which you execute logic from, like many traditional game script systems. ***Bango Scripts*** also provides some extra helper-nodes to bring more traditional DSL/script features into blueprints, like explicit references to specific actors. You can create completely unique "level scripts" for individual actors in a level, or create re-usable "content scripts" in your Content folder to use in multiple places with input variables.
+Imagine if you could write a short blueprint event directly onto an actor in a level. This plugin effectively allows you to do this, by creating and attaching small "script" blueprints onto actors via a custom actor component. These "script" blueprints simply contain a `Start` event node which you execute logic from, like many traditional game script systems. ***Bango Scripts*** also provides some extra helper-nodes to bring more traditional DSL/script features into blueprints, such as explicit references to specific actors in a level.
+
+You can create completely bespoke "level scripts" for individual actors in a level, or you can create re-usable "content scripts" in your Content folder to use in multiple places, complete with input variables configurable on each instance.
 
 ### Plugin Summary
 - A level scripting engine for UE5, using blueprint graphs.
@@ -12,7 +14,7 @@ This plugin effectively creates and embeds small "script" blueprints onto level 
 - Supported on: UE5.6 - UE5.7
 - Current status: ⚠️**Experimental**⚠️ *some crashes and possible data loss; do not use in a real project!*
 - Dependencies: None
-- Pairs with: Other Bango plugins in development (Bango Facts, Bango Triggers; both pre-alpha and unreleased)
+- Pairs with: Other Bango plugins in development (Bango Facts, Bango Triggers; both pre-alpha and unavailable at this time)
  
 ### Limitations
 - Runtime serialization: Bango does *not* use custom graphs; this is ordinary Blueprint Graph code, using the normal Blueprint VM. Blueprint execution state is not serializable; you cannot natively save/restore a script back to its middle of operation (you might want to use a different system for that, like Flow Graph).
@@ -23,12 +25,14 @@ This plugin effectively creates and embeds small "script" blueprints onto level 
 # Demonstration - Gameplay
 
 The level below contains:
-- Two door blueprints with simple "open" events. The opening animation of the doors is handled by a Sequencer Actor Component on the door, and a little bit of code, in the door blueprint.
+- Two door blueprints with simple "open" events. The opening animation of the doors is handled by a Sequencer Actor Component on the door (and a little bit of code) in the door blueprint.
 - Several Light blueprints with simple "turn on" events.
-- One simple pressure-plate trigger, this contains an overlap collider box and a Bango Script component. The script component is ran on a BeginOverlap event.
-- Two simple sphere collider triggers, this contains an overlap sphere and a Bango Script component. The script component is ran on a BeginOverlapy event.
+- One simple pressure-plate trigger. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The script component is ran on a BeginOverlap event.
+- Two simple sphere collider triggers. These contain an overlap sphere and a Bango Script component. The script component is ran on a BeginOverlap event, and the trigger self-destructs to prevent repeat activations.
 
-The three colliders are visible at the start of the video, before entering play mode.
+The triggers described about are NOT related to Bango Scripts. Your game needs to supply its own reusable trigger classes (or use Bango Triggers, which is not available yet).
+
+The three triggers are visible at the start of the video, before entering play mode:
 
 https://github.com/user-attachments/assets/94cc622d-3900-4bb5-8110-4802748d789b
 
@@ -56,19 +60,4 @@ Here's what the Bango scripts look like, in order of appearance:
 
 &nbsp;
 
-# Demonstration - Script Creation
-\<\<PLACEHOLDER\>\>
-  
-# Quick-Start
-- Build any sort of trigger `AActor` blueprint for your game. This could be an area-volume trigger, an event-based trigger, a button, etc.
-- Add a `UBangoScriptComponent` component onto this actor.
-- Using Blueprint or C++, execute the `Run` function/event on the `UBangoScriptComponent`.
-- Place your trigger actor into a level and select the Script Component.
-- Click the "New Level Script" button.
-- Click the "Edit Script" button. A normal blueprint editor appears.
-- Setup script logic off of the existing Event Start node.
-- Select and copy (ctrl+c) any actor in the level editor viewport.
-- Click back on your new script graph and Paste (ctrl+v) the actor onto the graph.
-- Run your game! If you leave the script blueprint window open it will automatically connect to the running script when it begins running.
-
-## Miscellaneous Features
+Go to the wiki to get started.
