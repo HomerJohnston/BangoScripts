@@ -33,16 +33,6 @@ FLinearColor UAssetDefinition_BangoScript::GetAssetColor() const
 	return FLinearColor::Black;
 }
 
-const FSlateBrush* UAssetDefinition_BangoScript::GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const
-{
-	return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript);// Super::GetIconBrush(InAssetData, InClassName);
-}
-
-const FSlateBrush* UAssetDefinition_BangoScript::GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const
-{
-	return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_EditScript);// Super::GetIconBrush(InAssetData, InClassName);
-}
-
 // ----------------------------------------------
 
 FText UAssetDefinition_BangoScript::GetAssetDescription(const FAssetData& AssetData) const
