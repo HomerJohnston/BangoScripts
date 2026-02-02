@@ -110,13 +110,13 @@ FBangoScriptHandle UBangoScriptSubsystem::K2_EnqueueScript(TSoftClassPtr<UBangoS
 {
 	if (!Runner)
 	{
-		UE_LOG(LogBango, Error, TEXT("RunScript called with null runner!"));
+		UE_LOG(LogBango, Warning, TEXT("RunScript called with null runner!"));
 		return FBangoScriptHandle::GetNullHandle();
 	}
 
 	if (ScriptClass.IsNull())
 	{
-		UE_LOG(LogBango, Warning, TEXT("RunScript called with null script!"));
+		UE_LOG(LogBango, VeryVerbose, TEXT("RunScript called with null script!"));
 		return FBangoScriptHandle::GetNullHandle();
 	}
 
@@ -135,7 +135,7 @@ FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScri
 {
     if (ScriptClass.IsNull())
     {
-        UE_LOG(LogBango, Warning, TEXT("RunScript called with null script!"));
+        UE_LOG(LogBango, VeryVerbose, TEXT("RunScript called with null script!"));
         return FBangoScriptHandle::GetNullHandle();
     }
     
