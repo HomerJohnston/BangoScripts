@@ -1,6 +1,5 @@
 ﻿#include "AssetDefinition_BangoScript.h"
 
-#include "BangoEditorStyle.h"
 #include "BangoScripts_Editor.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
@@ -29,7 +28,6 @@ TSoftClassPtr<UObject> UAssetDefinition_BangoScript::GetAssetClass() const
 
 FLinearColor UAssetDefinition_BangoScript::GetAssetColor() const
 {
-	// TODO
 	return FLinearColor::Black;
 }
 
@@ -47,32 +45,7 @@ FText UAssetDefinition_BangoScript::GetAssetDisplayName() const
 	return LOCTEXT("BangoScriptBlueprint_AssetDisplayName", "Bango Script Blueprint");
 }
 
-// ----------------------------------------------
-
-EAssetCommandResult UAssetDefinition_BangoScript::OpenAssets(const FAssetOpenArgs& OpenArgs) const
-{
-	UAssetEditorSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-
-	if (Subsystem)
-	{
-		TArray<UBlueprint*> ScriptBlueprints = OpenArgs.LoadObjects<UBlueprint>();
-		
-		if (ScriptBlueprints.Num() == 1)
-		{
-			TSharedRef<FBangoScriptBlueprintEditor> NewBlueprintEditor(new FBangoScriptBlueprintEditor());
-
-			const bool bShouldOpenInDefaultsMode = false;
-
-			NewBlueprintEditor->InitBlueprintEditor(EToolkitMode::Standalone, nullptr, ScriptBlueprints, bShouldOpenInDefaultsMode);
-
-			return EAssetCommandResult::Handled;
-		}
-	}
-
-	return EAssetCommandResult::Unhandled;
-}
-
-// ----------------------------------------------
+// ================================================================================================
 
 UFactory_BangoScript::UFactory_BangoScript()
 {
@@ -90,5 +63,6 @@ UObject* UFactory_BangoScript::FactoryCreateNew(UClass* InClass, UObject* InPare
 }
 
 // ----------------------------------------------
+
 
 #undef LOCTEXT_NAMESPACE

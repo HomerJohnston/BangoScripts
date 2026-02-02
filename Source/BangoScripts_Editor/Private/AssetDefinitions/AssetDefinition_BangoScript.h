@@ -4,6 +4,9 @@
 
 #include "AssetDefinition_BangoScript.generated.h"
 
+/*
+ * This asset definition is used for the content menu "Bango > New Script" entry.
+ */
 UCLASS()
 class UAssetDefinition_BangoScript : public UAssetDefinitionDefault
 {
@@ -19,8 +22,6 @@ public:
 	FText GetAssetDescription(const FAssetData& AssetData) const override;
 	
 	FText GetAssetDisplayName() const override;
-	
-	EAssetCommandResult OpenAssets(const FAssetOpenArgs& OpenArgs) const override;
 };
 
 UCLASS()
