@@ -60,4 +60,6 @@ Here's what the Bango scripts look like, in order of appearance:
 
 &nbsp;
 
-Go to the wiki to get started.
+# Getting Started
+
+Go to the wiki to get started using Bango Scripts.
