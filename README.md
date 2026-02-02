@@ -1,6 +1,8 @@
 # Bango Scripts
 
-Have you ever placed a door, and a button, and wondered *"how do I make that button open that door?"* Have you ever placed a trigger volume after a door and wondered *"how can I conditionally spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds?"*
+Have you ever placed a door, and a button, and wondered *"how do I make that button open that door?"* 
+
+Have you ever placed a trigger volume after a door and wondered *"how can I conditionally spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds?"*
 
 This plugin effectively creates and embeds small "script" blueprints onto level actors. These blueprints simply contain a `Start` event node which you execute logic from, like many traditional game script systems. ***Bango Scripts*** also provides some extra helper-nodes to bring more traditional DSL/script features into blueprints, like explicit references to specific actors. You can create completely unique "level scripts" for individual actors in a level, or create re-usable "content scripts" in your Content folder to use in multiple places with input variables.
 
