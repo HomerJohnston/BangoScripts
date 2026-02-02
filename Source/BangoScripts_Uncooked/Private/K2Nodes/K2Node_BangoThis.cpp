@@ -1,12 +1,14 @@
 ﻿#include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoThis.h"
 
 #include "BangoScripts/Core/BangoScript.h"
+#include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
 UK2Node_BangoThis::UK2Node_BangoThis()
 {
 	bShowNodeProperties = true;	
+	MenuSubcategory = BangoSubcategories::Scripting;
 }
 
 void UK2Node_BangoThis::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)

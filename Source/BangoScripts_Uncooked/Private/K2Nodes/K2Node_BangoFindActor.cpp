@@ -6,6 +6,7 @@
 #include "BangoScripts/Subsystem/BangoActorIDSubsystem.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
 #include "BangoScripts/EditorTooling/BangoHelpers.h"
+#include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder.h"
 #include "Editor/UnrealEdEngine.h"
 #include "WorldPartition/ActorDescContainerInstance.h"
@@ -18,6 +19,7 @@
 UK2Node_BangoFindActor::UK2Node_BangoFindActor()
 {
 	bShowNodeProperties = true;
+	MenuSubcategory = BangoSubcategories::Scripting;
 }
 
 bool UK2Node_BangoFindActor::ShouldDrawCompact() const
@@ -47,7 +49,7 @@ FText UK2Node_BangoFindActor::GetTooltipText() const
 		return LOCTEXT("TooltipText_BangoFindActorNode_TargetActor", "Soft actor pointer lookup");
 	}
 	
-	return LOCTEXT("TooltipText_BangoFindActorNode_BangoName", "Bango ID Component lookup");
+	return LOCTEXT("TooltipText_BangoFindActorNode_BangoName", "Bango ID Component lookup.");
 }
 
 void UK2Node_BangoFindActor::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)

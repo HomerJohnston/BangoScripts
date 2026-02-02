@@ -1,6 +1,7 @@
 ﻿#include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoGotoDestination.h"
 
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoGotoStart.h"
+#include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder_Macros.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
@@ -8,6 +9,7 @@
 UK2Node_BangoGotoDestination::UK2Node_BangoGotoDestination()
 {
 	bShowNodeProperties = true;
+	MenuSubcategory = BangoSubcategories::Scripting;
 }
 
 void UK2Node_BangoGotoDestination::AllocateDefaultPins()
@@ -20,7 +22,7 @@ void UK2Node_BangoGotoDestination::AllocateDefaultPins()
 
 FText UK2Node_BangoGotoDestination::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return INVTEXT("From");
+	return INVTEXT("Goto (end)");
 }
 
 void UK2Node_BangoGotoDestination::ExpandNode(class FKismetCompilerContext& Compiler, UEdGraph* SourceGraph)

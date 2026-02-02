@@ -25,6 +25,14 @@ FText UK2Node_BangoFinishScript::GetNodeTitle(ENodeTitleType::Type TitleType) co
 	return LOCTEXT("K2Node_BangoFinishScript_NodeTitle", "Finish Script");
 }
 
+FText UK2Node_BangoFinishScript::GetTooltipText() const
+{
+	return LOCTEXT("K2Node_BangoFinishScript_NodeTooltipText", 
+		"This node is not required for simple scripts which have a simple execution path. Bango will auto-destroy simple scripts.\n"
+		"\n"
+		"For scripts that subscribe to and await outside events, you must use this node to close out the running script instance.");
+}
+
 FLinearColor UK2Node_BangoFinishScript::GetNodeTitleColor() const
 {
 	return 0.5f * GetDefault<UGraphEditorSettings>()->EventNodeTitleColor;

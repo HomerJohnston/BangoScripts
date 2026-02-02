@@ -8,7 +8,11 @@
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
-/** 'This' is the object responsible for running this script. */
+/** 
+ * 'This' is a getter for the object that ran this script. Normally this node is automatically configured
+ * during creation of a Level Script, but you can also open the details panel to configure it. You could 
+ * use this, for example, to destroy a trigger after the script runs.
+ */
 UCLASS(MinimalAPI, DisplayName = "This")
 class UK2Node_BangoThis : public UK2Node_BangoBase, public FTickableEditorObject
 {

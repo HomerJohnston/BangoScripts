@@ -12,6 +12,7 @@
 #include "KismetCompiler.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Subsystem/BangoScriptSubsystem.h"
+#include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder_Macros.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -38,6 +39,7 @@ class UK2Node_IfThenElse;
 UK2Node_BangoRunScript::UK2Node_BangoRunScript()
 {
 	bIsLatent = true;
+	MenuSubcategory = BangoSubcategories::Scripting;
 }
 
 void UK2Node_BangoRunScript::PinDefaultValueChanged(UEdGraphPin* Pin)

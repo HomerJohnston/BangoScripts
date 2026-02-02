@@ -16,6 +16,7 @@
 #include "K2Node_VariableSet.h"
 #include "KismetCompiler.h"
 #include "BangoScripts/Core/BangoScript.h"
+#include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder_Macros.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -41,6 +42,7 @@ UK2Node_BangoSleep::UK2Node_BangoSleep()
 	bIsLatent = true;
 	bHideLatentIcon = true;
 	bShowNodeProperties = true;
+	MenuSubcategory = BangoSubcategories::Scripting;
 }
 
 void UK2Node_BangoSleep::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)

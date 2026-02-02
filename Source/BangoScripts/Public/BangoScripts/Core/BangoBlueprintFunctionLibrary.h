@@ -14,6 +14,6 @@ class UBangoBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 
-    UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext"))
+    UFUNCTION(BlueprintCallable, DisplayName = "Abort Script", meta = (WorldContext = "WorldContext"))
     static void AbortScript(UObject* WorldContext, UPARAM(Ref) FBangoScriptHandle& Handle);
 };

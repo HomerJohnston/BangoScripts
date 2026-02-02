@@ -4,7 +4,7 @@
 
 namespace BangoSubcategories
 {
-	FText Scripting = LOCTEXT("ScriptingSubcategory", "Scripting");
+	inline FText Scripting = LOCTEXT("ScriptingSubcategory", "Scripting");
 }
 
 #undef  LOCTEXT_NAMESPACE

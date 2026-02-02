@@ -1,6 +1,7 @@
 ﻿#include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoGotoStart.h"
 
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoGotoDestination.h"
+#include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
@@ -8,6 +9,7 @@
 UK2Node_BangoGotoStart::UK2Node_BangoGotoStart()
 {
 	bShowNodeProperties = true;
+	MenuSubcategory = BangoSubcategories::Scripting;
 }
 
 void UK2Node_BangoGotoStart::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
@@ -29,7 +31,7 @@ void UK2Node_BangoGotoStart::AllocateDefaultPins()
 
 FText UK2Node_BangoGotoStart::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return INVTEXT("Goto");
+	return INVTEXT("Goto (start)");
 }
 
 void UK2Node_BangoGotoStart::ExpandNode(class FKismetCompilerContext& Compiler, UEdGraph* SourceGraph)

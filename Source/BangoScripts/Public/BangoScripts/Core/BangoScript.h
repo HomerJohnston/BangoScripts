@@ -86,7 +86,7 @@ protected:
     void Start();
 
     /** This is supposed to be called at the end of the Execute function */
-    UFUNCTION(BlueprintCallable, meta = (WorldContext = "Script", BlueprintProtected))
+    UFUNCTION(BlueprintInternalUseOnly, BlueprintCallable, meta = (WorldContext = "Script", BlueprintProtected))
     static void Finish(UBangoScript* Script);
 
 #if WITH_EDITOR
@@ -112,20 +112,17 @@ protected:
 	UPROPERTY(Transient)
     TMap<int32, FOnLatentActionCompleted> SleepCancelDelegates;
 
-    UFUNCTION(BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", LatentInfo="LatentInfo", Duration="1.23", Keywords="sleep"))
+    UFUNCTION(BlueprintInternalUseOnly, BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", LatentInfo="LatentInfo", Duration="1.23", Keywords="sleep"))
     static UPARAM(DisplayName = "UUID") int32 LaunchSleep_Internal(const UObject* WorldContextObject, float Duration, struct FLatentActionInfo LatentInfo, FOnLatentActionTick TickDelegate, FOnLatentActionCompleted CompleteDelegate);
 
-    UFUNCTION(BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", Keywords="sleep"))
+    UFUNCTION(BlueprintInternalUseOnly, BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", Keywords="sleep"))
     static void CancelSleep_Internal(UObject* WorldContextObject, int32 ActionUUID);
 
-    UFUNCTION(BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", Keywords="sleep"))
+    UFUNCTION(BlueprintInternalUseOnly, BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", Keywords="sleep"))
     static void SkipSleep_Internal(UObject* WorldContextObject, int32 ActionUUID);
 
-    UFUNCTION(BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", Keywords="sleep"))
+    UFUNCTION(BlueprintInternalUseOnly, BlueprintCallable, Category="Bango|Delay", meta = (WorldContext="WorldContextObject", Keywords="sleep"))
     static void SetSleepPause_Internal(UObject* WorldContextObject, bool bPaused, int32 ActionUUID);
-    
-    UFUNCTION(BlueprintCallable, Category="Bango|Utilities", BlueprintPure)
-    static UPARAM(DisplayName="Val") float Rand(float Hi, float Lo);
     
 #if WITH_EDITOR
     

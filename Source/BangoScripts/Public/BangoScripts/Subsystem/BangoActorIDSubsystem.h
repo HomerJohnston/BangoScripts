@@ -46,10 +46,9 @@ class UBangoActorIDBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Bango", DisplayName = "Get Actor by Name", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintInternalUseOnly, BlueprintCallable, BlueprintPure, Category = "Bango", DisplayName = "Get Actor by Name", meta = (WorldContext = "WorldContextObject"))
 	static AActor* K2_GetActorByName(UObject* WorldContextObject, FName Name);
 	
-	// TODO: Do I have any real use for this? Should I just delete Guids off of my ID components?
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Bango", DisplayName = "Get Actor by GUID", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintInternalUseOnly,BlueprintCallable, BlueprintPure, Category = "Bango", DisplayName = "Get Actor by GUID", meta = (WorldContext = "WorldContextObject"))
 	static AActor* K2_GetActorByGuid(UObject* WorldContextObject, FGuid Guid);
 };

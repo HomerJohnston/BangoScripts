@@ -20,6 +20,8 @@ public:
 
 	FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	
+	FText GetTooltipText() const override;
+	
 	FLinearColor GetNodeTitleColor() const override;
 	
 	void ExpandNode(class FKismetCompilerContext& Compiler, UEdGraph* SourceGraph) override;
