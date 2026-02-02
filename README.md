@@ -20,6 +20,9 @@ You can create completely bespoke "level scripts" for individual actors in a lev
 > - *Runtime serialization*: Bango does *not* use custom graphs; this is ordinary Blueprint Graph code, using the normal Blueprint VM. Blueprint execution state is not serializable; you cannot natively save/restore a script back to its middle of operation (you might want to use a different system for that, like Flow Graph).
 > - *Untested in multiplayer*: this plugin is currently being used by the author for single-player projects; although it just uses normal blueprints, and should follow any normal rules of blueprint, so it may work fine.
 
+> [!CAUTION]
+> - *Known issues*: Be sure to visit the [Issues](https://github.com/HomerJohnston/BangoScripts/issues) page for known problems.
+
 &nbsp;
 
 # Demonstration - Gameplay
