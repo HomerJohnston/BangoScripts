@@ -25,17 +25,15 @@ You can create completely bespoke "level scripts" for individual actors in a lev
 
 # Demonstration - Gameplay
 
-The level below contains:
+https://github.com/user-attachments/assets/94cc622d-3900-4bb5-8110-4802748d789b
+
+The level above contains:
 - Two door blueprints with simple "open" events. The opening animation of the doors is handled by a Sequencer Actor Component on the door (and a little bit of code) in the door blueprint.
 - Several Light blueprints with simple "turn on" events.
 - One simple pressure-plate trigger. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The script component is ran on a BeginOverlap event.
 - Two simple sphere collider triggers. These contain an overlap sphere and a Bango Script component. The script component is ran on a BeginOverlap event, and the trigger self-destructs to prevent repeat activations.
 
-The triggers described about are NOT related to Bango Scripts. Your game needs to supply its own reusable trigger classes (or use Bango Triggers, which is not available yet).
-
-The three triggers are visible at the start of the video, before entering play mode:
-
-https://github.com/user-attachments/assets/94cc622d-3900-4bb5-8110-4802748d789b
+The trigger actors are NOT related to Bango Scripts. Your game needs to supply its own reusable trigger classes.
 
 &nbsp;
 
