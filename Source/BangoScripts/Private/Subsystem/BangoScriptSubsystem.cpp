@@ -20,12 +20,6 @@ void FBangoQueuedScript::LoadAsync()
 	{
 		return;
 	}
-
-	// Forget about it
-	if (!Runner.IsValid())
-	{
-		return;
-	}
 	
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
 	ScriptClassHandle = Streamable.RequestAsyncLoad(ScriptClass.ToSoftObjectPath());
@@ -40,12 +34,6 @@ void FBangoQueuedScript::LoadSync()
 	{
 		return;
 	}
-
-	// Forget about it
-	if (!Runner.IsValid())
-	{
-		return;
-	}
 	
 	UE_LOG(LogBango, Warning, TEXT("Loading Bango script synchronously. You should consider preloading this earlier. Runner: %s, Script: %s"), *Runner->GetName(), *ScriptClass->GetName());
 	
@@ -57,7 +45,7 @@ void FBangoQueuedScript::LoadSync()
 
 bool FBangoQueuedScript::IsReadyToRun()
 {
-	return Runner.IsValid() && ScriptClass.IsValid();
+	return ScriptClass.IsValid();
 }
 
 // ==============================================
@@ -139,6 +127,7 @@ FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScri
         return FBangoScriptHandle::GetNullHandle();
     }
     
+	// Runner needs to always be valid here, because we're going to use it as a World Context object. However, when the script actually runs, the Runner can be null/destroyed. 
 	check(Runner);
 	
 	UBangoScriptSubsystem* Subsystem = Get(Runner);
@@ -230,7 +219,7 @@ void UBangoScriptSubsystem::Tick(float DeltaTime, ELevelTick TickType, ENamedThr
 
 	PruneFinishedScripts(World);
 
-	PruneQueuedInvalidRunnerScripts();
+	// PruneQueuedInvalidRunnerScripts();
 	
 	LoadQueuedScripts();
 	
@@ -260,6 +249,8 @@ void UBangoScriptSubsystem::PruneFinishedScripts(UWorld* World)
 
 void UBangoScriptSubsystem::PruneQueuedInvalidRunnerScripts()
 {
+	// CURRENTLY UNUSED - see Tick function above. I decided this behavior is undesirable. Running a script should run it. I should, however, go back to make this optional in the future. 
+	// TODO make it possible for a script to require a valid "Outer" actor, and terminate the script when its owning actor is destroyed.
 	for (int32 i = 0; i < QueuedScripts.Num(); ++i)
 	{
 		FBangoQueuedScript& QueuedScript = QueuedScripts[i];
@@ -292,15 +283,16 @@ void UBangoScriptSubsystem::LaunchQueuedScripts()
 		if (QueuedScript.IsReadyToRun())
 		{
 			UObject* Runner = QueuedScript.Runner.Get();
-			check(Runner);
 			
 			TSubclassOf<UBangoScript> ScriptClass = QueuedScript.ScriptClass.Get();
 			check(ScriptClass);
 			
+			UObject* Outer = IsValid(Runner) ? Runner : this; 
+			
 			// TODO I should create these async, as part of the load process
-			UBangoScript* NewScriptInstance = NewObject<UBangoScript>(Runner, ScriptClass);
+			UBangoScript* NewScriptInstance = NewObject<UBangoScript>(Outer, ScriptClass);
 			NewScriptInstance->Handle = QueuedScript.Handle;
-			NewScriptInstance->This = Runner;
+			NewScriptInstance->This = Runner; // The user is responsible to use the "This" node responsibly... If they destroy a trigger actor at the start of a script and then call 'This', well, I can't stop everything.
 			
 			if (QueuedScript.PropertyBag)
 			{
