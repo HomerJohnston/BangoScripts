@@ -25,12 +25,16 @@ You can create completely bespoke "level scripts" for individual actors in a lev
 
 # Demonstration - Gameplay
 
-https://github.com/user-attachments/assets/94cc622d-3900-4bb5-8110-4802748d789b
+https://github.com/user-attachments/assets/f2b23127-251b-479e-bb31-d9f940fdac69
 
 The level above contains:
-- Two door blueprints with simple "open" events. The opening animation of the doors is handled by a Sequencer Actor Component in the door blueprint, and a little bit of code.
-- Several Light blueprints with simple "turn on" events.
-- One simple pressure-plate trigger. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The script component is ran on a BeginOverlap event.
+### ACTORS:
+- Two door blueprints, each with a simple "open" event. The animation, light, and sound is all coded into the door blueprints (mostly using a Sequencer component).
+- Several Light blueprints, each with a simple "turn on" event. Like the door, the animation and sound of the lights is handled by the light blueprint itself.
+- Two loudspeakers (just simple actors for PlaySoundAtLocation in this case, but could be coded to start and stop some other sounds).
+### TRIGGERS & SCRIPTS:
+- One blank actor with a script set to auto-run. This starts the music and announcer voices coming from two loudspeakers.
+- One simple pressure-plate trigger. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The scripts are ran from BeginOverlap/EndOverlap events.
 - Two simple sphere collider triggers. These contain an overlap sphere and a Bango Script component. The script component is ran on a BeginOverlap event, and the trigger self-destructs to prevent repeat activations.
 
 The trigger actors are NOT related to Bango Scripts. Your game needs to supply its own reusable trigger classes.
@@ -41,19 +45,25 @@ Here's what the Bango scripts look like, in order of appearance:
 
 &nbsp;
 
-<img width="1145" height="860" alt="image" src="https://github.com/user-attachments/assets/d54daec8-e163-42f8-bec3-5aeb49cce0a0" />
+<img width="1910" height="1068" alt="image" src="https://github.com/user-attachments/assets/739bfc2a-4b73-423b-90a7-c6e27792e438" />
 
-<p align="center"><i>The pressure plate script. This opens the first door, and starts playing a sound track.</i></p>
-
-&nbsp;
-
-<img width="1978" height="1188" alt="image" src="https://github.com/user-attachments/assets/19fe4650-676c-48ed-92a4-56493d88db99" />
-
-<p align="center"><i>The second trigger. This turns on all of the lights, using some various delays.</i></p>
+<p align="center"><i>The startup script. This plays PA system audio and starts music for the scene. </i></p>
 
 &nbsp;
 
-<img width="1147" height="863" alt="image" src="https://github.com/user-attachments/assets/b2d6fe19-f774-4f4a-ba5e-2052d374ba17" />
+<img width="1908" height="1069" alt="image" src="https://github.com/user-attachments/assets/f38f90f5-57d1-4bd1-9d0e-4a7a9bc1e33b" />
+
+<p align="center"><i>The pressure plate "Activate" script. This opens and closes the first door. It also has a separate "Deactivate" script which closes the door. </i></p>
+
+&nbsp;
+
+<img width="1904" height="1076" alt="image" src="https://github.com/user-attachments/assets/7eed9bf3-e41c-42d9-8f02-ccc402dd0f0c" />
+
+<p align="center"><i>The first spherical trigger. This turns on all of the lights, using some various delays.</i></p>
+
+&nbsp;
+
+<img width="1909" height="1077" alt="image" src="https://github.com/user-attachments/assets/6ed47123-a415-4f21-8102-7a48c123d979" />
 
 <p align="center"><i>The third trigger, which simply opens the last door.</i></p>
 
