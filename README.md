@@ -32,7 +32,7 @@ The level above contains:
 - Two doors, each with a simple "open" event. The animation, light, and sound is all handled in the door blueprint.
 - Several lights, each with a simple "turn on" event. Like the door, the animation and sound of the lights is handled in the light blueprint.
 - Two loudspeakers, just dummy actors for using PlaySoundAtLocation.
-- 
+
 ### TRIGGERS & SCRIPTS:
 - One blank actor with a script, set to auto-run. This starts the music and announcer voices coming from two loudspeakers.
 - One pressure-plate trigger controlling the first door. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The Activate script runs on BeginOverlap, and vice versa.
@@ -54,19 +54,19 @@ Here's what the scripts for this scene look like, in order of appearance:
 
 <img width="1908" height="1069" alt="image" src="https://github.com/user-attachments/assets/f38f90f5-57d1-4bd1-9d0e-4a7a9bc1e33b" />
 
-<p align="center"><i>The pressure plate "Activate" script. This pressure plate opens and closes the first door. It also has a separate "Deactivate" script doing the opposite. </i></p>
+<p align="center"><i>The pressure plate's "Activate" script. This opens the door. It also has a separate "Deactivate" script to close the door. </i></p>
 
 &nbsp;
 
 <img width="1904" height="1076" alt="image" src="https://github.com/user-attachments/assets/7eed9bf3-e41c-42d9-8f02-ccc402dd0f0c" />
 
-<p align="center"><i>The second trigger. This turns on all of the lights, using some various delays.</i></p>
+<p align="center"><i>The first sphere-volume trigger. This turns on all of the lights after you walk through the door.</i></p>
 
 &nbsp;
 
 <img width="1909" height="1077" alt="image" src="https://github.com/user-attachments/assets/6ed47123-a415-4f21-8102-7a48c123d979" />
 
-<p align="center"><i>The third trigger, which simply opens the last door when you get near it.</i></p>
+<p align="center"><i>The second sphere-volume trigger. This opens the last door when you get near it.</i></p>
 
 &nbsp;
 
