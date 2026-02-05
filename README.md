@@ -38,7 +38,7 @@ The level above contains:
 - One pressure-plate trigger controlling the first door. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The Activate script runs on BeginOverlap, and vice versa.
 - Two simple sphere collider triggers, the first turning on the hallway lights and the second opening the last door. These contain an overlap sphere and a Bango Script component. The script component is ran on the trigger's BeginOverlap event. The trigger is coded to self-destruct, to prevent repeat activations.
 
-The trigger actors are NOT related to Bango Scripts. Your game needs to supply its own reusable trigger classes.
+The trigger actors are NOT related to Bango Scripts. You will need to supply your own reusable trigger classes. More info in the wiki.
 
 &nbsp;
 
@@ -60,17 +60,17 @@ Here's what the scripts for this scene look like, in order of appearance:
 
 <img width="1904" height="1076" alt="image" src="https://github.com/user-attachments/assets/7eed9bf3-e41c-42d9-8f02-ccc402dd0f0c" />
 
-<p align="center"><i>The first sphere-volume trigger. This turns on all of the lights after you walk through the door.</i></p>
+<p align="center"><i>The first sphere-volume trigger. This turns on the hallway lights after the avatar walks through the door.</i></p>
 
 &nbsp;
 
 <img width="1909" height="1077" alt="image" src="https://github.com/user-attachments/assets/6ed47123-a415-4f21-8102-7a48c123d979" />
 
-<p align="center"><i>The second sphere-volume trigger. This opens the last door when you get near it.</i></p>
+<p align="center"><i>The second sphere-volume trigger. This opens the second door as the avatar gets close to it.</i></p>
 
 &nbsp;
 
-# Fun Stuff
+# Fun Features
 
 https://github.com/user-attachments/assets/d522717e-166c-4c23-972d-d19953e7b8e2
 
