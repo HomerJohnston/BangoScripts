@@ -2,7 +2,7 @@
 
 Have you ever placed a trigger volume and wondered *"how can I conditionally spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds?"*
 
-Imagine if you could write an *instanced* blueprint event directly onto an actor placed in a level. This plugin effectively allows you to do this. You can create and attach small script blueprints onto actors using a special actor component. The script blueprints contain a single `Start` event node. The script component has a `Run` function which will spawn and run an instance of the script blueprint. 
+Imagine if you could write an *instanced* blueprint event directly onto an actor placed in a level. This plugin effectively allows you to do this. You can create and attach small script blueprints onto actors using a special actor component. The script component has a `Run` function which will spawn and run an instance of the script blueprint. The script blueprints contain a single `Start` event node that will be executed.
 
 ***Bango Scripts*** also provides some extra helper-nodes which bring some traditionally common DSL/game script language features into blueprints, such as explicit references to specific actors in a level (similar to what Level Blueprints can do, but better).
 
