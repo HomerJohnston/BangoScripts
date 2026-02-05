@@ -48,13 +48,13 @@ Here's what the scripts for this scene look like, in order of appearance:
 
 <img width="1910" height="1068" alt="image" src="https://github.com/user-attachments/assets/739bfc2a-4b73-423b-90a7-c6e27792e438" />
 
-<p align="center"><i>The startup script. This plays PA system audio and starts music for the scene. </i></p>
+<p align="center"><i>The startup script. This plays PA system audio and starts music for the scene.</i></p>
 
 &nbsp;
 
 <img width="1908" height="1069" alt="image" src="https://github.com/user-attachments/assets/f38f90f5-57d1-4bd1-9d0e-4a7a9bc1e33b" />
 
-<p align="center"><i>The pressure plate's "Activate" script. This opens the door. It also has a separate "Deactivate" script to close the door. </i></p>
+<p align="center"><i>The pressure plate's "Activate" script. This opens the door. It also has a separate "Deactivate" script to close the door.</i></p>
 
 &nbsp;
 
@@ -70,6 +70,26 @@ Here's what the scripts for this scene look like, in order of appearance:
 
 &nbsp;
 
-# Getting Started
+# Fun Stuff
+
+https://github.com/user-attachments/assets/d522717e-166c-4c23-972d-d19953e7b8e2
+
+<p align="center"><i>Actor references can be inserted into the script by copy-pasting from the level viewport, or dragged from the world outliner list.</i></p>
+
+&nbsp;
+
+https://github.com/user-attachments/assets/cfb96e1f-808f-4f9a-a38b-a77feeb3a249
+
+<p align="center"><i>Actor references draw helpful reference lines while the blueprint is open.</i></p>
+
+&nbsp;
+
+https://github.com/user-attachments/assets/12682b63-7a3e-4d9e-b719-198e1ca3a7b9
+
+<p align="center"><i>If a script asset is open, running that script automatically hooks up the debugger.</i></p>
+
+&nbsp;
+
+# Getting Started & Technical Info
 
 Go to the wiki to get started using Bango Scripts.
