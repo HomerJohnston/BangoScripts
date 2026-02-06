@@ -67,6 +67,12 @@ public:
 	
 	void InvalidateLightingCacheDetailed(bool bInvalidateBuildEnqueuedLighting, bool bTranslationOnly) override;
 	
+	void PreSave(FObjectPreSaveContext SaveContext) override;
+	
+	void PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext) override;
+	
+	void PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
+	
 	//void OnRename();
 #endif
 	

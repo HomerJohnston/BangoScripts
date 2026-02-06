@@ -55,5 +55,8 @@ struct FBangoEditorDelegates
 	
 	//
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent, EBangoScriptComponentRegisterStatus RegistrationStatus)> ScriptComponentRegistered;
+	
+	// Can be broadcasted by game code (e.g. UBangoScriptComponent's PreSave func) to initiate an editor save of a script asset
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(TSoftClassPtr<UBangoScript> UnsavedScript)> RequestScriptSave;
 };
 #endif

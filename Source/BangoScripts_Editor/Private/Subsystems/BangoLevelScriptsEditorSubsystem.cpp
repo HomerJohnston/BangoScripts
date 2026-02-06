@@ -5,6 +5,7 @@
 #include "ISourceControlModule.h"
 #include "K2Node_CustomEvent.h"
 #include "ObjectTools.h"
+#include "PackageTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
 #include "BangoScripts/Core/BangoScript.h"
@@ -20,9 +21,7 @@
 #include "Private/Unsorted/BangoHideScriptFolderFilter.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "EdGraph/EdGraph.h"
-#include "Factories/Factory.h"
 #include "Misc/TransactionObjectEvent.h"
-#include "Settings/EditorStyleSettings.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "Subsystems/EditorAssetSubsystem.h"
 #include "UObject/ObjectSaveContext.h"
@@ -51,21 +50,41 @@ void UBangoLevelScriptsEditorSubsystem::Initialize(FSubsystemCollectionBase& Col
 	UContentBrowserDataSubsystem* ContentBrowserData = IContentBrowserDataModule::Get().GetSubsystem();
 	ContentBrowserData->RegisterCreateHideFolderIfEmptyFilter(FContentBrowserCreateHideFolderIfEmptyFilter::CreateLambda([this] () { return Filter; }));
 
-	// While maps are loading we want to ignore all script creation/destruction requests
-	FEditorDelegates::OnMapLoad.AddUObject(this, &ThisClass::OnMapLoad);
-	FEditorDelegates::OnMapOpened.AddUObject(this, &ThisClass::OnMapOpened);
-	
-	// Used to help detect "real" duplications of UBangoScriptComponent
-	FEditorDelegates::OnDuplicateActorsBegin.AddWeakLambda(this, [this] () { bDuplicatingActors = true; } );
-	FEditorDelegates::OnDuplicateActorsEnd.AddWeakLambda(this, [this] () { bDuplicatingActors = false; } );
-	
-	// Called by UBangoScriptComponent (potentially others)
-	FBangoEditorDelegates::OnScriptContainerCreated.AddUObject(this, &ThisClass::OnLevelScriptContainerCreated);
-	FBangoEditorDelegates::OnScriptContainerDestroyed.AddUObject(this, &ThisClass::OnLevelScriptContainerDestroyed);
-	FBangoEditorDelegates::OnScriptContainerDuplicated.AddUObject(this, &ThisClass::OnLevelScriptContainerDuplicated);
-	
-	FCoreUObjectDelegates::OnObjectRenamed.AddUObject(this, &ThisClass::OnObjectRenamed);
-	FCoreUObjectDelegates::OnObjectTransacted.AddUObject(this, &ThisClass::OnObjectTransacted);
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	if (AssetRegistryModule.Get().IsLoadingAssets())
+	{
+		// We are still discovering assets, listen for the completion delegate before building the graph
+		if (!AssetRegistryModule.Get().OnFilesLoaded().IsBoundToObject(this))
+		{
+			AssetRegistryModule.Get().OnFilesLoaded().AddUObject(this, &UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete);
+		}
+	}
+	else
+	{
+		OnInitialAssetRegistrySearchComplete();
+		
+		/*
+		// All assets are already discovered, build the graph now, if we have one
+		if (GraphObj)
+		{
+			GraphObj->RebuildGraph();
+		}
+
+		bDirtyResults = false;
+		if (!AssetRefreshHandle.IsValid())
+		{
+			// Listen for updates
+			AssetRefreshHandle = AssetRegistryModule.Get().OnAssetUpdated().AddSP(this, &SReferenceViewer::OnAssetRegistryChanged);
+			AssetRegistryModule.Get().OnAssetAdded().AddSP(this, &SReferenceViewer::OnAssetRegistryChanged);
+			AssetRegistryModule.Get().OnAssetRemoved().AddSP(this, &SReferenceViewer::OnAssetRegistryChanged);
+		}
+
+		IPluginManager& PluginManager = IPluginManager::Get();
+		if (!PluginManager.OnPluginEdited().IsBoundToObject(this))
+		{
+			PluginManager.OnPluginEdited().AddSP(this, &SReferenceViewer::OnPluginEdited);
+		}*/
+	}
 }
 
 // ----------------------------------------------
@@ -241,7 +260,7 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 	
 	// Through experimentation, a *true* duplicated component will either have the Transactional flag OR it will be wrapped in actor duplication.
 	
-	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors)
+	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors || bDuplicatingLevel)
 	{
 		ScriptContainer.SetIsDuplicate();
 		EnqueueCreatedScriptContainer(ScriptHolder);	
@@ -346,12 +365,14 @@ void UBangoLevelScriptsEditorSubsystem::RequestScriptQueueProcessing()
 		if (WeakThis.IsValid())
 		{
 			WeakThis->ProcessScriptRequestQueues();
+			WeakThis->bScriptProcessingLevelDuplication = false;
 		}
 	});
 		
 	if (!ProcessScriptRequestQueuesHandle.IsValid())
 	{
 		ProcessScriptRequestQueuesHandle = GEditor->GetTimerManager()->SetTimerForNextTick(ProcessScriptRequestQueuesNextTick);
+		bScriptProcessingLevelDuplication |= bDuplicatingLevel;
 	}
 }
 
@@ -595,6 +616,21 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 	
 	// Tells FBangoScript property type customizations to regenerate
 	FBangoEditorDelegates::OnScriptGenerated.Broadcast();
+	
+	if (bScriptProcessingLevelDuplication)
+	{
+		if (!Outer->MarkPackageDirty())
+		{
+			UE_LOG(LogBangoEditor, Warning, TEXT("MarkPackageDirty failed on duplicated script owner, unknown reason"));
+		}
+		
+		if (!DuplicatedBlueprint->MarkPackageDirty())
+		{
+			UE_LOG(LogBangoEditor, Warning, TEXT("MarkPackageDirty failed on duplicated script blueprint, unknown reason"));
+		}
+		
+		// UPackageTools::SavePackagesForObjects( {Outer->GetPackage(), DuplicatedBlueprint->GetPackage() } );
+	}
 }
 
 // ----------------------------------------------
@@ -697,6 +733,196 @@ void UBangoLevelScriptsEditorSubsystem::ProcessDestroyedScriptRequest(TSoftClass
 	}
 
 	Bango::Editor::DeleteEmptyLevelScriptFolders();
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete()
+{
+	auto DelayedCallbackHookup = [this] ()
+	{
+		FEditorDelegates::OnEditorInitialized.RemoveAll(this);
+
+		// While maps are loading we want to ignore all script creation/destruction requests
+		FEditorDelegates::OnMapLoad.AddUObject(this, &ThisClass::OnMapLoad);
+		FEditorDelegates::OnMapOpened.AddUObject(this, &ThisClass::OnMapOpened);
+	
+		// Used to help detect "real" duplications of UBangoScriptComponent
+		FEditorDelegates::OnDuplicateActorsBegin.AddWeakLambda(this, [this] () { bDuplicatingActors = true; } );
+		FEditorDelegates::OnDuplicateActorsEnd.AddWeakLambda(this, [this] () { bDuplicatingActors = false; } );
+	
+		// Called by UBangoScriptComponent (potentially others)
+		FBangoEditorDelegates::OnScriptContainerCreated.AddUObject(this, &ThisClass::OnLevelScriptContainerCreated);
+		FBangoEditorDelegates::OnScriptContainerDestroyed.AddUObject(this, &ThisClass::OnLevelScriptContainerDestroyed);
+		FBangoEditorDelegates::OnScriptContainerDuplicated.AddUObject(this, &ThisClass::OnLevelScriptContainerDuplicated);
+	
+		FBangoEditorDelegates::RequestScriptSave.AddUObject(this, &ThisClass::OnRequestScriptSave);
+		
+		FCoreUObjectDelegates::OnObjectRenamed.AddUObject(this, &ThisClass::OnObjectRenamed);
+		FCoreUObjectDelegates::OnObjectTransacted.AddUObject(this, &ThisClass::OnObjectTransacted);
+
+		// For level duplication/deletion handling
+		IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry").Get();
+		OnAssetAddedHandle = AssetRegistry.OnAssetAdded().AddUObject(this, &ThisClass::OnAssetAdded);
+		OnAssetRemovedHandle = AssetRegistry.OnAssetRemoved().AddUObject(this, &ThisClass::OnAssetRemoved);
+	
+		UImportSubsystem* ImportSubsystem = GEditor->GetEditorSubsystem<UImportSubsystem>();
+		ImportSubsystem->OnAssetPostImport.AddUObject(this, &ThisClass::OnAssetPostImport);
+
+		FEditorDelegates::OnAssetsPreDelete.AddUObject(this, &ThisClass::OnAssetsPreDelete);
+		FEditorDelegates::OnAssetsDeleted.AddUObject(this, &ThisClass::OnAssetsDeleted);
+	};
+		
+	GEditor->GetTimerManager()->SetTimerForNextTick(DelayedCallbackHookup);
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData)
+{
+	UWorld* World = Cast<UWorld>(AssetData.GetAsset());
+	
+	ULevel* LevelX = Cast<ULevel>(AssetData.GetAsset());
+	
+	if (!World)
+	{
+		return;
+	}
+
+	TArray<ULevel*> Levels = { World->PersistentLevel };
+	Levels.Append(World->GetLevels());
+	
+	for (ULevel* Level : Levels)
+	{
+		if (!Level)
+		{
+			continue;
+		}
+		
+		bDuplicatingLevel = true;
+		
+		for (AActor* Actor : Level->Actors)
+		{
+			if (!Actor)
+			{
+				continue;
+			}
+			
+			TArray<UActorComponent*> Components;
+			Actor->GetComponents(Components);
+			
+			for (UActorComponent* Component : Components)
+			{
+				IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Component);
+				
+				if (!ScriptHolder)
+				{
+					continue;
+				}
+				
+				OnLevelScriptContainerDuplicated(*ScriptHolder);
+				
+				UE_LOG(LogBangoEditor, Display, TEXT("OnAssetAdded"));
+			}
+		}
+		
+		bDuplicatingLevel = false;
+		
+		/*
+		// We'll leave the duplicating flag active for a frame. Sob. This is so horrible.
+		auto ReleaseDuplicatingLevelDelegate = [this] () { this->bDuplicatingLevel = false; };
+		GEditor->GetTimerManager()->SetTimerForNextTick(ReleaseDuplicatingLevelDelegate);
+		*/
+	}
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnAssetRemoved(const FAssetData& AssetData)
+{
+	UE_LOG(LogBangoEditor, Display, TEXT("OnAssetRemoved"));
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnAssetPostImport(UFactory* Factory, UObject* Object)
+{
+	UWorld* World = Cast<UWorld>(Object);
+	
+	ULevel* LevelX = Cast<ULevel>(Object);
+	
+	if (!World)
+	{
+		return;
+	}
+	
+	const TArray<ULevel*>& Levels = World->GetLevels();
+	
+	for (ULevel* Level : Levels)
+	{
+		if (!Level)
+		{
+			continue;
+		}
+		
+		for (AActor* Actor : Level->Actors)
+		{
+			if (!Actor)
+			{
+				continue;
+			}
+			
+			TArray<UActorComponent*> Components;
+			Actor->GetComponents(Components);
+			
+			for (UActorComponent* Component : Components)
+			{
+				IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Component);
+				
+				if (!ScriptHolder)
+				{
+					continue;
+				}
+				
+				OnLevelScriptContainerDuplicated(*ScriptHolder);
+				
+				UE_LOG(LogBangoEditor, Display, TEXT("OnAssetAdded"));
+			}
+		}
+	}
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnAssetPreDelete(UFactory* Factory, UObject* Object)
+{
+	if (Object->IsA<UWorld>())
+	{
+		UE_LOG(LogBangoEditor, Display, TEXT("Deleted world"));
+	}
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnAssetsPreDelete(const TArray<UObject*>& Objects)
+{
+
+	for (UObject* Object : Objects)
+	{
+		if (Object->IsA<UWorld>())
+		{
+			UE_LOG(LogBangoEditor, Display, TEXT("Deleting world"));
+		}	
+	}
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnAssetsDeleted(const TArray<UClass*>& Classes)
+{
+	for (UClass* Class : Classes)
+	{
+		if (Class == UWorld::StaticClass())
+		{
+			UE_LOG(LogBangoEditor, Display, TEXT("Deleted world"));
+		}	
+	}
+}
+
+void UBangoLevelScriptsEditorSubsystem::OnRequestScriptSave(TSoftClassPtr<UBangoScript> Class)
+{
+	TSubclassOf<UBangoScript> Script = Class.LoadSynchronous();
+	
+	if (Script)
+	{
+		UPackageTools::SavePackagesForObjects( { Script } );
+	}
 }
 
 // ----------------------------------------------

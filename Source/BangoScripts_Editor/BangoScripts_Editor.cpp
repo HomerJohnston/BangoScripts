@@ -45,9 +45,6 @@ void FBangoScripts_EditorModule::StartupModule()
 	
 	StyleSet = MakeShareable(new FSlateStyleSet("BangoEditorStyleSet"));
 	StyleSet->SetContentRoot(ResourcesDir);
-	StyleSet->Set("ClassThumbnail.BangoEvent", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("ClassIcons/BangoEvent.png")), FVector2D(256, 256)));
-	StyleSet->Set("ClassThumbnail.BangoAction", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("ClassIcons/BangoAction.png")), FVector2D(256, 256)));
-	StyleSet->Set("ClassThumbnail.BangoTrigger", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("ClassIcons/BangoTrigger.png")), FVector2D(256, 256)));
 	StyleSet->Set("Icon.Plunger", new FSlateVectorImageBrush(StyleSet->RootToContentDir(TEXT("NodeIcons/Icon_Plunger.svg")), FVector2D(16, 16)));
 	StyleSet->Set("Icon.Plunger_Dim", new FSlateVectorImageBrush(StyleSet->RootToContentDir(TEXT("NodeIcons/Icon_Plunger.svg")), FVector2D(16, 16), Bango::Colors::White_Glass));
 	

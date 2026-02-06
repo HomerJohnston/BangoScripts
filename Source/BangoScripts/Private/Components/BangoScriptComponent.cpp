@@ -11,6 +11,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/FileHelper.h"
 #include "Modules/ModuleManager.h"
+#include "UObject/ObjectSaveContext.h"
 
 #if WITH_EDITOR
 #include "Interfaces/IPluginManager.h"
@@ -304,6 +305,47 @@ void UBangoScriptComponent::PostEditChangeProperty(struct FPropertyChangedEvent&
 void UBangoScriptComponent::InvalidateLightingCacheDetailed(bool bInvalidateBuildEnqueuedLighting, bool bTranslationOnly)
 {
 	Super::InvalidateLightingCacheDetailed(bInvalidateBuildEnqueuedLighting, bTranslationOnly);
+}
+
+void UBangoScriptComponent::PreSave(FObjectPreSaveContext SaveContext)
+{
+	Super::PreSave(SaveContext);
+	
+	// The level scripts subsystem may be fixing this up after another tick. So let's save the referenced script after another tick, too.
+	TWeakObjectPtr<UBangoScriptComponent> WeakThis = this;
+	
+	auto DelaySaveScript = [WeakThis]
+	{
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		
+		TSoftClassPtr<UBangoScript> ScriptClass = WeakThis->GetScriptContainer().GetScriptClass();
+		
+		if (!ScriptClass.IsNull())
+		{
+			FName PackageName = ScriptClass.ToSoftObjectPath().GetLongPackageFName();
+				
+			if (!FPackageName::DoesPackageExist(PackageName.ToString()))
+			{
+				// The script class exists but it hasn't been saved yet. We need to fix this.
+				FBangoEditorDelegates::RequestScriptSave.Broadcast(ScriptClass);
+			}
+		}
+	};
+
+	GEditor->GetTimerManager()->SetTimerForNextTick(DelaySaveScript);
+}
+
+void UBangoScriptComponent::PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext)
+{
+	Super::PreSaveRoot(ObjectSaveContext);
+}
+
+void UBangoScriptComponent::PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext)
+{
+	Super::PostSaveRoot(ObjectSaveContext);
 }
 #endif
 

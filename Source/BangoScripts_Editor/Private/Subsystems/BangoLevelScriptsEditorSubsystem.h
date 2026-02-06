@@ -74,6 +74,10 @@ public:
 protected:
 	bool bMapLoading = false;
 	bool bDuplicatingActors = false;
+	bool bDuplicatingLevel = false;
+	
+	FDelegateHandle OnAssetAddedHandle;
+	FDelegateHandle OnAssetRemovedHandle;
 
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -87,7 +91,7 @@ public:
 	void OnMapOpened(const FString& String, bool bArg);
 	
 	void OnObjectRenamed(UObject* RenamedObject, UObject* RenamedObjectOuter, FName OldName) const;
-	
+
 	static TSharedPtr<IContentBrowserHideFolderIfEmptyFilter> Filter;	
 	
 	void OnLevelScriptContainerCreated(IBangoScriptHolderInterface& ScriptHolder, FString BlueprintName = "");
@@ -120,6 +124,24 @@ private:
 	// Script destruction method
 	void ProcessDestroyedScriptRequest(TSoftClassPtr<UBangoScript> ScriptClass);
 	
+	// -----------------------------------------
+	// Level asset duplication/deletion handling
+	void OnInitialAssetRegistrySearchComplete();
+	
+	void OnAssetAdded(const FAssetData& AssetData);
+	
+	void OnAssetRemoved(const FAssetData& AssetData);
+	
+	void OnAssetPostImport(UFactory* Factory, UObject* Object);
+	
+	void OnAssetPreDelete(UFactory* Factory, UObject* Object);
+	
+	void OnAssetsPreDelete(const TArray<UObject*>& Objects);
+	
+	void OnAssetsDeleted(const TArray<UClass*>& Classes);
+	
+	void OnRequestScriptSave(TSoftClassPtr<UBangoScript> Class);
+	
 private:
 	TSet<FScriptContainerKey> CreationRequests;
 	
@@ -127,4 +149,6 @@ private:
 	
 	FTimerHandle ProcessScriptRequestQueuesHandle;
 	
+	// When duplicating levels, we are going to duplicate and force-save script packages (similar to what OFPA does when duplicating levels)
+	bool bScriptProcessingLevelDuplication = false;	
 };
