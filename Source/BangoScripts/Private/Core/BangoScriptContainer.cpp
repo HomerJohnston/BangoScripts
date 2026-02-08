@@ -1,6 +1,7 @@
 ﻿#include "BangoScripts/Core/BangoScriptContainer.h"
 
 #include "BangoScripts/Core/BangoScript.h"
+#include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
 
@@ -29,6 +30,8 @@ void FBangoScriptContainer::SetGuid(const FGuid& InGuid)
 #if WITH_EDITOR
 void FBangoScriptContainer::Unset()
 {
+	UE_LOG(LogBango, Verbose, TEXT("FBangoScriptContainer::Unset()"));
+	
 	Guid.Invalidate();
 	ScriptClass = nullptr;
 	ScriptClass.Reset();
@@ -42,6 +45,8 @@ void FBangoScriptContainer::Unset()
 void FBangoScriptContainer::SetScriptClass(TSubclassOf<UObject> NewScriptClass)
 {
 	check(NewScriptClass);
+	
+	UE_LOG(LogBango, Verbose, TEXT(" oooooooooooooooooo Setting script class to: {%s}"), *NewScriptClass->GetPathName());
 	
 	ScriptClass = NewScriptClass;
 }
@@ -174,7 +179,7 @@ void FBangoScriptContainer::SetNewLevelScriptRequested()
 // ----------------------------------------------
 
 #if WITH_EDITOR
-void FBangoScriptContainer::SetIsCreated()
+void FBangoScriptContainer::MarkForNewLevelScript()
 {
 	bCreated = true;
 }
@@ -182,10 +187,21 @@ void FBangoScriptContainer::SetIsCreated()
 
 // ----------------------------------------------
 
+/*
 #if WITH_EDITOR
-void FBangoScriptContainer::SetIsDuplicate()
+void FBangoScriptContainer::MarkDuplicated()
 {
 	bIsDuplicate = true;
+}
+#endif
+*/
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void FBangoScriptContainer::MarkDeleted()
+{
+	bIsDeleted = true;
 }
 #endif
 
@@ -203,7 +219,7 @@ bool FBangoScriptContainer::ConsumeNewLevelScriptRequest()
 // ----------------------------------------------
 
 #if WITH_EDITOR
-bool FBangoScriptContainer::ConsumeCreated()
+bool FBangoScriptContainer::ConsumeMarkForNewLevelScript()
 {
 	bool bRequest = bCreated;
 	bCreated = false;
@@ -213,14 +229,22 @@ bool FBangoScriptContainer::ConsumeCreated()
 
 // ----------------------------------------------
 
+/*
 #if WITH_EDITOR
-bool FBangoScriptContainer::ConsumeDuplicate()
+bool FBangoScriptContainer::ConsumeMarkDuplicated()
 {
 	bool bWasDuplicate = bIsDuplicate;
 	bIsDuplicate = false;
+	
+	if (bWasDuplicate)
+	{
+		UE_LOG(LogBango, Verbose, TEXT("Consuming duplicate..."));
+	}
+	
 	return bWasDuplicate;
 }
 #endif
+*/
 
 // ----------------------------------------------
 

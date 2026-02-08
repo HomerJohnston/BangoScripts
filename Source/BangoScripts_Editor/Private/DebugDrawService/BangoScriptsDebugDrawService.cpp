@@ -464,7 +464,7 @@ void UBangoScriptsDebugDrawService::OnBangoScriptRegistrationChange(UBangoScript
 		AddCount--;
 	}
 	
-	UE_LOG(LogBangoEditor, VeryVerbose, TEXT("ScriptReg: %s, %i"), *ScriptComponent->GetPathName(), AddCount);
+	UE_LOG(LogBangoEditor, Verbose, TEXT("ScriptReg: %s, %i"), *ScriptComponent->GetPathName(), AddCount);
 }
 
 // ----------------------------------------------

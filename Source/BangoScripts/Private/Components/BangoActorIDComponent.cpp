@@ -133,7 +133,7 @@ void UBangoActorIDComponent::EnsureValidGuid()
 			UE_LOG(LogBango, Display, TEXT("EnsureValidGuid called - existing Guid: %s"), *BangoGuid.ToString());
 			Modify();
 			BangoGuid = FGuid::NewGuid();
-			UE_LOG(LogBango, VeryVerbose, TEXT("Setting ID Component GUID to: %s"), *BangoGuid.ToString());
+			UE_LOG(LogBango, Verbose, TEXT("Setting ID Component GUID to: %s"), *BangoGuid.ToString());
 		}
 	}
 }

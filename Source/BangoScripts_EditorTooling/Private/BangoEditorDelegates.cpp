@@ -26,4 +26,4 @@ TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjec
 
 TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent, EBangoScriptComponentRegisterStatus RegistrationStatus)> FBangoEditorDelegates::ScriptComponentRegistered;
 
-TMulticastDelegate<void(TSoftClassPtr<UBangoScript> UnsavedScript)> FBangoEditorDelegates::RequestScriptSave;
+TMulticastDelegate<void(IBangoScriptHolderInterface* ScriptHolder, TSoftClassPtr<UBangoScript> UnsavedScript)> FBangoEditorDelegates::RequestScriptSave;

@@ -55,7 +55,7 @@ void UBangoScriptComponent::OnRegister()
 {
 	Super::OnRegister();
 	
-	Bango::Debug::PrintComponentState(this, "OnRegister_Early");
+	Bango::Debug::PrintComponentState(this, "OnRegister");
 	
 	if (Bango::Editor::IsComponentInEditedLevel(this))
 	{
@@ -132,7 +132,7 @@ void UBangoScriptComponent::OnRegister()
 	
 	UpdateBillboard();
 	
-	Bango::Debug::PrintComponentState(this, "OnRegister_Late");
+	// Bango::Debug::PrintComponentState(this, "OnRegister_Late");
 }
 #endif
 
@@ -141,7 +141,7 @@ void UBangoScriptComponent::OnRegister()
 #if WITH_EDITOR
 void UBangoScriptComponent::OnUnregister()
 {
-	Bango::Debug::PrintComponentState(this, "OnUnregister_Early");
+	Bango::Debug::PrintComponentState(this, "OnUnregister");
 	
 	if (bDebugRegistered)
 	{
@@ -153,7 +153,7 @@ void UBangoScriptComponent::OnUnregister()
 		
 	Super::OnUnregister();
 	
-	Bango::Debug::PrintComponentState(this, "OnUnregister_Late");	
+	// Bango::Debug::PrintComponentState(this, "OnUnregister_Late");	
 }
 #endif
 
@@ -162,7 +162,7 @@ void UBangoScriptComponent::OnUnregister()
 #if WITH_EDITOR
 void UBangoScriptComponent::OnComponentCreated()
 {
-	Bango::Debug::PrintComponentState(this, "OnComponentCreated_Early");
+	Bango::Debug::PrintComponentState(this, "OnComponentCreated");
 	
 	Super::OnComponentCreated();
 		
@@ -175,17 +175,17 @@ void UBangoScriptComponent::OnComponentCreated()
 	
 			if (ScriptContainer.GetGuid().IsValid())
 			{
-				FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
+				// FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 			}
 			else
 			{
-				FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(AsScriptHolder(), ScriptName);
+				// FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(AsScriptHolder(), ScriptName);
 			}	
 		}
 	
 	}
 
-	Bango::Debug::PrintComponentState(this, "OnComponentCreated_Late");
+	// Bango::Debug::PrintComponentState(this, "OnComponentCreated_Late");
 }
 #endif
 
@@ -194,7 +194,11 @@ void UBangoScriptComponent::OnComponentCreated()
 #if WITH_EDITOR
 void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 {
-	TSoftClassPtr<UBangoScript> ScriptClass = ScriptContainer.GetScriptClass();
+	// TODO I currently use the component long after it is being destroyed here... is this safe? It isn't crashing but maybe it will sometimes.
+	// I may need to store the target script class early and pass it over to the subsystem handler
+	// TSoftClassPtr<UBangoScript> ScriptClass = ScriptContainer.GetScriptClass();
+	
+	Bango::Debug::PrintComponentState(this, "OnComponentDestroyed");
 	
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
 	
@@ -203,10 +207,30 @@ void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 		BillboardInstance->DestroyComponent();
 	}
 	
-	if (!ScriptClass.IsNull())
+	// Two paths because this engine is complex as hell and I am not certain that I can always treat these identically
+	if (CreationMethod == EComponentCreationMethod::Instance)
 	{
-		// Moves handling over to an editor module to handle more complicated package deletion/undo management
-		FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
+		//if (!HasAnyFlags(RF_WasLoaded))
+		//{
+			// Through trial and error testing, I know that RF_BeginDestroyed will be applied when the component is unloaded, but not when it is deleted. But only for CDO component. 
+			if (!HasAnyFlags(RF_BeginDestroyed))
+			{
+				UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for Instance component..."));
+				
+				ScriptContainer.MarkDeleted();
+				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
+			}
+		//}
+	}
+	else
+	{ 
+		if (!HasAnyFlags(RF_WasLoaded | RF_BeginDestroyed) || !IsValid(GetOwner()))
+		{
+			UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component..."));
+			
+			ScriptContainer.MarkDeleted();
+			FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
+		}
 	}
 }
 
@@ -245,14 +269,14 @@ void UBangoScriptComponent::PostLoad()
 
 void UBangoScriptComponent::BeginDestroy()
 {
-	Bango::Debug::PrintComponentState(this, "BeginDestroy_Early");
+	Bango::Debug::PrintComponentState(this, "BeginDestroy");
 	
 	Super::BeginDestroy();
 }
 
 void UBangoScriptComponent::FinishDestroy()
 {
-	Bango::Debug::PrintComponentState(this, "FinishDestroy_Early");
+	Bango::Debug::PrintComponentState(this, "FinishDestroy");
 	
 	Super::FinishDestroy();
 }
@@ -263,31 +287,41 @@ void UBangoScriptComponent::FinishDestroy()
 #if WITH_EDITOR
 void UBangoScriptComponent::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 {
-	Bango::Debug::PrintComponentState(this, "PostDuplicate_Early");
+	Super::PostDuplicate(DuplicateMode);
 	
+	// Ignore PIE. Ignore World (level) duplication.
+	if (DuplicateMode != EDuplicateMode::Normal)
+	{
+		return;
+	}
 	if (!Bango::Editor::IsComponentInEditedLevel(this))
 	{
 		return;
 	}
 	
-	Bango::Debug::PrintComponentState(this, "PostDuplicate_InEditedLevel");
+	Bango::Debug::PrintComponentState(this, "PostDuplicate");
+	
+	if (HasAnyFlags(RF_Transactional))
+	{
+		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
+		return;
+	}
 	
 	if (CreationMethod == EComponentCreationMethod::Instance)
 	{
-		Bango::Debug::PrintComponentState(this, "PostDuplicate_Instance");
+		//Bango::Debug::PrintComponentState(this, "PostDuplicate_Instance");
 		
 		// Component was added to an actor in the level; this case is very easy to handle, PostDuplicate is only called on real human-initiated duplications
 		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 	}
 	else
 	{
-		Bango::Debug::PrintComponentState(this, "PostDuplicate_CDO");
-
 		// Component is part of a blueprint, only run duplication code if it's in a level already
-		//if (GetOwner()->HasAnyFlags(RF_WasLoaded))
-		//{
+		// Owner will have WasLoaded if it is being loaded/unloaded as part of world partition
+		if (!GetOwner()->HasAnyFlags(RF_WasLoaded))
+		{
 			FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
-		//}
+		}
 	}
 }
 #endif
@@ -309,7 +343,11 @@ void UBangoScriptComponent::InvalidateLightingCacheDetailed(bool bInvalidateBuil
 
 void UBangoScriptComponent::PreSave(FObjectPreSaveContext SaveContext)
 {
+	bSaving = true;
+	
 	Super::PreSave(SaveContext);
+	
+	UE_LOG(LogBango, Verbose, TEXT("PreSave {%s}"), *GetPathName());
 	
 	// The level scripts subsystem may be fixing this up after another tick. So let's save the referenced script after another tick, too.
 	TWeakObjectPtr<UBangoScriptComponent> WeakThis = this;
@@ -330,12 +368,12 @@ void UBangoScriptComponent::PreSave(FObjectPreSaveContext SaveContext)
 			if (!FPackageName::DoesPackageExist(PackageName.ToString()))
 			{
 				// The script class exists but it hasn't been saved yet. We need to fix this.
-				FBangoEditorDelegates::RequestScriptSave.Broadcast(ScriptClass);
+				FBangoEditorDelegates::RequestScriptSave.Broadcast(WeakThis.Get(), ScriptClass);
 			}
 		}
 	};
 
-	GEditor->GetTimerManager()->SetTimerForNextTick(DelaySaveScript);
+	// GEditor->GetTimerManager()->SetTimerForNextTick(DelaySaveScript);
 }
 
 void UBangoScriptComponent::PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext)
@@ -432,9 +470,9 @@ void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 #if WITH_EDITOR
 void UBangoScriptComponent::PreEditUndo()
 {
-	Super::PreEditUndo();
-	
 	Bango::Debug::PrintComponentState(this, "PreEditUndo");
+
+	Super::PreEditUndo();
 }
 #endif
 
@@ -443,9 +481,9 @@ void UBangoScriptComponent::PreEditUndo()
 #if WITH_EDITOR
 void UBangoScriptComponent::PostEditUndo(TSharedPtr<ITransactionObjectAnnotation> TransactionAnnotation)
 {
-	Super::Super::PostEditUndo(TransactionAnnotation);
-	
 	Bango::Debug::PrintComponentState(this, "PostEditUndo");
+
+	Super::Super::PostEditUndo(TransactionAnnotation);
 }
 #endif
 
@@ -481,6 +519,20 @@ FVector UBangoScriptComponent::GetBillboardPosition() const
 bool UBangoScriptComponent::HasValidScript() const
 {
 	return !ScriptContainer.GetScriptClass().IsNull();
+}
+
+void UBangoScriptComponent::LogStatus(FString* OutString) const
+{
+	FString String = FString::Format(TEXT("LOGSTATUS UBangoScriptComponent {{0}}, Script: {{1}}"), { *GetPathName(), (ScriptContainer.GetScriptClass().IsNull()) ? TEXT("NONE") : *ScriptContainer.GetScriptClass().ToString() } );
+	
+	if (OutString)
+	{
+		*OutString = String;
+	}
+	else
+	{
+		UE_LOG(LogBango, Verbose, TEXT("     %s"), *String);
+	}
 }
 #endif
 

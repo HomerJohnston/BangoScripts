@@ -62,28 +62,6 @@ void UBangoLevelScriptsEditorSubsystem::Initialize(FSubsystemCollectionBase& Col
 	else
 	{
 		OnInitialAssetRegistrySearchComplete();
-		
-		/*
-		// All assets are already discovered, build the graph now, if we have one
-		if (GraphObj)
-		{
-			GraphObj->RebuildGraph();
-		}
-
-		bDirtyResults = false;
-		if (!AssetRefreshHandle.IsValid())
-		{
-			// Listen for updates
-			AssetRefreshHandle = AssetRegistryModule.Get().OnAssetUpdated().AddSP(this, &SReferenceViewer::OnAssetRegistryChanged);
-			AssetRegistryModule.Get().OnAssetAdded().AddSP(this, &SReferenceViewer::OnAssetRegistryChanged);
-			AssetRegistryModule.Get().OnAssetRemoved().AddSP(this, &SReferenceViewer::OnAssetRegistryChanged);
-		}
-
-		IPluginManager& PluginManager = IPluginManager::Get();
-		if (!PluginManager.OnPluginEdited().IsBoundToObject(this))
-		{
-			PluginManager.OnPluginEdited().AddSP(this, &SReferenceViewer::OnPluginEdited);
-		}*/
 	}
 }
 
@@ -96,6 +74,9 @@ void UBangoLevelScriptsEditorSubsystem::Deinitialize()
 	
 	FEditorDelegates::OnDuplicateActorsBegin.RemoveAll(this);
 	FEditorDelegates::OnDuplicateActorsEnd.RemoveAll(this);
+
+	FEditorDelegates::PreSaveWorldWithContext.RemoveAll(this);
+	FEditorDelegates::PostSaveWorldWithContext.RemoveAll(this);
 	
 	FBangoEditorDelegates::OnScriptContainerCreated.RemoveAll(this);
 	FBangoEditorDelegates::OnScriptContainerDestroyed.RemoveAll(this);
@@ -129,7 +110,7 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectTransacted(UObject* Object, cons
 	
 	if (!Bango::Editor::IsComponentInEditedLevel(ScriptHolder->_getUObject()))
 	{
-		EnqueueDestroyedScriptContainer(*ScriptHolder);
+		EnqueueChangedScriptContainer(*ScriptHolder);
 	}
 }
 
@@ -226,10 +207,42 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, 
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayedScriptRename);
 }
 
+void UBangoLevelScriptsEditorSubsystem::OnObjectConstructed(UObject* Object)
+{
+	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Object);
+	
+	if (!ScriptHolder)
+	{
+		return;
+	}
+	
+	if (GEditor->IsPlaySessionInProgress())
+	{
+		return;
+	}
+	
+	if (IsRunningCommandlet())
+	{
+		return;
+	}
+	
+	if (bMapLoading)
+	{
+		return;
+	}
+	
+	// EnqueueChangedScriptContainer(*ScriptHolder);
+}
+
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(IBangoScriptHolderInterface& ScriptHolder, FString BlueprintName)
 {
+	if (bSavingLevel)
+	{
+		return;
+	}
+	
 	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 	
 	UObject* Outer = ScriptHolder._getUObject();
@@ -237,23 +250,33 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(IBangoScri
 
 	ScriptContainer.SetRequestedName(BlueprintName);
 	
-	EnqueueCreatedScriptContainer(ScriptHolder);
+	EnqueueChangedScriptContainer(ScriptHolder);
 }
 
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder)
 {
+	//if (bSavingLevel)
+	//{
+	//	return;
+	//}
+	
 	UObject* Outer = ScriptHolder._getUObject();
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDestroyed: %s"), *Outer->GetName());
 
-	EnqueueDestroyedScriptContainer(ScriptHolder);
+	EnqueueChangedScriptContainer(ScriptHolder);
 }
 
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoScriptHolderInterface& ScriptHolder)
 {
+	if (bSavingLevel)
+	{
+		return;
+	}
+		
 	UObject* Outer = ScriptHolder._getUObject();
 	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDuplicated: %s, %s"), *Outer->GetName(), *ScriptContainer.GetGuid().ToString());
@@ -262,14 +285,16 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 	
 	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors || bDuplicatingLevel)
 	{
-		ScriptContainer.SetIsDuplicate();
-		EnqueueCreatedScriptContainer(ScriptHolder);	
+		UE_LOG(LogBangoEditor, Verbose, TEXT("Setting this script's IsDuplicate flag..."));
+		// ScriptContainer.MarkDuplicated();
+		DuplicatingObjects.Add(Outer);
+		EnqueueChangedScriptContainer(ScriptHolder);	
 	}
 }
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::EnqueueCreatedScriptContainer(IBangoScriptHolderInterface& ScriptHolder)
+void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(IBangoScriptHolderInterface& ScriptHolder)
 {
 	// UObject* Owner, FBangoScriptContainer* ScriptContainer
 	if (GEditor->IsPlaySessionInProgress())
@@ -296,62 +321,35 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueCreatedScriptContainer(IBangoScri
 		return;
 	}
 	
-	UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueCreatedScriptComponent: %s (%p)"), *Outer->GetName(), ScriptContainer);
-	
-	FScriptContainerKey Key(ScriptHolder);
-	CreationRequests.Add(Key);
-	RequestScriptQueueProcessing();
-}
+	FScriptContainerKey NewKey(ScriptHolder);
 
-// ----------------------------------------------
-
-void UBangoLevelScriptsEditorSubsystem::EnqueueDestroyedScriptContainer(IBangoScriptHolderInterface& ScriptHolder)
-{
-	// UObject* Owner, FBangoScriptContainer* ScriptContainer
-	if (GEditor->IsPlaySessionInProgress())
+	int32 Hash = GetTypeHash(NewKey);
+	UE_LOG(LogBangoEditor, Warning, TEXT("Hash... %i"), Hash);
+	
+	FScriptContainerKey* ExistingKey = ChangeRequests.Find(NewKey);
+	
+	// Let newest key win as long as it has a script class. This is a horrible race condition with UE serializing the script class UPROPERTY (it's often NONE when it should logicaly be set)
+	if (!ExistingKey || NewKey.ScriptContainer->GetScriptClass().IsValid())
 	{
-		return;
+		if (ExistingKey)
+		{
+			FString StatuString;
+			ScriptHolder.LogStatus(&StatuString);
+			
+			UE_LOG(LogBangoEditor, Warning, TEXT("Overwriting existing... %s"), *StatuString);
+		}
+		
+		UE_LOG(LogBangoEditor, Warning, TEXT("EnqueueChangedScriptComponent"));
+		ScriptHolder.LogStatus();
+		
+		if (bDuplicatingActors)
+		{
+			DuplicatingObjects.Add(Outer);
+		}
+		
+		ChangeRequests.Add(NewKey);
+		RequestScriptQueueProcessing();
 	}
-	
-	if (IsRunningCommandlet())
-	{
-		return;
-	}
-	
-	if (bMapLoading)
-	{
-		return;
-	}
-	
-	UObject* Outer = ScriptHolder._getUObject();
-	FBangoScriptContainer* ScriptContainer = &ScriptHolder.GetScriptContainer();
-	
-	if (!Outer || !ScriptContainer)
-	{
-		checkNoEntry();
-		return;
-	}
-	
-	if (!ScriptContainer->GetGuid().IsValid())
-	{
-		return;
-	}
-	
-	if (ScriptContainer->GetScriptClass().IsNull())
-	{
-		return;
-	}
-	
-	UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueDestroyedScriptComponent: %s (%p)"), *Outer->GetName(), ScriptContainer);
-	
-	TSoftClassPtr<UBangoScript> ScriptClass = ScriptContainer->GetScriptClass();
-    
-    if (!ScriptClass.IsNull())
-    {
-	    DestructionRequests.Add(ScriptContainer->GetScriptClass());
-    }
-    
-	RequestScriptQueueProcessing();
 }
 
 // ----------------------------------------------
@@ -381,47 +379,67 @@ void UBangoLevelScriptsEditorSubsystem::RequestScriptQueueProcessing()
 void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 {
 	UE_LOG(LogBangoEditor, Verbose, TEXT("--------------------------------"))
-	UE_LOG(LogBangoEditor, Verbose, TEXT("ProcessScriptRequestQueue %llu"), GFrameCounter)
+	UE_LOG(LogBangoEditor, Verbose, TEXT("ProcessScriptRequestQueue"))
 
+	UE_LOG(LogBangoEditor, Verbose, TEXT("          Change Requests:"));
+	
+	for (const auto& CreationRequest : ChangeRequests)
+	{
+		UObject* Object = CreationRequest.Outer.ResolveObject();
+		IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Object);
+		
+		if (ScriptHolder)
+		{
+			FString StatusString;
+			ScriptHolder->LogStatus(&StatusString);
+			
+			UE_LOG(LogBangoEditor, Verbose, TEXT("            Object: {%s}, Script: {%s} or {%s}"), *CreationRequest.Outer.ToString(), *CreationRequest.Script.ToString(), *CreationRequest.ScriptContainer->GetScriptClass().ToString());
+		}
+	}
+	
 	// This should always be running one frame later than the requests were queued
-	
-	for (const auto& Request : CreationRequests)
+	for (const auto& Request : ChangeRequests)
 	{
-		if (!Request.Outer.IsValid())
-		{
-			continue;
-		}
+		UObject* Outer = Request.Outer.ResolveObject();
 		
-		TSoftClassPtr<UBangoScript> ScriptClass = Request.ScriptContainer->GetScriptClass();
+		if (!IsValid(Outer))
+		{
+			// This script holder was destroyed. Is the script still in use?
+			FAssetRegistryModule& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		
+			if (!Request.Script.IsNull())
+			{
+				if (Request.ScriptContainer->IsMarkedDeleted())
+				{
+					ProcessDestroyedScriptRequest(Request.Script);	
+				}
+				/*
+				FName PackageName = Request.Script.LoadSynchronous()->GetPackage()->GetFName();
+			
+				TArray<FName> Referencers;
+				AssetRegistry.Get().GetReferencers(PackageName, Referencers);
+			
+				for (FName Name : Referencers)
+				{
+					UE_LOG(LogBangoEditor, Verbose, TEXT("            Referencer: %s"), *Name.ToString());
+				}
+				
+				if (Referencers.Num() == 0)
+				{
+					ProcessDestroyedScriptRequest(Request.Script);	
+				}
+				*/
+			}
 
-	    // We want creation requests to take priority; parse through creations first and have any creation requests cancel out any destruction requestss
-	    if (!ScriptClass.IsNull())
-	    {
-	    	UE_LOG(LogBangoEditor, Verbose, TEXT("Creation request contained existing script: %s"), *ScriptClass->GetPathName());
-    		DestructionRequests.Remove(ScriptClass);
-	    }
-		else
-		{
-			UE_LOG(LogBangoEditor, Verbose, TEXT("Creation request for new script"));
-		}
-	    
-		ProcessCreatedScriptRequest(Request.Outer, Request.ScriptContainer);
-	}
-	
-	for (const TSoftClassPtr<UBangoScript>& DestroyedScript : DestructionRequests)
-	{
-		if (DestroyedScript.IsNull())
-		{
-			UE_LOG(LogBangoEditor, Warning, TEXT("Destruction request for null script, this should never happen"));
 			continue;
 		}
-		
-		UE_LOG(LogBangoEditor, Verbose, TEXT("Destruction request for script: %s"), *DestroyedScript->GetPathName());
-		ProcessDestroyedScriptRequest(DestroyedScript);
+
+		TSoftClassPtr<UBangoScript> ScriptClass = Request.ScriptContainer->GetScriptClass();
+		ProcessCreatedScriptRequest(*Outer, Request);
 	}
 	
-	CreationRequests.Empty();
-	DestructionRequests.Empty();
+	ChangeRequests.Empty();
+	ChangeRequests.Empty();
 	ProcessScriptRequestQueuesHandle.Invalidate();
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("--------------------------------"))
@@ -429,45 +447,41 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(TWeakObjectPtr<UObject> Owner, FBangoScriptContainer* ScriptContainer)
+void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(UObject& Owner, const Bango::FScriptContainerKey& CreationRequest)
 {
-	if (!Owner.IsValid())
-	{
-		return;
-	}
-
-	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Owner.Get());
+	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(&Owner);
 	check(ScriptHolder);
 	
-	TSoftClassPtr<UBangoScript> ExistingScriptClass = ScriptContainer->GetScriptClass();
+	UObject* Outer = ScriptHolder->_getUObject();
 	
-	if (ExistingScriptClass.IsNull())
+	UE_LOG(LogBangoEditor, Verbose, TEXT("     ...Processing Creation Request..."))
+	
+	FBangoScriptContainer* ScriptContainer = CreationRequest.ScriptContainer;
+	
+	if (ScriptContainer->ConsumeNewLevelScriptRequest())
 	{
-		if (ScriptContainer->ConsumeNewLevelScriptRequest())
+		CreateLevelScript(*ScriptHolder);
+	}
+	else if (DuplicatingObjects.Remove(Outer))
+	{
+		DuplicateLevelScript(*ScriptHolder, CreationRequest.ScriptContainer->GetScriptClass());
+	}
+	else if (!ScriptContainer->GetScriptClass().IsNull())
+	{
+		// This script container already has a script class assigned, *and* it wasn't a duplicate... 			
+		FSoftObjectPath ScriptClassSoft(ScriptContainer->GetScriptClass().ToSoftObjectPath());
+				
+		bool bScriptExists = FPackageName::DoesPackageExist(ScriptClassSoft.GetLongPackageName());
+		
+		if (!bScriptExists)
 		{
-			// This must be a fresh shiny brand new script container. Make a script for it!
-			CreateLevelScript(*ScriptHolder);	
+			// This must have been an undo-delete. Let's see if we can find the script class in the Transient Package.
+			TryUndeleteScript(ScriptClassSoft, ScriptContainer);
 		}
 	}
 	else
 	{
-		if (ScriptContainer->ConsumeDuplicate())
-		{
-			DuplicateLevelScript(*ScriptHolder);
-		}
-		else
-		{
-			// This script container already has a script class assigned, *and* it wasn't a duplicate... 			
-			FSoftObjectPath ScriptClassSoft(ScriptContainer->GetScriptClass().ToSoftObjectPath());
-					
-			bool bScriptExists = FPackageName::DoesPackageExist(ScriptClassSoft.GetLongPackageName());
-			
-			if (!bScriptExists)
-			{
-				// This must have been an undo-delete. Let's see if we can find the script class in the Transient Package.
-				TryUndeleteScript(ScriptClassSoft, ScriptContainer);
-			}
-		}
+		UE_LOG(LogBango, Verbose, TEXT("ProcessCreatedScriptRequest Unhandled"));
 	}
 }
 
@@ -501,7 +515,7 @@ void UBangoLevelScriptsEditorSubsystem::CreateLevelScript(IBangoScriptHolderInte
 			return;
 		}
 
-		UE_LOG(LogBangoEditor, Display, TEXT("Created new Bango level script asset: %s"), *ScriptPackage->GetPathName());
+		UE_LOG(LogBangoEditor, Display, TEXT(" >>>>>>>>>>>>>>>>>> Created new Bango level script asset: %s"), *ScriptPackage->GetPathName());
 		
 		// Higher-level systems can fill in the requested name to get it passed in here for creation. This was a bit of a late-stage hack, not very "clean code", but it works fine
 		FString NewBlueprintName = ScriptContainer.GetRequestedName();
@@ -563,16 +577,16 @@ void UBangoLevelScriptsEditorSubsystem::CreateLevelScript(IBangoScriptHolderInte
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderInterface& ScriptHolder)
+void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderInterface& ScriptHolder, TSoftClassPtr<UBangoScript> ScriptClass)
 {
 	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 	UObject* Outer = ScriptHolder._getUObject();
 	
-	UBangoScriptBlueprint* SourceBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(ScriptContainer.GetScriptClass());
+	UBangoScriptBlueprint* SourceBlueprint = UBangoScriptBlueprint::GetBangoScriptBlueprintFromClass(ScriptClass);
 
 	if (!SourceBlueprint)
 	{
-		UE_LOG(LogBangoEditor, Error, TEXT("Failed to locate script blueprint asset for script class path %s"), *ScriptContainer.GetScriptClass().ToSoftObjectPath().ToString());
+		UE_LOG(LogBangoEditor, Error, TEXT("Failed to locate script blueprint asset for script class path %s"), *ScriptClass.ToSoftObjectPath().ToString());
 		return;
 	}
 	
@@ -583,15 +597,14 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 		UE_LOG(LogBangoEditor, Error, TEXT("Failed to duplicate script; could not find an AActor outer for %s"), *Outer->GetPathName()); 
 		return;
 	}
-		
+	
 	Outer->Modify();
 	
 	// Prepare the newly duplicated script container
 	ScriptContainer.Unset();
-		
+	
 	FGuid NewScriptGuid = FGuid::NewGuid(); 
-	ScriptContainer.SetGuid(NewScriptGuid);
-		
+	
 	// Duplicate the blueprint
 	UPackage* NewScriptPackage = Bango::Editor::MakeLevelScriptPackage(Outer, NewScriptGuid);
 		
@@ -601,18 +614,19 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 		return;
 	}
 	
-	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDuplicated: %s, %s, %s"), *Outer->GetName(), *ScriptContainer.GetGuid().ToString(), *ScriptContainer.GetRequestedName());
-	
 	UBangoScriptBlueprint* DuplicatedBlueprint = Bango::Editor::DuplicateLevelScript(SourceBlueprint, NewScriptPackage, ScriptContainer.GetRequestedName(), NewScriptGuid, OwnerActor);
 	check(DuplicatedBlueprint);
 	
+	UE_LOG(LogBangoEditor, Verbose, TEXT(" >>>>>>>>>>>>>>>>>> OnLevelScriptContainerDuplicated, Owner: %s, Guid: %s, NewScript: %s"), *Outer->GetPathName(), *NewScriptGuid.ToString(), *DuplicatedBlueprint->GetPathName());
+	
 	FKismetEditorUtilities::CompileBlueprint(DuplicatedBlueprint);
 	
-	Outer->Modify();
+	ScriptContainer.SetGuid(NewScriptGuid);
 	ScriptContainer.SetScriptClass(DuplicatedBlueprint->GeneratedClass);
 	
 	FAssetRegistryModule::AssetCreated(DuplicatedBlueprint);
 	(void)NewScriptPackage->MarkPackageDirty();
+	
 	
 	// Tells FBangoScript property type customizations to regenerate
 	FBangoEditorDelegates::OnScriptGenerated.Broadcast();
@@ -631,6 +645,26 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 		
 		// UPackageTools::SavePackagesForObjects( {Outer->GetPackage(), DuplicatedBlueprint->GetPackage() } );
 	}
+	
+	/*
+	auto DelayTest = [Outer, NewScriptGuid, DuplicatedBlueprint]
+	{
+		IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Outer);
+		
+		if (!ScriptHolder)
+		{
+			return;
+		}
+		
+		//Outer->Modify();
+	
+		FBangoScriptContainer& ScriptContainer = ScriptHolder->GetScriptContainer();
+		//ScriptContainer.SetGuid(NewScriptGuid);
+		//ScriptContainer.SetScriptClass(DuplicatedBlueprint->GeneratedClass);
+	};
+	
+	GEditor->GetTimerManager()->SetTimerForNextTick(DelayTest);
+	*/
 }
 
 // ----------------------------------------------
@@ -692,6 +726,8 @@ void UBangoLevelScriptsEditorSubsystem::TryUndeleteScript(FSoftObjectPath Script
 
 void UBangoLevelScriptsEditorSubsystem::ProcessDestroyedScriptRequest(TSoftClassPtr<UBangoScript> ScriptClass)
 {
+	UE_LOG(LogBangoEditor, Verbose, TEXT("ProcessDestroyedScriptRequest: {%s}"), *ScriptClass->GetPathName());
+	
 	const FSoftObjectPath& ScriptClassPath = ScriptClass.ToSoftObjectPath();
 	
 	if (ScriptClassPath.IsNull())
@@ -749,6 +785,46 @@ void UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete()
 		FEditorDelegates::OnDuplicateActorsBegin.AddWeakLambda(this, [this] () { bDuplicatingActors = true; } );
 		FEditorDelegates::OnDuplicateActorsEnd.AddWeakLambda(this, [this] () { bDuplicatingActors = false; } );
 	
+		FCoreUObjectDelegates::OnObjectConstructed.AddUObject(this, &ThisClass::OnObjectConstructed);
+		/*
+		//UEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UEditorSubsystem>();
+		FCoreUObjectDelegates::OnObjectPreSave.AddWeakLambda(this, [this] (UObject*, FObjectPreSaveContext)
+		{
+			UE_LOG(LogBangoEditor, Verbose, TEXT("Clearing request queues..."));
+			ChangeRequests.Empty();
+			ChangeRequests.Empty();
+			
+			bSavingLevel = true;
+			
+			auto DelayUnset = [this]
+			{
+				UE_LOG(LogTemp, Error, TEXT("===")); bSavingLevel = true;
+				this->bSavingLevel = false;
+			};
+			
+			GEditor->GetTimerManager()->SetTimerForNextTick(DelayUnset);
+		});
+		
+		FEditorDelegates::PreSaveWorldWithContext.AddWeakLambda(this, [this] (UWorld*, FObjectPreSaveContext)
+		{
+			UE_LOG(LogBangoEditor, Verbose, TEXT("Clearing request queues..."));
+			ChangeRequests.Empty();
+			ChangeRequests.Empty();
+			
+			bSavingLevel = true;
+			
+			auto DelayUnset = [this]
+			{
+				UE_LOG(LogTemp, Error, TEXT("======")); bSavingLevel = true;
+				this->bSavingLevel = false;
+			};
+			
+			GEditor->GetTimerManager()->SetTimerForNextTick(DelayUnset);
+		});
+		// FEditorDelegates::PostSaveWorldWithContext.AddWeakLambda(this, [this] (UWorld*, FObjectPostSaveContext) { UE_LOG(LogTemp, Error, TEXT("---")); bSavingLevel = false; });
+			*/
+		
+		
 		// Called by UBangoScriptComponent (potentially others)
 		FBangoEditorDelegates::OnScriptContainerCreated.AddUObject(this, &ThisClass::OnLevelScriptContainerCreated);
 		FBangoEditorDelegates::OnScriptContainerDestroyed.AddUObject(this, &ThisClass::OnLevelScriptContainerDestroyed);
@@ -815,20 +891,21 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData
 				{
 					continue;
 				}
-				
-				OnLevelScriptContainerDuplicated(*ScriptHolder);
-				
-				UE_LOG(LogBangoEditor, Display, TEXT("OnAssetAdded"));
+	
+				// Saving should not run any processing, just save!
+				if ((AssetData.PackageFlags & PKG_IsSaving) == 0)
+				{
+					UE_LOG(LogBangoEditor, Display, TEXT("OnAssetAdded calling OnLevelScriptContainerDuplicated, package flags: %i"), AssetData.PackageFlags);
+					OnLevelScriptContainerDuplicated(*ScriptHolder);	
+				}
 			}
 		}
 		
-		bDuplicatingLevel = false;
+		//bDuplicatingLevel = false;
 		
-		/*
 		// We'll leave the duplicating flag active for a frame. Sob. This is so horrible.
 		auto ReleaseDuplicatingLevelDelegate = [this] () { this->bDuplicatingLevel = false; };
 		GEditor->GetTimerManager()->SetTimerForNextTick(ReleaseDuplicatingLevelDelegate);
-		*/
 	}
 }
 
@@ -876,9 +953,8 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetPostImport(UFactory* Factory, UOb
 					continue;
 				}
 				
-				OnLevelScriptContainerDuplicated(*ScriptHolder);
-				
-				UE_LOG(LogBangoEditor, Display, TEXT("OnAssetAdded"));
+				// UE_LOG(LogBangoEditor, Display, TEXT("OnAssetPostImport calling OnLevelScriptContainerDuplicated"));
+				// OnLevelScriptContainerDuplicated(*ScriptHolder);
 			}
 		}
 	}
@@ -915,13 +991,13 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetsDeleted(const TArray<UClass*>& C
 	}
 }
 
-void UBangoLevelScriptsEditorSubsystem::OnRequestScriptSave(TSoftClassPtr<UBangoScript> Class)
+void UBangoLevelScriptsEditorSubsystem::OnRequestScriptSave(IBangoScriptHolderInterface* ScriptHolder, TSoftClassPtr<UBangoScript> Class)
 {
 	TSubclassOf<UBangoScript> Script = Class.LoadSynchronous();
 	
 	if (Script)
 	{
-		UPackageTools::SavePackagesForObjects( { Script } );
+		UPackageTools::SavePackagesForObjects( { ScriptHolder->_getUObject(), Script } );
 	}
 }
 

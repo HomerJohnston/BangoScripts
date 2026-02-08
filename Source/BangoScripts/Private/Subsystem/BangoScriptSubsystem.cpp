@@ -104,7 +104,7 @@ FBangoScriptHandle UBangoScriptSubsystem::K2_EnqueueScript(TSoftClassPtr<UBangoS
 
 	if (ScriptClass.IsNull())
 	{
-		UE_LOG(LogBango, VeryVerbose, TEXT("RunScript called with null script!"));
+		UE_LOG(LogBango, Verbose, TEXT("RunScript called with null script!"));
 		return FBangoScriptHandle::GetNullHandle();
 	}
 
@@ -123,7 +123,7 @@ FBangoScriptHandle UBangoScriptSubsystem::EnqueueScript(TSoftClassPtr<UBangoScri
 {
     if (ScriptClass.IsNull())
     {
-        UE_LOG(LogBango, VeryVerbose, TEXT("RunScript called with null script!"));
+        UE_LOG(LogBango, Verbose, TEXT("RunScript called with null script!"));
         return FBangoScriptHandle::GetNullHandle();
     }
     

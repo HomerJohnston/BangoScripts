@@ -148,30 +148,16 @@ void Bango::Debug::LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FSt
 
 void Bango::Debug::PrintComponentState(UActorComponent* Component, FString Msg)
 {
-	uint32 Flags = (uint32)Component->GetFlags();
-	uint32 IntFlags = (uint32)Component->GetInternalFlags();
+	FString ComponentFlagsString = GetFlagsString(Component);
 	
-	FString BitString1;
-	FString BitString2;
-	BitString1.Reserve(32);
-	BitString2.Reserve(32);
-
-	while (Msg.Len() < 64)
+	FString OwnerFlagsString = "No Owner";
+	
+	if (Component->GetOwner())
 	{
-		Msg += " ";
+		OwnerFlagsString = GetFlagsString(Component->GetOwner());
 	}
 	
-	for (int32 i = 31; i >= 0; --i)
-	{
-		BitString1.AppendChar(((Flags >> i) & 1) ? TEXT('1') : TEXT('0'));
-		BitString2.AppendChar(((IntFlags >> i) & 1) ? TEXT('1') : TEXT('0'));
-	}
-	
-	//UE_LOG(LogBangoEditor, VeryVerbose, TEXT("%p: %s"), Component, *FString::Format(TEXT("{0} --- Flags: {1}                          --- Internal Flags: {2}"), { Msg, *BitString1, *BitString2 } ));
-	
-	FString FlagsString = GetFlagsString(Component);
-	
-	UE_LOG(LogBangoEditor, VeryVerbose, TEXT("%p: %s"), Component, *FString::Format(TEXT("{0} --- {1}"), { Msg, FlagsString } ));
+	UE_LOG(LogBangoEditor, Verbose, TEXT("%s {%s}"), *FString::Format(TEXT("{0} --- {1} [{2}]"), { Msg, ComponentFlagsString, OwnerFlagsString } ), *Component->GetPathName());
 }
 
 // ----------------------------------------------

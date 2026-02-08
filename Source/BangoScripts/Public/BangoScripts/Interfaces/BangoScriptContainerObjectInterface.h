@@ -33,5 +33,7 @@ public:
 	virtual const FString& GetStartEventComment() const;
 	
 	virtual void UpdateBillboard() {};
+	
+	virtual void LogStatus(FString* OutString = nullptr) const {};
 #endif
 };

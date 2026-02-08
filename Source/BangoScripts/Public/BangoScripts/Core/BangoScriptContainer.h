@@ -48,6 +48,9 @@ private:
 	FString RequestedName = "";
 	bool bNewLeveScriptRequested = false;
 	bool bCreated = false;
+	bool bIsDeleted = false;
+	
+	UPROPERTY(Transient)
 	bool bIsDuplicate = false;
 #endif
 	
@@ -79,16 +82,22 @@ public:
 
 	void SetNewLevelScriptRequested();
 	
-	void SetIsCreated();
+	void MarkForNewLevelScript();
 	
-	void SetIsDuplicate();
+	// void MarkDuplicated();
 
+	void MarkDeleted();
+	
 	bool ConsumeNewLevelScriptRequest();
 	
-	bool ConsumeCreated();
+	bool ConsumeMarkForNewLevelScript();
 	
-	bool ConsumeDuplicate();
+	// bool ConsumeMarkDuplicated();
 
+	bool IsMarkedDeleted() const { return bIsDeleted; };
+	
+	// bool IsMarkedDuplicated() const { return bIsDuplicate; };
+	
 	const FString& GetDescription() const;
 
 	bool AreScriptInputsOutDated() const;

@@ -920,7 +920,7 @@ public:
 				]
 		];
 
-		UE_LOG(LogEditorClassViewer, VeryVerbose, TEXT("CLASS [%s]"), **ClassName);
+		UE_LOG(LogEditorClassViewer, Verbose, TEXT("CLASS [%s]"), **ClassName);
 
 
 		STableRow< TSharedPtr<FString> >::ConstructInternal(

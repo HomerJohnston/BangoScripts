@@ -69,6 +69,8 @@ public:
 	
 	void PreSave(FObjectPreSaveContext SaveContext) override;
 	
+	bool bSaving = false;
+	
 	void PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext) override;
 	
 	void PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
@@ -155,6 +157,7 @@ public:
 	
 	bool HasValidScript() const;
 	
+	void LogStatus(FString* OutString = nullptr) const override;
 protected:
 	void UpdateBillboard() override;
 #endif
