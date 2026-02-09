@@ -149,8 +149,8 @@ void UBangoScriptComponent::OnUnregister()
 		bDebugRegistered = false;				
 	}
 	
-	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
-		
+	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder(), EBangoScriptDeletedHelper::OwnerDestroyed);
+	
 	Super::OnUnregister();
 	
 	// Bango::Debug::PrintComponentState(this, "OnUnregister_Late");	
@@ -217,26 +217,26 @@ void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 			{
 				UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for Instance component..."));
 				
-				ScriptContainer.MarkDeleted();
-				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
+				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder(), EBangoScriptDeletedHelper::SuspectedDelete);
 			}
 		//}
 	}
 	else
 	{ 
-		if (GetOwner() && GetOwner()->HasAnyFlags(RF_BeginDestroyed))
+		if (bDestroyingHierarchy)
 		{
-			UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component (owner BeginDestroyed)..."));
-			
-			ScriptContainer.MarkDeleted();
-			FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
-		}
-		else if (!HasAnyFlags(RF_WasLoaded | RF_BeginDestroyed) || !IsValid(GetOwner()))
-		{
-			UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component..."));
-			
-			ScriptContainer.MarkDeleted();
-			FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
+			if (GetOwner() && GetOwner()->HasAnyFlags(RF_BeginDestroyed))
+			{
+				UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component (owner BeginDestroyed)..."));
+				
+				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder(), EBangoScriptDeletedHelper::SuspectedDelete);
+			}
+			else if (!HasAnyFlags(RF_WasLoaded | RF_BeginDestroyed) || !IsValid(GetOwner()))
+			{
+				UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component..."));
+				
+				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder(), EBangoScriptDeletedHelper::SuspectedDelete);
+			}
 		}
 	}
 }

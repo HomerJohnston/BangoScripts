@@ -243,6 +243,11 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(IBangoScri
 		return;
 	}
 	
+	if (bMapLoading)
+	{
+		return;
+	}
+	
 	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 	
 	UObject* Outer = ScriptHolder._getUObject();
@@ -255,16 +260,36 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(IBangoScri
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder)
+void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder, EBangoScriptDeletedHelper Flag)
 {
-	//if (bSavingLevel)
-	//{
-	//	return;
-	//}
+	if (GEditor->IsPlaySessionInProgress())
+	{
+		return;
+	}
+	
+	if (IsRunningCommandlet())
+	{
+		return;
+	}
+	
+	if (bMapLoading)
+	{
+		return;
+	}
 	
 	UObject* Outer = ScriptHolder._getUObject();
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDestroyed: %s"), *Outer->GetName());
 
+	if (Flag == EBangoScriptDeletedHelper::SuspectedDelete)
+	{
+		const auto& Script = ScriptHolder.GetScriptContainer().GetScriptClass();
+		
+		if (!Script.IsNull())
+		{
+			DeletedScripts.Add(Script.ToSoftObjectPath());
+		}
+	}
+	
 	EnqueueChangedScriptContainer(ScriptHolder);
 }
 
@@ -296,7 +321,6 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 
 void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(IBangoScriptHolderInterface& ScriptHolder)
 {
-	// UObject* Owner, FBangoScriptContainer* ScriptContainer
 	if (GEditor->IsPlaySessionInProgress())
 	{
 		return;
@@ -323,9 +347,6 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(IBangoScri
 	
 	FScriptContainerKey NewKey(ScriptHolder);
 
-	int32 Hash = GetTypeHash(NewKey);
-	UE_LOG(LogBangoEditor, Warning, TEXT("Hash... %i"), Hash);
-	
 	FScriptContainerKey* ExistingKey = ChangeRequests.Find(NewKey);
 	
 	// Let newest key win as long as it has a script class. This is a horrible race condition with UE serializing the script class UPROPERTY (it's often NONE when it should logicaly be set)
@@ -393,7 +414,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 			FString StatusString;
 			ScriptHolder->LogStatus(&StatusString);
 			
-			UE_LOG(LogBangoEditor, Verbose, TEXT("            Object: {%s}, Script: {%s} or {%s}"), *CreationRequest.Outer.ToString(), *CreationRequest.Script.ToString(), *CreationRequest.ScriptContainer->GetScriptClass().ToString());
+			// UE_LOG(LogBangoEditor, Verbose, TEXT("            Object: {%s}, Script: {%s} or {%s}"), *CreationRequest.Outer.ToString(), *CreationRequest.Script.ToString(), *CreationRequest.ScriptContainer->GetScriptClass().ToString());
 		}
 	}
 	
@@ -408,7 +429,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 			continue;
 		}
 		
-		if (Request.ScriptContainer->IsMarkedDeleted())
+		if (DeletedScripts.Remove(Request.Script.ToSoftObjectPath()))
 		{
 			ProcessDestroyedScriptRequest(Request.Script);
 			continue;
@@ -432,6 +453,11 @@ void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(UObject& Own
 	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(&Owner);
 	check(ScriptHolder);
 	
+	if (bMapLoading)
+	{
+		return;
+	}
+	
 	UObject* Outer = ScriptHolder->_getUObject();
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("     ...Processing Creation Request..."))
@@ -444,12 +470,12 @@ void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(UObject& Own
 	}
 	else if (DuplicatingObjects.Remove(Outer))
 	{
-		DuplicateLevelScript(*ScriptHolder, CreationRequest.ScriptContainer->GetScriptClass());
+		DuplicateLevelScript(*ScriptHolder, CreationRequest.Script);
 	}
 	else if (!ScriptContainer->GetScriptClass().IsNull())
 	{
 		// This script container already has a script class assigned, *and* it wasn't a duplicate... 			
-		FSoftObjectPath ScriptClassSoft(ScriptContainer->GetScriptClass().ToSoftObjectPath());
+		FSoftObjectPath ScriptClassSoft(CreationRequest.Script.ToSoftObjectPath());
 				
 		bool bScriptExists = FPackageName::DoesPackageExist(ScriptClassSoft.GetLongPackageName());
 		

@@ -20,6 +20,12 @@ enum class EBangoScriptComponentRegisterStatus : uint8
 	Unregistered
 };
 
+enum class EBangoScriptDeletedHelper : uint8
+{
+	SuspectedDelete,
+	OwnerDestroyed,
+};
+
 #if WITH_EDITOR
 struct FBangoEditorDelegates
 {
@@ -30,7 +36,7 @@ struct FBangoEditorDelegates
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> OnScriptContainerDuplicated;
 	
 	// 
-	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> OnScriptContainerDestroyed;
+	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder, EBangoScriptDeletedHelper Flag)> OnScriptContainerDestroyed;
 	
 	// 
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(AActor* Actor)> RequestNewID;

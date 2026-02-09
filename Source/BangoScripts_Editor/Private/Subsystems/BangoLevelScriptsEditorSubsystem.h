@@ -25,7 +25,7 @@ namespace Bango
 		// ----------------------------
 		
 		FSoftObjectPath Outer;
-		FBangoScriptContainer* ScriptContainer;
+		FBangoScriptContainer* ScriptContainer = nullptr;
 		TSoftClassPtr<UBangoScript> Script;
 
 		// ----------------------------
@@ -103,7 +103,7 @@ public:
 	
 	void OnLevelScriptContainerCreated(IBangoScriptHolderInterface& ScriptHolder, FString BlueprintName = "");
 
-	void OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder);
+	void OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder, EBangoScriptDeletedHelper Flag);
 
 	void OnLevelScriptContainerDuplicated(IBangoScriptHolderInterface& ScriptHolder);
 	

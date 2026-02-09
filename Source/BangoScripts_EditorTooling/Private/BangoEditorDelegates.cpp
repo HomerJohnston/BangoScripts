@@ -8,7 +8,7 @@ TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder, FString Reque
 
 TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> FBangoEditorDelegates::OnScriptContainerDuplicated;
 
-TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder)> FBangoEditorDelegates::OnScriptContainerDestroyed;
+TMulticastDelegate<void(IBangoScriptHolderInterface& ScriptHolder, EBangoScriptDeletedHelper Flag)> FBangoEditorDelegates::OnScriptContainerDestroyed;
 
 TMulticastDelegate<void(AActor* Actor)> FBangoEditorDelegates::RequestNewID;
 

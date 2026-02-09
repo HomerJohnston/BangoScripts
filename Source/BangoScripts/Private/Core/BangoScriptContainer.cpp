@@ -187,26 +187,6 @@ void FBangoScriptContainer::MarkForNewLevelScript()
 
 // ----------------------------------------------
 
-/*
-#if WITH_EDITOR
-void FBangoScriptContainer::MarkDuplicated()
-{
-	bIsDuplicate = true;
-}
-#endif
-*/
-
-// ----------------------------------------------
-
-#if WITH_EDITOR
-void FBangoScriptContainer::MarkDeleted()
-{
-	bIsDeleted = true;
-}
-#endif
-
-// ----------------------------------------------
-
 #if WITH_EDITOR
 bool FBangoScriptContainer::ConsumeNewLevelScriptRequest()
 {
