@@ -426,7 +426,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 				
 				if (Referencers.Num() == 0)
 				{
-					ProcessDestroyedScriptRequest(Request.Script);	
+					ProcessDestroyedScriptRequest(Request.Script);	m
 				}
 				*/
 			}
@@ -853,8 +853,6 @@ void UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete()
 void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData)
 {
 	UWorld* World = Cast<UWorld>(AssetData.GetAsset());
-	
-	ULevel* LevelX = Cast<ULevel>(AssetData.GetAsset());
 	
 	if (!World)
 	{

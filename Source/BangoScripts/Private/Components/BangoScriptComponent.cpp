@@ -224,7 +224,14 @@ void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 	}
 	else
 	{ 
-		if (!HasAnyFlags(RF_WasLoaded | RF_BeginDestroyed) || !IsValid(GetOwner()))
+		if (GetOwner() && GetOwner()->HasAnyFlags(RF_BeginDestroyed))
+		{
+			UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component (owner BeginDestroyed)..."));
+			
+			ScriptContainer.MarkDeleted();
+			FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder());
+		}
+		else if (!HasAnyFlags(RF_WasLoaded | RF_BeginDestroyed) || !IsValid(GetOwner()))
 		{
 			UE_LOG(LogBango, Verbose, TEXT("Calling OnScriptContainerDestroyed for CDO component..."));
 			
