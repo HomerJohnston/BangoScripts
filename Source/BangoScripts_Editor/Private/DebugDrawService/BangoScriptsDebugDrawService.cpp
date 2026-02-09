@@ -76,7 +76,13 @@ bool FBangoDebugDraw_ScriptComponentHover::TryToFocusOnComponent(const UBangoScr
 		ScreenDistance = MouseDistanceToBillboard;
 		return false;
 	}
-		
+	
+	// If the mouse is currently on top of the current widget, don't try to find another one
+	if (IsWidgetVisibleAndHovered())
+	{
+		return true;
+	}
+	
 	// If this is a new contender with a better distance, select it
 	if (MouseDistanceToBillboard < ScreenDistance)
 	{
@@ -333,7 +339,44 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		}
 		
 		FVector2f MouseScreenPos = GlobalMousePos - ViewportWidget->GetCachedGeometry().GetAbsolutePosition();
+
+		for (FLevelEditorViewportClient* Client : GEditor->GetLevelViewportClients())
+		{
+			if (Client && Client->GetWorld() == World)
+			{
+				FSceneViewFamilyContext ViewFamily(FSceneViewFamily::ConstructionValues(Client->Viewport, Client->GetScene(), Client->EngineShowFlags));
+				const FSceneView* SceneView = Client->CalcSceneView(&ViewFamily);
+	
+				FVector CameraPos = SceneView->ViewMatrices.GetViewOrigin();
+				FConvexVolume CullingFrustum = SceneView->GetCullingFrustum();
 		
+				auto FrustumTest = [this, CullingFrustum, SceneView, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
+				{
+					if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
+					{
+						return;
+					}
+			
+					if (ScriptElement.ScriptComponent.IsValid() && CullingFrustum.IntersectPoint(ScriptElement.Position) /*&& ScriptElement.ScriptComponent->HasValidScript()*/)
+					{
+						FVector2D PixelLocation;
+						SceneView->WorldToPixel(ScriptElement.Position, PixelLocation);
+
+						float DistSqrd = FVector2f::DistSquared(FVector2f(PixelLocation), MouseScreenPos);
+			
+						FBangoScripts_NearbyScript NearbyScript(ScriptElement.ScriptComponent.Get(), DistSqrd, FVector2f(PixelLocation));
+			
+						NearbyScripts.Emplace(NearbyScript);
+					}
+				};
+	
+				FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
+	
+				ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
+			}
+		}
+		
+		/*
 		APlayerController* PlayerController = nullptr;
 		
 		for (APlayerController* Actor : TActorRange<APlayerController>(World))
@@ -346,7 +389,7 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		{
 			return;
 		}
-
+		
 		AActor* ViewTarget = PlayerController->PlayerCameraManager->GetViewTarget();
 		
 		FMatrix One;
@@ -380,10 +423,11 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		};
 		
 		FVector CameraPos = PlayerController->PlayerCameraManager->GetCameraLocation();
+		*/
 		
-		FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
+		//FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
 	
-		ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
+		//ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
 	}
 	else
 	{
@@ -597,7 +641,10 @@ bool UBangoScriptsDebugDrawService::DrawViewportHoverControls(UBangoScriptCompon
 	}
 	
 	// At this point, we know the mouse is near the evaluating component. Let's see if it can take over focus...
-	HoverInfo.TryToFocusOnComponent(ScriptComponent, MouseDistSqrd);
+	if (HoverInfo.TryToFocusOnComponent(ScriptComponent, MouseDistSqrd))
+	{
+		return true;
+	}
 	
 	// Did we take over focus? If not, we're done
 	if (HoverInfo.GetFocusedComponent() != ScriptComponent)
