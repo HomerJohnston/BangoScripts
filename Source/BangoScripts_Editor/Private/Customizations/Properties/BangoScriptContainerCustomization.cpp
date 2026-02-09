@@ -323,6 +323,8 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 				UObject* Outer = ScriptHolder._getUObject();
 				Outer->Modify();
 
+				ScriptContainer.MarkDeleted();
+				
 				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(ScriptHolder);
 				
 				ScriptContainer.Unset();

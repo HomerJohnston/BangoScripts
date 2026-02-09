@@ -82,6 +82,7 @@ protected:
 
 	TSet<FSoftObjectPath> NewObjects;
 	TSet<FSoftObjectPath> DuplicatingObjects;
+	TSet<FSoftObjectPath> DeletedScripts;
 	
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;

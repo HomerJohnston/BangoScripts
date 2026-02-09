@@ -404,33 +404,13 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 		
 		if (!IsValid(Outer))
 		{
-			// This script holder was destroyed. Is the script still in use?
-			FAssetRegistryModule& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+			ProcessDestroyedScriptRequest(Request.Script);	
+			continue;
+		}
 		
-			if (!Request.Script.IsNull())
-			{
-				if (Request.ScriptContainer->IsMarkedDeleted())
-				{
-					ProcessDestroyedScriptRequest(Request.Script);	
-				}
-				/*
-				FName PackageName = Request.Script.LoadSynchronous()->GetPackage()->GetFName();
-			
-				TArray<FName> Referencers;
-				AssetRegistry.Get().GetReferencers(PackageName, Referencers);
-			
-				for (FName Name : Referencers)
-				{
-					UE_LOG(LogBangoEditor, Verbose, TEXT("            Referencer: %s"), *Name.ToString());
-				}
-				
-				if (Referencers.Num() == 0)
-				{
-					ProcessDestroyedScriptRequest(Request.Script);	m
-				}
-				*/
-			}
-
+		if (Request.ScriptContainer->IsMarkedDeleted())
+		{
+			ProcessDestroyedScriptRequest(Request.Script);
 			continue;
 		}
 
@@ -726,6 +706,11 @@ void UBangoLevelScriptsEditorSubsystem::TryUndeleteScript(FSoftObjectPath Script
 
 void UBangoLevelScriptsEditorSubsystem::ProcessDestroyedScriptRequest(TSoftClassPtr<UBangoScript> ScriptClass)
 {
+	if (ScriptClass.IsNull())
+	{
+		return;
+	}
+	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("ProcessDestroyedScriptRequest: {%s}"), *ScriptClass->GetPathName());
 	
 	const FSoftObjectPath& ScriptClassPath = ScriptClass.ToSoftObjectPath();
