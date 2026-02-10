@@ -357,10 +357,10 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(IBangoScri
 			FString StatuString;
 			ScriptHolder.LogStatus(&StatuString);
 			
-			UE_LOG(LogBangoEditor, Warning, TEXT("Overwriting existing... %s"), *StatuString);
+			UE_LOG(LogBangoEditor, Verbose, TEXT("Overwriting existing... %s"), *StatuString);
 		}
 		
-		UE_LOG(LogBangoEditor, Warning, TEXT("EnqueueChangedScriptComponent"));
+		UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueChangedScriptComponent"));
 		ScriptHolder.LogStatus();
 		
 		if (bDuplicatingActors)

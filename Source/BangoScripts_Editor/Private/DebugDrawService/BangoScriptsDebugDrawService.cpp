@@ -296,25 +296,17 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 	
 	NearbyScripts.Empty();
 	
-	FViewport* Viewport = GEditor->GetActiveViewport();
-	
-	if (!Viewport || Viewport->GetSizeXY().X < 50 || Viewport->GetSizeXY().Y < 50)
-	{
-		return;
-	} 
-			
-	FViewportClient* ViewportClient = Viewport->GetClient();
-	UWorld* World = ViewportClient->GetWorld();
-	
-	if (!FBangoScripts_EditorToolingModule::BangoScriptsShowFlag.IsEnabled(*ViewportClient->GetEngineShowFlags()))
-	{
-		return;
-	}
-	
 	// TODO return if the camera is moving or other input is going on
-	
-	if (World->IsPlayInEditor())
+
+	if (GEditor->IsPlaySessionInProgress() && !GEditor->IsSimulateInEditorInProgress())
 	{
+		UWorld* World = GEditor->PlayWorld;
+		
+		if (!World)
+		{
+			return;
+		}
+		
 		UGameViewportClient* GameViewportClient = GEditor->GameViewport;
 	
 		if (!GameViewportClient)
@@ -329,6 +321,11 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 			return;
 		}
 
+		if (ViewportWidget->HasAnyUserFocus())
+		{
+			return;
+		}
+		
 		FVector2D GlobalMousePos = FSlateApplication::Get().GetCursorPos();
 		
 		// Check if mouse is within viewport
@@ -337,46 +334,9 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		{
 			return;
 		}
-		
+	
 		FVector2f MouseScreenPos = GlobalMousePos - ViewportWidget->GetCachedGeometry().GetAbsolutePosition();
-
-		for (FLevelEditorViewportClient* Client : GEditor->GetLevelViewportClients())
-		{
-			if (Client && Client->GetWorld() == World)
-			{
-				FSceneViewFamilyContext ViewFamily(FSceneViewFamily::ConstructionValues(Client->Viewport, Client->GetScene(), Client->EngineShowFlags));
-				const FSceneView* SceneView = Client->CalcSceneView(&ViewFamily);
-	
-				FVector CameraPos = SceneView->ViewMatrices.GetViewOrigin();
-				FConvexVolume CullingFrustum = SceneView->GetCullingFrustum();
 		
-				auto FrustumTest = [this, CullingFrustum, SceneView, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
-				{
-					if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
-					{
-						return;
-					}
-			
-					if (ScriptElement.ScriptComponent.IsValid() && CullingFrustum.IntersectPoint(ScriptElement.Position) /*&& ScriptElement.ScriptComponent->HasValidScript()*/)
-					{
-						FVector2D PixelLocation;
-						SceneView->WorldToPixel(ScriptElement.Position, PixelLocation);
-
-						float DistSqrd = FVector2f::DistSquared(FVector2f(PixelLocation), MouseScreenPos);
-			
-						FBangoScripts_NearbyScript NearbyScript(ScriptElement.ScriptComponent.Get(), DistSqrd, FVector2f(PixelLocation));
-			
-						NearbyScripts.Emplace(NearbyScript);
-					}
-				};
-	
-				FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
-	
-				ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
-			}
-		}
-		
-		/*
 		APlayerController* PlayerController = nullptr;
 		
 		for (APlayerController* Actor : TActorRange<APlayerController>(World))
@@ -423,57 +383,101 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		};
 		
 		FVector CameraPos = PlayerController->PlayerCameraManager->GetCameraLocation();
-		*/
-		
-		//FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
 	
-		//ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
+		FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
+
+		ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
 	}
 	else
 	{
-		FEditorViewportClient* EditorViewportClient = static_cast<FEditorViewportClient*>(ViewportClient);
-	
-		// Check if mouse is within viewport
-		const FVector2D AbsoluteMousePos = FSlateApplication::Get().GetCursorPos();
-		if (!EditorViewportClient->GetEditorViewportWidget()->GetCachedGeometry().IsUnderLocation(AbsoluteMousePos))
+		FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+
+		TSharedPtr<ILevelEditor> LevelEditor = LevelEditorModule.GetFirstLevelEditor();
+		if (!LevelEditor)
 		{
 			return;
 		}
 		
-		// Check if script component is within camera frustum 
-		FIntPoint MousePos;
-		Viewport->GetMousePos(MousePos);
-		FVector2f MouseScreenPos(MousePos.X, MousePos.Y);
-		
-		FSceneViewFamilyContext ViewFamily(FSceneViewFamily::ConstructionValues(EditorViewportClient->Viewport, EditorViewportClient->GetScene(), EditorViewportClient->EngineShowFlags));
-		const FSceneView* SceneView = EditorViewportClient->CalcSceneView(&ViewFamily);
-	
-		FVector CameraPos = SceneView->ViewMatrices.GetViewOrigin();
-		FConvexVolume CullingFrustum = SceneView->GetCullingFrustum();
-		
-		auto FrustumTest = [this, CullingFrustum, SceneView, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
+		TSharedPtr<SLevelViewport> LevelViewport = LevelEditor->GetActiveViewportInterface();
+		if (!LevelViewport.IsValid())
 		{
-			if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
+			return;
+		}
+		
+		TSharedPtr<FSceneViewport> SceneViewport = LevelViewport->GetSharedActiveViewport();
+		
+		if (SceneViewport)
+		{
+			FViewport* Viewport = SceneViewport->GetViewport();
+			
+			if (!Viewport)
 			{
 				return;
 			}
 			
-			if (ScriptElement.ScriptComponent.IsValid() && CullingFrustum.IntersectPoint(ScriptElement.Position) /*&& ScriptElement.ScriptComponent->HasValidScript()*/)
+			FViewportClient* ViewportClient = Viewport->GetClient();
+			
+			if (!ViewportClient || !FBangoScripts_EditorToolingModule::BangoScriptsShowFlag.IsEnabled(*ViewportClient->GetEngineShowFlags()))
 			{
-				FVector2D PixelLocation;
-				SceneView->WorldToPixel(ScriptElement.Position, PixelLocation);
-
-				float DistSqrd = FVector2f::DistSquared(FVector2f(PixelLocation), MouseScreenPos);
-			
-				FBangoScripts_NearbyScript NearbyScript(ScriptElement.ScriptComponent.Get(), DistSqrd, FVector2f(PixelLocation));
-			
-				NearbyScripts.Emplace(NearbyScript);
+				return;
 			}
-		};
-	
-		FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
-	
-		ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
+			
+			UWorld* World = ViewportClient->GetWorld();
+			
+			if (!World)
+			{
+				return;
+			}
+			
+			TWeakPtr<SViewport> ViewportWidget = SceneViewport->GetViewportWidget();
+			
+			if (!ViewportWidget.IsValid())
+			{
+				return;
+			}
+			
+			const FVector2D AbsoluteMousePos = FSlateApplication::Get().GetCursorPos();
+			if (!ViewportWidget.Pin()->GetCachedGeometry().IsUnderLocation(AbsoluteMousePos))
+			{
+				return;
+			}
+			
+			FLevelEditorViewportClient& EditorViewportClient = LevelViewport->GetLevelViewportClient();
+
+			FSceneViewFamilyContext ViewFamily(FSceneViewFamily::ConstructionValues(Viewport, EditorViewportClient.GetScene(), EditorViewportClient.EngineShowFlags));
+
+			FSceneView* SceneView = EditorViewportClient.CalcSceneView(&ViewFamily);
+			
+			FConvexVolume CullingFrustum = SceneView->GetCullingFrustum();
+			
+			FVector2f MouseScreenPos = AbsoluteMousePos - ViewportWidget.Pin()->GetCachedGeometry().GetAbsolutePosition();
+			
+			auto FrustumTest = [this, CullingFrustum, SceneView, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
+			{
+				if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
+				{
+					return;
+				}
+			
+				if (ScriptElement.ScriptComponent.IsValid() && CullingFrustum.IntersectPoint(ScriptElement.Position) /*&& ScriptElement.ScriptComponent->HasValidScript()*/)
+				{
+					FVector2D PixelLocation;
+					SceneView->WorldToPixel(ScriptElement.Position, PixelLocation);
+
+					float DistSqrd = FVector2f::DistSquared(FVector2f(PixelLocation), MouseScreenPos);
+			
+					FBangoScripts_NearbyScript NearbyScript(ScriptElement.ScriptComponent.Get(), DistSqrd, FVector2f(PixelLocation));
+			
+					NearbyScripts.Emplace(NearbyScript);
+				}
+			};
+
+			FVector CameraPos = SceneView->ViewMatrices.GetViewOrigin();
+			
+			FBoxCenterAndExtent CameraBox(CameraPos, FVector(5000.0f));
+
+			ScriptComponentTree.FindElementsWithBoundsTest(CameraBox, FrustumTest);
+		}
 	}
 }
 
