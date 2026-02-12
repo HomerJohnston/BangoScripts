@@ -243,11 +243,15 @@ void UBangoScriptComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 
 void UBangoScriptComponent::PostApplyToComponent()
 {
+	Bango::Debug::PrintComponentState(this, "PostApplyToComponent");
+	
 	Super::PostApplyToComponent();
 }
 
 void UBangoScriptComponent::PostLoad()
 {
+	Bango::Debug::PrintComponentState(this, "PostLoad");
+	
 	Super::PostLoad();
 	
 	TWeakObjectPtr<UBangoScriptComponent> WeakThis = this;
@@ -329,6 +333,21 @@ void UBangoScriptComponent::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 		{
 			FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 		}
+	}
+}
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+#endif
+void UBangoScriptComponent::PostEditImport()
+{
+	Bango::Debug::PrintComponentState(this, "PostEditImport");
+	Super::PostEditImport();
+	
+	if (GetFlags() == RF_Transactional)
+	{
+		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 	}
 }
 #endif

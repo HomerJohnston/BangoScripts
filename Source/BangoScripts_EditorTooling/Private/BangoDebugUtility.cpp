@@ -146,18 +146,20 @@ void Bango::Debug::LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FSt
 
 // ----------------------------------------------
 
-void Bango::Debug::PrintComponentState(UActorComponent* Component, FString Msg)
+void Bango::Debug::PrintComponentState(UActorComponent* Component, FString EventMsg)
 {
 	FString ComponentFlagsString = GetFlagsString(Component);
 	
-	FString OwnerFlagsString = "No Owner";
+	FString OwnerFlags = "No Owner";
 	
-	if (Component->GetOwner())
+	if (AActor* Owner = Component->GetOwner())
 	{
-		OwnerFlagsString = GetFlagsString(Component->GetOwner());
+		OwnerFlags = Owner->GetActorLabel() + ": " + GetFlagsString(Owner);
 	}
 	
-	UE_LOG(LogBangoEditor, Verbose, TEXT("%s {%s}"), *FString::Format(TEXT("{0} --- {1} [{2}]"), { Msg, ComponentFlagsString, OwnerFlagsString } ), *Component->GetPathName());
+	FString ComponentAddress = FString::Printf(TEXT("%p"), Component);
+	
+	UE_LOG(LogBangoEditor, Verbose, TEXT("%s"), *FString::Format(TEXT("{0} --- {1} {2} [{3}] ({4})"), { EventMsg, ComponentFlagsString, *Component->GetPathName(), ComponentAddress, OwnerFlags } ));
 }
 
 // ----------------------------------------------

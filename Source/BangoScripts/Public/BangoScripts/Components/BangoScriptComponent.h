@@ -63,6 +63,8 @@ public:
 	// This is only used to spawn script assets for CDO spawned components (actor dragged into world) as well as for duplicating any actors or any instance components
 	void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 
+	void PostEditImport() override;
+	
 	void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	void InvalidateLightingCacheDetailed(bool bInvalidateBuildEnqueuedLighting, bool bTranslationOnly) override;

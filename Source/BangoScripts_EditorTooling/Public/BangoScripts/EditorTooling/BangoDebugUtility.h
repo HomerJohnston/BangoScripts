@@ -30,7 +30,7 @@ namespace Bango
 
 		BANGOSCRIPTS_EDITORTOOLING_API void LoadIcon(TStrongObjectPtr<UTexture2D>& Destination, const FString& Path);
 	    
-		BANGOSCRIPTS_EDITORTOOLING_API void PrintComponentState(UActorComponent* Component, FString Msg);
+		BANGOSCRIPTS_EDITORTOOLING_API void PrintComponentState(UActorComponent* Component, FString EventMsg);
 
 		BANGOSCRIPTS_EDITORTOOLING_API FString GetFlagsString(UObject* Object);
 		

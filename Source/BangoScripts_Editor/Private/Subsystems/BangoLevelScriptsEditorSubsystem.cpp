@@ -311,15 +311,17 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors || bDuplicatingLevel)
 	{
 		UE_LOG(LogBangoEditor, Verbose, TEXT("Setting this script's IsDuplicate flag..."));
-		// ScriptContainer.MarkDuplicated();
-		DuplicatingObjects.Add(Outer);
+		
+		FScriptContainerKey Key(ScriptHolder);
+		DuplicatingObjects.Add(Key);
+		
 		EnqueueChangedScriptContainer(ScriptHolder);	
 	}
 }
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(IBangoScriptHolderInterface& ScriptHolder)
+void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(const Bango::FScriptContainerKey Key)
 {
 	if (GEditor->IsPlaySessionInProgress())
 	{
@@ -336,39 +338,26 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(IBangoScri
 		return;
 	}
 	
-	UObject* Outer = ScriptHolder._getUObject();
-	FBangoScriptContainer* ScriptContainer = &ScriptHolder.GetScriptContainer();
-	
-	if (!Outer || !ScriptContainer)
-	{
-		checkNoEntry();
-		return;
-	}
-	
-	FScriptContainerKey NewKey(ScriptHolder);
-
-	FScriptContainerKey* ExistingKey = ChangeRequests.Find(NewKey);
+	FScriptContainerKey* ExistingKey = ChangeRequests.Find(Key);
 	
 	// Let newest key win as long as it has a script class. This is a horrible race condition with UE serializing the script class UPROPERTY (it's often NONE when it should logicaly be set)
-	if (!ExistingKey || NewKey.ScriptContainer->GetScriptClass().IsValid())
+	if (!ExistingKey || Key.ScriptContainer->GetScriptClass().IsValid())
 	{
 		if (ExistingKey)
 		{
 			FString StatuString;
-			ScriptHolder.LogStatus(&StatuString);
 			
 			UE_LOG(LogBangoEditor, Verbose, TEXT("Overwriting existing... %s"), *StatuString);
 		}
 		
 		UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueChangedScriptComponent"));
-		ScriptHolder.LogStatus();
 		
 		if (bDuplicatingActors)
 		{
-			DuplicatingObjects.Add(Outer);
+			DuplicatingObjects.Add(Key);
 		}
 		
-		ChangeRequests.Add(NewKey);
+		ChangeRequests.Add(Key);
 		RequestScriptQueueProcessing();
 	}
 }
@@ -406,7 +395,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	
 	for (const auto& CreationRequest : ChangeRequests)
 	{
-		UObject* Object = CreationRequest.Outer.ResolveObject();
+		UObject* Object = CreationRequest.GetObject();
 		IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Object);
 		
 		if (ScriptHolder)
@@ -421,7 +410,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	// This should always be running one frame later than the requests were queued
 	for (const auto& Request : ChangeRequests)
 	{
-		UObject* Outer = Request.Outer.ResolveObject();
+		UObject* Outer = Request.GetObject();
 		
 		if (!IsValid(Outer))
 		{
@@ -468,7 +457,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(UObject& Own
 	{
 		CreateLevelScript(*ScriptHolder);
 	}
-	else if (DuplicatingObjects.Remove(Outer))
+	else if (DuplicatingObjects.Remove(CreationRequest))
 	{
 		DuplicateLevelScript(*ScriptHolder, CreationRequest.Script);
 	}

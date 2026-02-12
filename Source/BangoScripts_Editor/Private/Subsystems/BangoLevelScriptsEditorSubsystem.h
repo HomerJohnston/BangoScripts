@@ -16,15 +16,31 @@ namespace Bango
 	struct FScriptContainerKey
 	{
 		FScriptContainerKey(IBangoScriptHolderInterface& ScriptHolder)
-			: Outer(ScriptHolder._getUObject())
-			, ScriptContainer(&ScriptHolder.GetScriptContainer())
 		{
+			UObject* OuterObject = ScriptHolder._getUObject();
+			
+			if (OuterObject->GetPackage() == GetTransientPackage())
+			{
+				OuterPtr = OuterObject;
+			}
+			else
+			{
+				Outer = OuterObject;
+			}
+			
+			ScriptContainer = &ScriptHolder.GetScriptContainer();
 			Script = ScriptContainer->GetScriptClass();
 		}
 		
 		// ----------------------------
 		
-		FSoftObjectPath Outer;
+	protected:
+		// Most of the time we'll use a soft object path, but I've found copy-pasting and relying on PostEditImport requires usage of actual pointer address
+		// since the component is often spawned into the transient package and then later moved.
+		TOptional<FSoftObjectPath> Outer;
+		TOptional<UObject*> OuterPtr;
+		
+	public:
 		FBangoScriptContainer* ScriptContainer = nullptr;
 		TSoftClassPtr<UBangoScript> Script;
 
@@ -32,15 +48,25 @@ namespace Bango
 		
 		bool operator==(const FScriptContainerKey& Other) const
 		{
-			return Outer == Other.Outer;
+			return GetObject() == Other.GetObject();
 		}
 
 		// ----------------------------
 		
+		UObject* GetObject() const
+		{
+			if (OuterPtr.IsSet())
+			{
+				return OuterPtr.GetValue();
+			}
+			
+			return Outer->ResolveObject();
+		}
+		
 		friend int32 GetTypeHash(const FScriptContainerKey& ScriptContainerKey)
 		{
 			// This limits me to one script per UObject... I don't know if I can get it working any other way
-			return HashCombine(GetTypeHash(ScriptContainerKey.Outer)); // , GetTypeHash(ScriptContainerKey.ScriptContainer->GetGuid()));
+			return HashCombine(GetTypeHash(ScriptContainerKey.GetObject())); // , GetTypeHash(ScriptContainerKey.ScriptContainer->GetGuid()));
 			
 			/*
 			if (ScriptContainerKey.ScriptContainer->GetScriptClass().IsNull())
@@ -81,7 +107,7 @@ protected:
 	FDelegateHandle OnAssetRemovedHandle;
 
 	TSet<FSoftObjectPath> NewObjects;
-	TSet<FSoftObjectPath> DuplicatingObjects;
+	TSet<FScriptContainerKey> DuplicatingObjects;
 	TSet<FSoftObjectPath> DeletedScripts;
 	
 public:
@@ -110,7 +136,7 @@ public:
 	// ------------------------------------------
 	// Level script creation functions
 private:
-	void EnqueueChangedScriptContainer(IBangoScriptHolderInterface& ScriptHolder);
+	void EnqueueChangedScriptContainer(const Bango::FScriptContainerKey Key);
 	
 	void RequestScriptQueueProcessing();
 	
