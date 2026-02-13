@@ -42,6 +42,8 @@ public:
 	
 	FLinearColor GetNodeTitleTextColor() const override;
 	
+	virtual void FixUpForNewOwnerActor(const TSoftObjectPtr<AActor>& OldOwner, const TSoftObjectPtr<AActor>& NewOwner) { };
+	
 	BANGOSCRIPTS_UNCOOKED_API UBangoScriptBlueprint* GetBangoScriptBlueprint() const;
 };
 

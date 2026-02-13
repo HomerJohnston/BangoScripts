@@ -117,7 +117,11 @@ void UBangoScriptBlueprint::Reset()
 	OwnerActorPath.Empty();
 	ScriptGuid.Invalidate();
 }
+#endif
 
+// ----------------------------------------------
+
+#if WITH_EDITOR
 TWeakObjectPtr<UObject> UBangoScriptBlueprint::GetCurrentObjectBeingDebugged() const
 {
 	return CurrentObjectBeingDebugged;

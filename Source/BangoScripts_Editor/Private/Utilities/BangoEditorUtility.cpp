@@ -204,9 +204,38 @@ UBangoScriptBlueprint* Bango::Editor::DuplicateLevelScript(UBangoScriptBlueprint
 	DuplicateScript->Reset();
 	
 	DuplicateScript->SetScriptGuid(NewGuid);
-	DuplicateScript->SetOwnerActor(NewOwnerActor);	
+	DuplicateScript->SetOwnerActor(NewOwnerActor);
+
+	TSoftObjectPtr<AActor> OldOwnerActorSoft = SourceBlueprint->GetOwnerActor();
+	TSoftObjectPtr<AActor> NewOwnerActorSoft = DuplicateScript->GetOwnerActor();
+	
+	if (OldOwnerActorSoft != NewOwnerActorSoft)
+	{
+		FixupBlueprintForNewOwner(DuplicateScript, OldOwnerActorSoft, NewOwnerActorSoft);
+	}
 	
 	return DuplicateScript;
+}
+
+// ----------------------------------------------
+
+void Bango::Editor::FixupBlueprintForNewOwner(UBangoScriptBlueprint* ScriptBlueprint, const TSoftObjectPtr<AActor>& OldOwnerActorSoft, const TSoftObjectPtr<AActor>& NewOwnerActorSoft)
+{
+	check(ScriptBlueprint);
+	
+	TArray<UEdGraph*> Graphs;
+	ScriptBlueprint->GetAllGraphs(Graphs);
+
+	for (const UEdGraph* Graph : Graphs)
+	{
+		TArray<UK2Node_BangoBase*> AllBangoNodes;
+		Graph->GetNodesOfClass<UK2Node_BangoBase>(AllBangoNodes);
+
+		for (UK2Node_BangoBase* Node : AllBangoNodes)
+		{
+			Node->FixUpForNewOwnerActor(OldOwnerActorSoft, NewOwnerActorSoft);
+		}
+	}
 }
 
 // ----------------------------------------------

@@ -44,7 +44,7 @@ public:
 	void Reset();
 	
 	TWeakObjectPtr<UObject> GetCurrentObjectBeingDebugged() const;
-	
+
 	// ------------------------------------------
 	// Delete/Undo support
 	// These are assigned when a script is deleted (i.e. when something owning a script is deleted), and is used to restore the script back to an identical-to-original state.

@@ -92,6 +92,11 @@ void UBangoLevelScriptsEditorSubsystem::Deinitialize()
 
 void UBangoLevelScriptsEditorSubsystem::OnObjectTransacted(UObject* Object, const class FTransactionObjectEvent& TransactionEvent)
 {
+	if (!CanProcessScripts())
+	{
+		return;
+	}
+	
 	// TODO I need a way to allow hooking in other types more nicely. What if a user wants a custom type and not just UBangoScriptComponent?
 	if (TransactionEvent.GetEventType() != ETransactionObjectEventType::UndoRedo)
 	{
@@ -118,6 +123,8 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectTransacted(UObject* Object, cons
 
 void UBangoLevelScriptsEditorSubsystem::OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap)
 {
+	UE_LOG(LogBangoEditor, Error, TEXT("----- OnMapLoad -----"));
+	
 	bMapLoading = true;
 	
 	// The intent is to obliterate "undo" soft delete script assets after a new map is loaded in.
@@ -127,25 +134,33 @@ void UBangoLevelScriptsEditorSubsystem::OnMapLoad(const FString& String, FCanLoa
 	});
 	
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayCollectGarbage);
+	
+	// Forcefully ignore any change requests created due to level loading
+	ChangeRequests.Empty();
 }
 
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnMapOpened(const FString& String, bool bArg)
 {
-	bMapLoading = false;
+	// Keep ignoring any change requests for one tick
+	auto DelayUnlock = [this] ()
+	{
+		UE_LOG(LogBangoEditor, Error, TEXT("----- OnMapOpened -----"));
+		bMapLoading = false;
+	};
+	
+	// Forcefully ignore any change requests created due to level loading
+	ChangeRequests.Empty();
+	
+	GEditor->GetTimerManager()->SetTimerForNextTick(DelayUnlock);
 }
 
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, UObject* RenamedObjectOuter, FName OldName) const
 {
-	if (!GEditor || !GEditor->IsInitialized())
-	{
-		return;
-	}
-    
-	if (IsRunningCommandlet())
+	if (!CanProcessScripts())
 	{
 		return;
 	}
@@ -209,41 +224,23 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, 
 
 void UBangoLevelScriptsEditorSubsystem::OnObjectConstructed(UObject* Object)
 {
+	/*
 	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Object);
 	
-	if (!ScriptHolder)
+	if (!CanProcessScripts())
 	{
 		return;
 	}
 	
-	if (GEditor->IsPlaySessionInProgress())
-	{
-		return;
-	}
-	
-	if (IsRunningCommandlet())
-	{
-		return;
-	}
-	
-	if (bMapLoading)
-	{
-		return;
-	}
-	
-	// EnqueueChangedScriptContainer(*ScriptHolder);
+	EnqueueChangedScriptContainer(*ScriptHolder);
+	*/
 }
 
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(IBangoScriptHolderInterface& ScriptHolder, FString BlueprintName)
 {
-	if (bSavingLevel)
-	{
-		return;
-	}
-	
-	if (bMapLoading)
+	if (!CanProcessScripts())
 	{
 		return;
 	}
@@ -262,17 +259,7 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerCreated(IBangoScri
 
 void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDestroyed(IBangoScriptHolderInterface& ScriptHolder, EBangoScriptDeletedHelper Flag)
 {
-	if (GEditor->IsPlaySessionInProgress())
-	{
-		return;
-	}
-	
-	if (IsRunningCommandlet())
-	{
-		return;
-	}
-	
-	if (bMapLoading)
+	if (!CanProcessScripts())
 	{
 		return;
 	}
@@ -297,11 +284,11 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDestroyed(IBangoSc
 
 void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoScriptHolderInterface& ScriptHolder)
 {
-	if (bSavingLevel)
+	if (!CanProcessScripts())
 	{
 		return;
 	}
-		
+	
 	UObject* Outer = ScriptHolder._getUObject();
 	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDuplicated: %s, %s"), *Outer->GetName(), *ScriptContainer.GetGuid().ToString());
@@ -323,21 +310,6 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 
 void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(const Bango::FScriptContainerKey Key)
 {
-	if (GEditor->IsPlaySessionInProgress())
-	{
-		return;
-	}
-	
-	if (IsRunningCommandlet())
-	{
-		return;
-	}
-	
-	if (bMapLoading)
-	{
-		return;
-	}
-	
 	FScriptContainerKey* ExistingKey = ChangeRequests.Find(Key);
 	
 	// Let newest key win as long as it has a script class. This is a horrible race condition with UE serializing the script class UPROPERTY (it's often NONE when it should logicaly be set)
@@ -997,6 +969,16 @@ void UBangoLevelScriptsEditorSubsystem::OnRequestScriptSave(IBangoScriptHolderIn
 	{
 		UPackageTools::SavePackagesForObjects( { ScriptHolder->_getUObject(), Script } );
 	}
+}
+
+bool UBangoLevelScriptsEditorSubsystem::CanProcessScripts() const
+{
+	if (bSavingLevel || bMapLoading || IsRunningCommandlet() || GEditor->IsPlaySessionInProgress())
+	{
+		return false;
+	}
+	
+	return true;
 }
 
 // ----------------------------------------------

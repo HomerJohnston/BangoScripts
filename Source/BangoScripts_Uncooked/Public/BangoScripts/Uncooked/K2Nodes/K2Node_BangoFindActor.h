@@ -77,6 +77,8 @@ public:
 	
 	void ExpandNode_ManualName(class FKismetCompilerContext& Compiler, UEdGraph* SourceGraph);
 	
+	void FixUpForNewOwnerActor(const TSoftObjectPtr<AActor>& OldOwner, const TSoftObjectPtr<AActor>& NewOwner) override;
+	
 	bool IsNodePure() const override { return true; }
 	
 	BANGOSCRIPTS_UNCOOKED_API void SetActor(AActor* Actor);

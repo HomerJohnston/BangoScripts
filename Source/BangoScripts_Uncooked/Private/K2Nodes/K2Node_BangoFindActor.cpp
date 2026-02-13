@@ -305,6 +305,19 @@ void UK2Node_BangoFindActor::ExpandNode_ManualName(class FKismetCompilerContext&
 	BreakAllNodeLinks();
 }
 
+void UK2Node_BangoFindActor::FixUpForNewOwnerActor(const TSoftObjectPtr<AActor>& OldOwner, const TSoftObjectPtr<AActor>& NewOwner)
+{
+	FString OldLevelAssetPathString = OldOwner.ToSoftObjectPath().GetAssetPathString();
+	FString NewLevelAssetPathString = NewOwner.ToSoftObjectPath().GetAssetPathString();
+	
+	FString TargetActorPathString = TargetActor.ToString();
+	
+	if (TargetActorPathString.RemoveFromStart(OldLevelAssetPathString))
+	{
+		TargetActor = NewLevelAssetPathString + TargetActorPathString;
+	}
+}
+
 void UK2Node_BangoFindActor::SetActor(AActor* Actor)
 {
 	TSoftObjectPtr<AActor> ActorPath = Actor;

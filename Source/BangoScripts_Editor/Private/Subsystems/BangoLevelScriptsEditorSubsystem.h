@@ -180,4 +180,6 @@ private:
 	
 	// When duplicating levels, we are going to duplicate and force-save script packages (similar to what OFPA does when duplicating levels)
 	bool bScriptProcessingLevelDuplication = false;	
+	
+	bool CanProcessScripts() const;
 };

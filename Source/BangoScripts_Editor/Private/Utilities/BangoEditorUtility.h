@@ -35,6 +35,8 @@ namespace Bango::Editor
 	// Actual function that duplicates a UBangoScriptBlueprint level script blueprint.
 	UBangoScriptBlueprint* DuplicateLevelScript(UBangoScriptBlueprint* SourceBlueprint, UPackage* NewScriptPackage, const FString& InName, const FGuid& NewGuid, AActor* NewOwnerActor);
 	
+	void FixupBlueprintForNewOwner(UBangoScriptBlueprint* Script, const TSoftObjectPtr<AActor>& OldOwnerActorSoft, const TSoftObjectPtr<AActor>& NewOwnerActorSoft);
+	
 	// I can't find any existing PUBLIC code in this retarded engine to do this, so now I have to copy code from AssetViewUtils.
 	bool DeleteEmptyFolderFromDisk(const FString& InPathToDelete);
 	
