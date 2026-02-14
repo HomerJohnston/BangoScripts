@@ -194,17 +194,14 @@ void UBangoScriptComponent::OnComponentCreated()
 	
 			if (ScriptContainer.GetGuid().IsValid())
 			{
-				// FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
+				FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 			}
 			else
 			{
 				// FBangoEditorDelegates::OnScriptContainerCreated.Broadcast(AsScriptHolder(), ScriptName);
 			}	
 		}
-	
 	}
-
-	// Bango::Debug::PrintComponentState(this, "OnComponentCreated_Late");
 }
 #endif
 

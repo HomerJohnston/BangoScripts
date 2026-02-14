@@ -311,6 +311,8 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 		
 		UE_LOG(LogBangoEditor, Verbose, TEXT("Script is a duplicate... %s"), *Info);
 		
+		DuplicatingObjects.Add(ScriptHolder);
+		
 		EnqueueChangedScriptContainer(ScriptHolder);	
 	}
 }
