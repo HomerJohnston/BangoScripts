@@ -34,6 +34,16 @@ TSharedPtr<IContentBrowserHideFolderIfEmptyFilter> UBangoLevelScriptsEditorSubsy
 
 // ==============================================
 
+bool FBangoScriptEventKey::operator==(const FBangoScriptEventKey& Other) const
+{
+	UObject* ThisObject = GetObject();
+	UObject* OtherObject = Other.GetObject();
+	
+	return ThisObject == OtherObject || ThisObject->GetPathName() == OtherObject->GetPathName();
+	
+	//return GetObject() == Other.GetObject();
+}
+
 UBangoLevelScriptsEditorSubsystem* UBangoLevelScriptsEditorSubsystem::Get()
 {
 	return GEditor->GetEditorSubsystem<UBangoLevelScriptsEditorSubsystem>();
@@ -123,8 +133,6 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectTransacted(UObject* Object, cons
 
 void UBangoLevelScriptsEditorSubsystem::OnMapLoad(const FString& String, FCanLoadMap& CanLoadMap)
 {
-	UE_LOG(LogBangoEditor, Error, TEXT("----- OnMapLoad -----"));
-	
 	bMapLoading = true;
 	
 	// The intent is to obliterate "undo" soft delete script assets after a new map is loaded in.
@@ -146,7 +154,6 @@ void UBangoLevelScriptsEditorSubsystem::OnMapOpened(const FString& String, bool 
 	// Keep ignoring any change requests for one tick
 	auto DelayUnlock = [this] ()
 	{
-		UE_LOG(LogBangoEditor, Error, TEXT("----- OnMapOpened -----"));
 		bMapLoading = false;
 	};
 	
@@ -221,6 +228,8 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, 
 	
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayedScriptRename);
 }
+
+// ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnObjectConstructed(UObject* Object)
 {
@@ -297,10 +306,10 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 	
 	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors || bDuplicatingLevel)
 	{
-		UE_LOG(LogBangoEditor, Verbose, TEXT("Setting this script's IsDuplicate flag..."));
+		FString Info;
+		ScriptHolder.LogStatus(&Info);
 		
-		FScriptContainerKey Key(ScriptHolder);
-		DuplicatingObjects.Add(Key);
+		UE_LOG(LogBangoEditor, Verbose, TEXT("Script is a duplicate... %s"), *Info);
 		
 		EnqueueChangedScriptContainer(ScriptHolder);	
 	}
@@ -308,9 +317,9 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(const Bango::FScriptContainerKey Key)
+void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(const Bango::FBangoScriptEventKey Key)
 {
-	FScriptContainerKey* ExistingKey = ChangeRequests.Find(Key);
+	FBangoScriptEventKey* ExistingKey = ChangeRequests.Find(Key);
 	
 	// Let newest key win as long as it has a script class. This is a horrible race condition with UE serializing the script class UPROPERTY (it's often NONE when it should logicaly be set)
 	if (!ExistingKey || Key.ScriptContainer->GetScriptClass().IsValid())
@@ -319,14 +328,17 @@ void UBangoLevelScriptsEditorSubsystem::EnqueueChangedScriptContainer(const Bang
 		{
 			FString StatuString;
 			
-			UE_LOG(LogBangoEditor, Verbose, TEXT("Overwriting existing... %s"), *StatuString);
+			UE_LOG(LogBangoEditor, Verbose, TEXT("Overwriting existing queued changed script... %s"), *StatuString);
 		}
 		
-		UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueChangedScriptComponent"));
-		
-		if (bDuplicatingActors)
+		if (bDuplicatingActors || bDuplicatingLevel)
 		{
+			UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueChangedScriptComponent - Adding to Duplicating Objects (now has: %i entries)"), DuplicatingObjects.Num());
 			DuplicatingObjects.Add(Key);
+		}
+		else
+		{
+			UE_LOG(LogBangoEditor, Verbose, TEXT("EnqueueChangedScriptComponent"));
 		}
 		
 		ChangeRequests.Add(Key);
@@ -365,6 +377,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 
 	UE_LOG(LogBangoEditor, Verbose, TEXT("          Change Requests:"));
 	
+	/*
 	for (const auto& CreationRequest : ChangeRequests)
 	{
 		UObject* Object = CreationRequest.GetObject();
@@ -378,6 +391,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 			// UE_LOG(LogBangoEditor, Verbose, TEXT("            Object: {%s}, Script: {%s} or {%s}"), *CreationRequest.Outer.ToString(), *CreationRequest.Script.ToString(), *CreationRequest.ScriptContainer->GetScriptClass().ToString());
 		}
 	}
+	*/
 	
 	// This should always be running one frame later than the requests were queued
 	for (const auto& Request : ChangeRequests)
@@ -402,6 +416,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	
 	ChangeRequests.Empty();
 	ChangeRequests.Empty();
+	DuplicatingObjects.Empty();
 	ProcessScriptRequestQueuesHandle.Invalidate();
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("--------------------------------"))
@@ -409,7 +424,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 
 // ----------------------------------------------
 
-void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(UObject& Owner, const Bango::FScriptContainerKey& CreationRequest)
+void UBangoLevelScriptsEditorSubsystem::ProcessCreatedScriptRequest(UObject& Owner, const Bango::FBangoScriptEventKey& CreationRequest)
 {
 	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(&Owner);
 	check(ScriptHolder);
@@ -683,10 +698,6 @@ void UBangoLevelScriptsEditorSubsystem::TryUndeleteScript(FSoftObjectPath Script
             GEditor->GetEditorSubsystem<UEditorAssetSubsystem>()->SaveLoadedAsset(MatchedBlueprint, false);
         }
     }
-    else
-    {
-        UE_LOG(LogBangoEditor, Warning, TEXT("Error - could not find associated blueprint for %s"), *ScriptClassSoft.ToString());
-    }
 }
 
 // ----------------------------------------------
@@ -742,6 +753,8 @@ void UBangoLevelScriptsEditorSubsystem::ProcessDestroyedScriptRequest(TSoftClass
 
 	Bango::Editor::DeleteEmptyLevelScriptFolders();
 }
+
+// ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete()
 {
@@ -822,6 +835,8 @@ void UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete()
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayedCallbackHookup);
 }
 
+// ----------------------------------------------
+
 void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData)
 {
 	UWorld* World = Cast<UWorld>(AssetData.GetAsset());
@@ -840,9 +855,7 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData
 		{
 			continue;
 		}
-		
-		bDuplicatingLevel = true;
-		
+				
 		for (AActor* Actor : Level->Actors)
 		{
 			if (!Actor)
@@ -866,23 +879,31 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData
 				if ((AssetData.PackageFlags & PKG_IsSaving) == 0)
 				{
 					UE_LOG(LogBangoEditor, Display, TEXT("OnAssetAdded calling OnLevelScriptContainerDuplicated, package flags: %i"), AssetData.PackageFlags);
+					
+					bDuplicatingLevel = true;
+					
 					OnLevelScriptContainerDuplicated(*ScriptHolder);	
 				}
 			}
 		}
-		
-		//bDuplicatingLevel = false;
-		
+	}
+	
+	if (bDuplicatingLevel)
+	{
 		// We'll leave the duplicating flag active for a frame. Sob. This is so horrible.
 		auto ReleaseDuplicatingLevelDelegate = [this] () { this->bDuplicatingLevel = false; };
-		GEditor->GetTimerManager()->SetTimerForNextTick(ReleaseDuplicatingLevelDelegate);
+		GEditor->GetTimerManager()->SetTimerForNextTick(ReleaseDuplicatingLevelDelegate);	
 	}
 }
+
+// ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnAssetRemoved(const FAssetData& AssetData)
 {
 	UE_LOG(LogBangoEditor, Display, TEXT("OnAssetRemoved"));
 }
+
+// ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnAssetPostImport(UFactory* Factory, UObject* Object)
 {
@@ -930,6 +951,8 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetPostImport(UFactory* Factory, UOb
 	}
 }
 
+// ----------------------------------------------
+
 void UBangoLevelScriptsEditorSubsystem::OnAssetPreDelete(UFactory* Factory, UObject* Object)
 {
 	if (Object->IsA<UWorld>())
@@ -937,6 +960,8 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetPreDelete(UFactory* Factory, UObj
 		UE_LOG(LogBangoEditor, Display, TEXT("Deleted world"));
 	}
 }
+
+// ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnAssetsPreDelete(const TArray<UObject*>& Objects)
 {
@@ -950,6 +975,8 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetsPreDelete(const TArray<UObject*>
 	}
 }
 
+// ----------------------------------------------
+
 void UBangoLevelScriptsEditorSubsystem::OnAssetsDeleted(const TArray<UClass*>& Classes)
 {
 	for (UClass* Class : Classes)
@@ -961,6 +988,8 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetsDeleted(const TArray<UClass*>& C
 	}
 }
 
+// ----------------------------------------------
+
 void UBangoLevelScriptsEditorSubsystem::OnRequestScriptSave(IBangoScriptHolderInterface* ScriptHolder, TSoftClassPtr<UBangoScript> Class)
 {
 	TSubclassOf<UBangoScript> Script = Class.LoadSynchronous();
@@ -970,6 +999,8 @@ void UBangoLevelScriptsEditorSubsystem::OnRequestScriptSave(IBangoScriptHolderIn
 		UPackageTools::SavePackagesForObjects( { ScriptHolder->_getUObject(), Script } );
 	}
 }
+
+// ----------------------------------------------
 
 bool UBangoLevelScriptsEditorSubsystem::CanProcessScripts() const
 {

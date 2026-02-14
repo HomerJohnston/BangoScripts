@@ -148,8 +148,12 @@ void UBangoScriptComponent::OnUnregister()
 		FBangoEditorDelegates::ScriptComponentRegistered.Broadcast(this, EBangoScriptComponentRegisterStatus::Unregistered);
 		bDebugRegistered = false;				
 	}
-	
-	FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder(), EBangoScriptDeletedHelper::OwnerDestroyed);
+
+	// Objects that are freshly duplicated/copied/etc will not have this flag. Prevents double-occurrences of processing.
+	if (HasAllFlags(RF_WasLoaded))
+	{
+		FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(AsScriptHolder(), EBangoScriptDeletedHelper::OwnerDestroyed);
+	}
 	
 	Super::OnUnregister();
 	

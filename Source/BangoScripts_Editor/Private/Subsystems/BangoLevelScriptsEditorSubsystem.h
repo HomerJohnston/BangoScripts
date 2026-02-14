@@ -13,9 +13,9 @@ using namespace Bango;
 
 namespace Bango
 {
-	struct FScriptContainerKey
+	struct FBangoScriptEventKey
 	{
-		FScriptContainerKey(IBangoScriptHolderInterface& ScriptHolder)
+		FBangoScriptEventKey(IBangoScriptHolderInterface& ScriptHolder)
 		{
 			UObject* OuterObject = ScriptHolder._getUObject();
 			
@@ -46,10 +46,7 @@ namespace Bango
 
 		// ----------------------------
 		
-		bool operator==(const FScriptContainerKey& Other) const
-		{
-			return GetObject() == Other.GetObject();
-		}
+		bool operator==(const FBangoScriptEventKey& Other) const;
 
 		// ----------------------------
 		
@@ -63,19 +60,10 @@ namespace Bango
 			return Outer->ResolveObject();
 		}
 		
-		friend int32 GetTypeHash(const FScriptContainerKey& ScriptContainerKey)
+		friend int32 GetTypeHash(const FBangoScriptEventKey& ScriptContainerKey)
 		{
 			// This limits me to one script per UObject... I don't know if I can get it working any other way
 			return HashCombine(GetTypeHash(ScriptContainerKey.GetObject())); // , GetTypeHash(ScriptContainerKey.ScriptContainer->GetGuid()));
-			
-			/*
-			if (ScriptContainerKey.ScriptContainer->GetScriptClass().IsNull())
-			{
-				return HashCombine(GetTypeHash(ScriptContainerKey.Outer), GetTypeHash(ScriptContainerKey.ScriptContainer));
-			}
-
-			return GetTypeHash(ScriptContainerKey.ScriptContainer->GetScriptClass().ToString());
-			*/
 		}
 	};
 }
@@ -107,7 +95,7 @@ protected:
 	FDelegateHandle OnAssetRemovedHandle;
 
 	TSet<FSoftObjectPath> NewObjects;
-	TSet<FScriptContainerKey> DuplicatingObjects;
+	TSet<FBangoScriptEventKey> DuplicatingObjects;
 	TSet<FSoftObjectPath> DeletedScripts;
 	
 public:
@@ -136,7 +124,7 @@ public:
 	// ------------------------------------------
 	// Level script creation functions
 private:
-	void EnqueueChangedScriptContainer(const Bango::FScriptContainerKey Key);
+	void EnqueueChangedScriptContainer(const Bango::FBangoScriptEventKey Key);
 	
 	void RequestScriptQueueProcessing();
 	
@@ -144,7 +132,7 @@ private:
 	void ProcessScriptRequestQueues();
 	
 	// Script creation methods
-	void ProcessCreatedScriptRequest(UObject& Owner, const Bango::FScriptContainerKey& CreationRequest);
+	void ProcessCreatedScriptRequest(UObject& Owner, const Bango::FBangoScriptEventKey& CreationRequest);
 	
 	void CreateLevelScript(IBangoScriptHolderInterface& ScriptHolder);
 	
@@ -174,7 +162,7 @@ private:
 	void OnRequestScriptSave(IBangoScriptHolderInterface* ScriptHolder, TSoftClassPtr<UBangoScript> Class);
 	
 private:
-	TSet<FScriptContainerKey> ChangeRequests;
+	TSet<FBangoScriptEventKey> ChangeRequests;
 	
 	FTimerHandle ProcessScriptRequestQueuesHandle;
 	

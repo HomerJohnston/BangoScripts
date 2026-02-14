@@ -314,6 +314,7 @@ void UK2Node_BangoFindActor::FixUpForNewOwnerActor(const TSoftObjectPtr<AActor>&
 	
 	if (TargetActorPathString.RemoveFromStart(OldLevelAssetPathString))
 	{
+		Modify();
 		TargetActor = NewLevelAssetPathString + TargetActorPathString;
 	}
 }
