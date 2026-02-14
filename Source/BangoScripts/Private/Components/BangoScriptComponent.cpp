@@ -34,6 +34,21 @@ UBangoScriptComponent::UBangoScriptComponent()
 {
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	PrimaryComponentTick.bCanEverTick = false;
+	
+	{
+		using enum EBangoScriptComponentAllowedRunContexts;
+		AllowedRunContexts = (uint8)(Editor | Standalone);
+	}
+	
+	{
+		using enum EBangoScriptComponentAllowedBuildConfigs;
+		AllowedBuildConfigs = (uint8)(Development | Test | Shipping);
+	}
+	
+	{
+		using enum EBangoScriptComponentAllowedNetConfigs;
+		AllowedNetConfigs = (uint8)(Server | Client);
+	}
 }
 
 // ----------------------------------------------
@@ -421,6 +436,16 @@ void UBangoScriptComponent::PostSaveRoot(FObjectPostSaveRootContext ObjectSaveCo
 
 void UBangoScriptComponent::Run()
 {
+	if (!IsRunningGame() && bPreventExecution)
+	{
+		return;
+	}
+	
+	if (!ContextPassesAllowFlags())
+	{
+		return;
+	}
+	
 #if WITH_EDITOR
 	RunningHandle =  
 #endif
@@ -433,6 +458,79 @@ void UBangoScriptComponent::Run()
 		UBangoScriptSubsystem::RegisterOnScriptFinished(this, RunningHandle, OnFinished);
 	}
 #endif
+}
+
+// ----------------------------------------------
+
+bool UBangoScriptComponent::ContextPassesAllowFlags() const
+{
+	// =================
+	{
+		using enum EBangoScriptComponentAllowedRunContexts;
+		const auto _AllowedRunContexts = (EBangoScriptComponentAllowedRunContexts)AllowedRunContexts;
+		
+#if WITH_EDITOR
+		if (!EnumHasAnyFlags(_AllowedRunContexts, Editor))
+		{
+			return false;
+		}
+#endif
+		
+		if (IsRunningGame() && !EnumHasAnyFlags(_AllowedRunContexts, Standalone))
+		{
+			return false;
+		}
+	}
+	
+	// =================
+	{
+		using enum EBangoScriptComponentAllowedBuildConfigs;
+		const auto _AllowedBuildConfigs = (EBangoScriptComponentAllowedBuildConfigs)AllowedBuildConfigs;
+		
+		#if UE_BUILD_DEVELOPMENT || UE_BUILD_DEBUG
+		if (!EnumHasAnyFlags(_AllowedBuildConfigs, Development))
+		{
+			return false;
+		}
+		#endif
+				
+		#if UE_BUILD_TEST
+		if (!EnumHasAnyFlags(_AllowedBuildConfigs, Test))
+		{
+			return false;
+		}
+		#endif
+			
+		#if UE_BUILD_SHIPPING
+		if (!EnumHasAnyFlags(_AllowedBuildConfigs, Shipping))
+		{
+			return false;
+		}
+		#endif
+	}
+	
+	// =================
+	{
+		using enum EBangoScriptComponentAllowedNetConfigs;
+		const auto _AllowedNetConfigs = (EBangoScriptComponentAllowedNetConfigs)AllowedNetConfigs;
+		
+		if (GetNetMode() == NM_Client)
+		{
+			if (!EnumHasAnyFlags(_AllowedNetConfigs, Client))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if (!EnumHasAnyFlags(_AllowedNetConfigs, Server))
+			{
+				return false;
+			}
+		}
+	}
+	
+	return true;
 }
 
 // ----------------------------------------------
