@@ -14,6 +14,7 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "PropertyEditorModule.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
+#include "Framework/Notifications/NotificationManager.h"
 
 #include "Private/BangoEditorStyle.h"
 #include "Private/Subsystems/BangoLevelScriptsEditorSubsystem.h"
@@ -23,6 +24,7 @@
 #include "Widgets/SBangoScriptClassViewer.h"
 #include "Widgets/SBangoScriptPropertyEditorClass.h"
 #include "Widgets/Colors/SColorBlock.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -248,6 +250,19 @@ FReply FBangoScriptContainerCustomization::OnClicked_CreateScript()
 	ScriptContainerProperty->GetValueData(ScriptContainerPtr);
 	
 	IBangoScriptHolderInterface& ScriptHolder = GetScriptHolder();
+	UWorld* World = ScriptHolder._getUObject()->GetWorld();
+	
+	if (!FPackageName::DoesPackageExist(World->GetPackage()->GetName()))
+	{
+		FNotificationInfo NotificationInfo(LOCTEXT("OnClicked_CreateScript_ErrorUnsavedWorld_Title", "Error: Unsaved World"));
+		NotificationInfo.ExpireDuration = 6.0f;
+		NotificationInfo.Image = FAppStyle::GetBrush("Icons.WarningWithColor");
+		NotificationInfo.SubText = LOCTEXT("OnClicked_CreateScript_Text", "The world must be saved before you can create level scripts.");
+		FSlateNotificationManager::Get().AddNotification(NotificationInfo);
+		
+		return FReply::Handled();
+	}
+	
 	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
 	ScriptContainer.bNewLeveScriptRequested = true;
 	FString BlueprintName = ScriptHolder._getUObject()->GetFName().ToString();
