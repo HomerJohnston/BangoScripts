@@ -108,7 +108,7 @@ void FBangoScriptContainer::GetPropertiesForRefresh(TArray<FProperty*>& MissingP
 		{
 			FProperty* Property = *PropertyIterator;
 			
-			if (Property->HasAnyPropertyFlags(CPF_Edit | CPF_ExposeOnSpawn) && !Property->IsNative())
+			if (!Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance | CPF_Transient) && !Property->IsNative())
 			{
 				MissingProperties.Add(Property);
 			}
