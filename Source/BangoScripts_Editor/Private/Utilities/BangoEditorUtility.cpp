@@ -310,6 +310,11 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 			
 				if (const AActor* Actor = TargetActor.Get())
 				{
+					if (Actor->IsLockLocation())
+					{
+						continue;
+					}
+					
 					FBangoActorNodeDraw DrawRecord;
 					DrawRecord.Actor = TargetActor;
 					
