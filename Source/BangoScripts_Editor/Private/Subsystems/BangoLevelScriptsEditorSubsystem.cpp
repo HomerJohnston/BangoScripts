@@ -123,7 +123,7 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectTransacted(UObject* Object, cons
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnObjectTransacted: %s, %i"), *Object->GetName(), (uint8)TransactionEvent.GetEventType());
 	
-	if (!Bango::Editor::IsComponentInEditedLevel(ScriptHolder->_getUObject()))
+	if (Bango::Editor::IsComponentInEditedLevel(ScriptHolder->_getUObject()))
 	{
 		EnqueueChangedScriptContainer(*ScriptHolder);
 	}
@@ -417,6 +417,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	ChangeRequests.Empty();
 	ChangeRequests.Empty();
 	DuplicatingObjects.Empty();
+	DeletedScripts.Empty();
 	ProcessScriptRequestQueuesHandle.Invalidate();
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT("--------------------------------"))
