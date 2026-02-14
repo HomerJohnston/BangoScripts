@@ -84,7 +84,7 @@ protected:
 	FGuid ScriptGuid;
 	
 	/* 
-	 * We use a raw FString to avoid packaing/asset reference discovery issues with UE thinking that the actor is referenced by this script. 
+	 * We use a raw FString to avoid packaging/asset reference discovery issues with UE thinking that the actor is referenced by this script. 
 	 * This is only used for blueprint editor niceties and has no effect on gameplay.
 	 */
 	UPROPERTY(NonPIEDuplicateTransient, TextExportTransient)
