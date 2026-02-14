@@ -7,7 +7,7 @@ class FBangoHideScriptFolderFilter : public IContentBrowserHideFolderIfEmptyFilt
 public:
 	bool HideFolderIfEmpty(FName Path, FStringView PathString) const override
 	{
-		static const FString BangoScriptsPath("/Game/__BangoScripts__");
+		static const FString BangoScriptsPath("/Game" / Bango::Editor::GetGameScriptRootFolder());
 
 		if (PathString.StartsWith(BangoScriptsPath))
 		{

@@ -30,6 +30,8 @@
 
 class FWidgetBlueprintEditor;
 
+using namespace Bango::Editor;
+
 // ================================================================================================
 
 FBangoScriptContainerCustomization::FBangoScriptContainerCustomization()
@@ -278,7 +280,7 @@ FReply FBangoScriptContainerCustomization::OnClicked_CreateScript()
 
 FText FBangoScriptContainerCustomization::Text_UnsetDeleteScript() const
 {
-	switch (GetScriptType())
+	switch (GetScriptType(GetScriptClass()))
 	{
 		case EBangoScriptType::None:
 		{
@@ -309,7 +311,7 @@ FText FBangoScriptContainerCustomization::Text_UnsetDeleteScript() const
 
 FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 {
-	switch (GetScriptType())
+	switch (GetScriptType(GetScriptClass()))
 	{
 		case EBangoScriptType::None:
 		{
@@ -404,7 +406,7 @@ bool FBangoScriptContainerCustomization::IsEnabled_DeleteUnsetButton() const
 
 bool FBangoScriptContainerCustomization::IsEnabled_ScriptClassPicker() const
 {
-	switch (GetScriptType())
+	switch (GetScriptType(GetScriptClass()))
 	{
 		case EBangoScriptType::None:
 		{
@@ -865,7 +867,7 @@ void FBangoScriptContainerCustomization::UpdateHeaderRowNameAndValueContent()
 	TSharedPtr<SWidget> CreateLevelScriptButton = nullptr;
 	TSharedPtr<SWidget> DeleteOrUnsetButton = nullptr;
 	
-	if (GetScriptType() != EBangoScriptType::LevelScript)
+	if (GetScriptType(GetScriptClass()) != EBangoScriptType::LevelScript)
 	{
 		ScriptClassDropdown = SNew(SBangoScriptPropertyEditorClass)
 		.IsEnabled(this, &FBangoScriptContainerCustomization::IsEnabled_CreateLevelScriptButton)
@@ -983,7 +985,7 @@ void FBangoScriptContainerCustomization::UpdateGraphWidgetBox()
 		]
 	];
 	
-	if (GetScriptType() == EBangoScriptType::LevelScript)
+	if (GetScriptType(GetScriptClass()) == EBangoScriptType::LevelScript)
 	{
 		GraphOverlayWidget->AddSlot()
 		.HAlign(HAlign_Left)
@@ -1192,23 +1194,6 @@ EBangoScriptStatus FBangoScriptContainerCustomization::GetScriptStatus() const
 }
 
 // ----------------------------------------------
-
-EBangoScriptType FBangoScriptContainerCustomization::GetScriptType() const
-{
-	TSubclassOf<UBangoScript> ScriptClass = GetScriptClass();
-
-	if (!ScriptClass)
-	{
-		return EBangoScriptType::None;
-	}
-	
-	if (ScriptClass->GetName().StartsWith(Bango::Editor::GetLevelScriptNamePrefix()))
-	{
-		return EBangoScriptType::LevelScript;
-	}
-	
-	return EBangoScriptType::ContentAssetScript;
-}
 
 void FBangoScriptContainerCustomization::SendDummyPECPEvent(UObject* Object) const
 {

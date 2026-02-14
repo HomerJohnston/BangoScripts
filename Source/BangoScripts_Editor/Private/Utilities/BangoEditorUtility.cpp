@@ -53,6 +53,35 @@ FString Bango::Editor::GetAbsoluteScriptRootFolder()
 
 // ----------------------------------------------
 
+Bango::Editor::EBangoScriptType Bango::Editor::GetScriptType(TSubclassOf<UBangoScript> ScriptClass)
+{
+	if (!ScriptClass)
+	{
+		return EBangoScriptType::None;
+	}
+
+	if (ScriptClass->GetName().StartsWith(Bango::Editor::GetLevelScriptNamePrefix()))
+	{
+		return EBangoScriptType::LevelScript;
+	}
+
+	return EBangoScriptType::ContentAssetScript;
+}
+
+// ----------------------------------------------
+
+Bango::Editor::EBangoScriptType Bango::Editor::GetScriptType(TSoftClassPtr<UBangoScript> ScriptClass)
+{
+	if (ScriptClass.ToSoftObjectPath().ToString().StartsWith("/Game" / Bango::Editor::GetGameScriptRootFolder()))
+	{
+		return EBangoScriptType::LevelScript;
+	}
+	
+	return EBangoScriptType::ContentAssetScript;
+}
+
+// ----------------------------------------------
+
 UPackage* Bango::Editor::MakeLevelScriptPackage(UObject* Outer, FGuid Guid)
 {
 	if (!IsValid(Outer) || Outer->GetFlags() == RF_NoFlags || Outer->HasAnyFlags(RF_BeingRegenerated))

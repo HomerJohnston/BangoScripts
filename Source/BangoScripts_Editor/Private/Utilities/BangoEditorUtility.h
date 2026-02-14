@@ -14,6 +14,13 @@ class FBangoScriptBlueprintEditor;
 
 namespace Bango::Editor
 {
+	enum class EBangoScriptType : uint8
+	{
+		None,
+		ContentAssetScript,
+		LevelScript,
+	};
+
 	// returns "__BangoScript__".
 	FString GetGameScriptRootFolder();
 
@@ -22,6 +29,12 @@ namespace Bango::Editor
 	
 	// Gets the full computer drive path to the script folder.
 	FString GetAbsoluteScriptRootFolder();
+	
+	// 
+	EBangoScriptType GetScriptType(TSubclassOf<UBangoScript> ScriptClass);
+	
+	// 
+	EBangoScriptType GetScriptType(TSoftClassPtr<UBangoScript> ScriptClass);
 	
 	// Normal starting point for making a new package.
 	UPackage* MakeLevelScriptPackage(UObject* Outer, FGuid Guid);

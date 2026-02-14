@@ -19,13 +19,6 @@ enum class EBangoScriptRenameStatus : uint8
 	InvalidNewName,
 };
 
-enum class EBangoScriptType : uint8
-{
-	None,
-	ContentAssetScript,
-	LevelScript,
-};
-
 enum class EBangoScriptStatus : uint8
 {
 	None,
@@ -158,8 +151,6 @@ protected:
 	IBangoScriptHolderInterface& GetScriptHolder() const;
 	
 	EBangoScriptStatus GetScriptStatus() const;
-	
-	EBangoScriptType GetScriptType() const;
 	
 	void SendDummyPECPEvent(UObject* Object = nullptr) const;
 };
