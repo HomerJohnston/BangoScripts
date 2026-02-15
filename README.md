@@ -3,11 +3,12 @@
 ### THE PROBLEM
 
 - Have you ever placed a trigger volume and wondered *"how can I spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds? What if I want to spawn different enemies based on the player's skill setting?"*
-- Many teams will build some sort of "Actions" system which involves arrays full of "Action" entries. This is clanky, difficult to visualize and work with, and can require a lot of effort to build new entry types, even for basic things.
+- Some teams will build some sort of "Actions" system which involves arrays full of "Action" entries. This is clanky, difficult to visualize and work with, and can require a lot of effort to build new entry types, even for basic things.
+- Some teams will build custom scripting systems (DSL's) for their games. This is a great solution, but requires lots of man-hours, and often still lacks basic features like autocomplete.
 
 ### THE SOLUTION
 
-- What if you could write an *instanced* blueprint event directly onto an actor placed in a level?
+- What if you could write an *instanced* Blueprint Event directly onto an actor placed in a level and use Blueprint like a DSL?
 - What if you could reference other actors in the level with simple, easy-to-use nodes?
 - What if you had more blueprint nodes that helped with actual level scripting, and not just O.O.P. coding?
 
