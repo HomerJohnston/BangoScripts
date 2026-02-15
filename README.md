@@ -79,4 +79,4 @@ Here's what the scripts for the demo scene look like, in order of appearance:
 
 ### GETTING STARTED
 
-Go to the wiki to try out Bango Scripts.
+If this all sounded like fun to you, visit [the wiki](https://github.com/HomerJohnston/BangoScripts/wiki) to try out Bango Scripts!
