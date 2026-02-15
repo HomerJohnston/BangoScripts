@@ -53,25 +53,25 @@ Here's what the scripts for the demo scene look like, in order of appearance:
 
 &nbsp;
 
-<img width="1910" height="1068" alt="image" src="https://github.com/user-attachments/assets/739bfc2a-4b73-423b-90a7-c6e27792e438" />
+<p align="center"><img width="1910" height="1068" alt="image" src="https://github.com/user-attachments/assets/739bfc2a-4b73-423b-90a7-c6e27792e438" /></p>
 
 <p align="center"><i>The startup script. This plays PA system audio and starts music for the scene.</i></p>
 
 &nbsp;
 
-<img width="1908" height="1069" alt="image" src="https://github.com/user-attachments/assets/f38f90f5-57d1-4bd1-9d0e-4a7a9bc1e33b" />
+<p align="center"><img width="1908" height="1069" alt="image" src="https://github.com/user-attachments/assets/f38f90f5-57d1-4bd1-9d0e-4a7a9bc1e33b" /></p>
 
 <p align="center"><i>The pressure plate's "Activate" script. This opens the door. It also has a separate "Deactivate" script to close the door.</i></p>
 
 &nbsp;
 
-<img width="1904" height="1076" alt="image" src="https://github.com/user-attachments/assets/7eed9bf3-e41c-42d9-8f02-ccc402dd0f0c" />
+<p align="center"><img width="1913" height="1070" alt="image" src="https://github.com/user-attachments/assets/66b7dbe0-59fd-44e7-a1ac-dd0ee9e1de51" /></p>
 
 <p align="center"><i>The first sphere-volume trigger. This turns on the hallway lights after the avatar walks through the door.</i></p>
 
 &nbsp;
 
-<img width="1909" height="1077" alt="image" src="https://github.com/user-attachments/assets/6ed47123-a415-4f21-8102-7a48c123d979" />
+<p align="center"><img width="1909" height="1077" alt="image" src="https://github.com/user-attachments/assets/6ed47123-a415-4f21-8102-7a48c123d979" /></p>
 
 <p align="center"><i>The second sphere-volume trigger. This opens the second door as the avatar gets close to it.</i></p>
 
