@@ -320,49 +320,47 @@ void UK2Node_BangoRunScript::UpdateScriptPins(UObject* InClassObject)
 		{
 			FProperty* Property = *PropIt;
 
-			if (!Property->FindMetaData("ExposeOnSpawn"))
+			if (!Property->HasAnyPropertyFlags(CPF_DisableEditOnInstance | CPF_Transient) && !Property->IsNative())
 			{
-				continue;
-			}
+				FFieldClass* PropertyClass = Property->GetClass();
         
-			FFieldClass* PropertyClass = Property->GetClass();
-        
-			FName PinTypeName;
-			bool bAddPin = false;
+				FName PinTypeName;
+				bool bAddPin = false;
 
-			// See EdGraphSchema_K2.h ~line 400 for all types
-			TRY_PARSE_PIN_TYPE2(Bool, Boolean);
-			TRY_PARSE_PIN_TYPE(Byte);
-			TRY_PARSE_PIN_TYPE(Class)
-			TRY_PARSE_PIN_TYPE(SoftClass)
-			TRY_PARSE_PIN_TYPE(Int)
-			TRY_PARSE_PIN_TYPE(Int64)
-			TRY_PARSE_PIN_TYPE(Float)
-			TRY_PARSE_PIN_TYPE(Double)
-			// TRY_PARSE_PIN_TYPE(Real) // TODO Do I need this?
-			TRY_PARSE_PIN_TYPE(Name)
-			TRY_PARSE_PIN_TYPE(Delegate)
-			TRY_PARSE_PIN_TYPE2(MulticastDelegate, MCDelegate)
-			TRY_PARSE_PIN_TYPE(Object)
-			TRY_PARSE_PIN_TYPE(Interface)
-			TRY_PARSE_PIN_TYPE(SoftObject)
-			TRY_PARSE_PIN_TYPE2(Str, String)
-			TRY_PARSE_PIN_TYPE(Text)
-			TRY_PARSE_PIN_TYPE(Struct)
-			// TRY_PARSE_PIN_TYPE(Wildcard) // I should not need this
-			TRY_PARSE_PIN_TYPE(Enum)
-			TRY_PARSE_PIN_TYPE(FieldPath)
+				// See EdGraphSchema_K2.h ~line 400 for all types
+				TRY_PARSE_PIN_TYPE2(Bool, Boolean);
+				TRY_PARSE_PIN_TYPE(Byte);
+				TRY_PARSE_PIN_TYPE(Class)
+				TRY_PARSE_PIN_TYPE(SoftClass)
+				TRY_PARSE_PIN_TYPE(Int)
+				TRY_PARSE_PIN_TYPE(Int64)
+				TRY_PARSE_PIN_TYPE(Float)
+				TRY_PARSE_PIN_TYPE(Double)
+				// TRY_PARSE_PIN_TYPE(Real) // TODO Do I need this?
+				TRY_PARSE_PIN_TYPE(Name)
+				TRY_PARSE_PIN_TYPE(Delegate)
+				TRY_PARSE_PIN_TYPE2(MulticastDelegate, MCDelegate)
+				TRY_PARSE_PIN_TYPE(Object)
+				TRY_PARSE_PIN_TYPE(Interface)
+				TRY_PARSE_PIN_TYPE(SoftObject)
+				TRY_PARSE_PIN_TYPE2(Str, String)
+				TRY_PARSE_PIN_TYPE(Text)
+				TRY_PARSE_PIN_TYPE(Struct)
+				// TRY_PARSE_PIN_TYPE(Wildcard) // I should not need this
+				TRY_PARSE_PIN_TYPE(Enum)
+				TRY_PARSE_PIN_TYPE(FieldPath)
         
-			if (bAddPin)
-			{
-				PinNames.Add(FName(Property->GetName()));
-
-				bool bPinExists = !!FindPropertyPin(Property->GetFName());
-				if (!bPinExists)
+				if (bAddPin)
 				{
-					CreatePin(EGPD_Input, PinTypeName, FName(Property->GetName()));
-					bChanged = true;
-				}   
+					PinNames.Add(FName(Property->GetName()));
+
+					bool bPinExists = !!FindPropertyPin(Property->GetFName());
+					if (!bPinExists)
+					{
+						CreatePin(EGPD_Input, PinTypeName, FName(Property->GetName()));
+						bChanged = true;
+					}   
+				}
 			}
 		}
 	}

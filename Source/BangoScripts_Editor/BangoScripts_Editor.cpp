@@ -12,6 +12,7 @@
 #include "BangoScripts/Editor/Customizations/Properties/BangoScriptContainerCustomization.h"
 #include "BangoScripts/Core/BangoScriptContainer.h"
 
+#include "Private/KismetPins/BangoScriptsPinFactory.h"
 #include "Private/ComponentVisualizers/BangoScriptComponentVisualizer.h"
 #include "Private/Menus/BangoEditorMenus.h"
 #include "Private/BangoEditorStyle.h"
@@ -35,6 +36,10 @@ void FBangoScripts_EditorModule::StartupModule()
 	
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(PropertyEditor);
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	TSharedPtr<FBangoScriptsPinFactory> PinFactory = MakeShared<FBangoScriptsPinFactory>();
+	FEdGraphUtilities::RegisterVisualPinFactory(PinFactory);
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
