@@ -17,29 +17,46 @@ public:
 
 protected:
 	
+	/**  */
 	UPROPERTY()
 	float Duration = 1.0f;
 	
-	UPROPERTY(EditAnywhere, DisplayName = "Infinite duration")
+	/** If set, this node can only be skipped or cancelled. */
+	UPROPERTY(EditAnywhere, Category = "Time", DisplayName = "Non-timed")
 	bool bInfiniteDuration;
 	
-	UPROPERTY(EditAnywhere, DisplayName = "Exec Skip")
+	/** Skipping will immediately run the output pin. */
+	UPROPERTY(EditAnywhere, Category = "Controls", DisplayName = "Enable Skip Exec Pin")
 	bool bEnableSkipExecPin;
 	
-	UPROPERTY(EditAnywhere, DisplayName = "Exec Cancel")
+	/** Cancelling will prevent this node from ever executing its output pin. */
+	UPROPERTY(EditAnywhere, Category = "Controls", DisplayName = "Enable Cancel Exec Pin", meta = (EditCondition = "!bInfiniteDuration", EditConditionHides))
 	bool bEnableCancelExecPin;
 
-	UPROPERTY(EditAnywhere, DisplayName = "Conditional Skip")
+	/** Skipping will immediately run the output pin. Condition will be checked on tick! */
+	UPROPERTY(EditAnywhere, Category = "Controls", DisplayName = "Enable Skip Condition Pin")
 	bool bEnableSkipConditionPin;
 	
-	UPROPERTY(EditAnywhere, DisplayName = "Conditional Cancel")
+	/** Cancelling will prevent this node from ever executing its output pin. Condition will be checked on tick! */
+	UPROPERTY(EditAnywhere, Category = "Controls", DisplayName = "Enable Cancel Condition Pin", meta = (EditCondition = "!bInfiniteDuration", EditConditionHides))
 	bool bEnableCancelConditionPin;
 
-	UPROPERTY(EditAnywhere, DisplayName = "Conditional Pause")
+	/** Pausing will prevent this node's timer from counting down. Condition will be updated on tick! */
+	UPROPERTY(EditAnywhere, Category = "Controls", DisplayName = "Enable Pause Condition Pin", meta = (EditCondition = "!bInfiniteDuration", EditConditionHides))
 	bool bEnablePauseConditionPin;
 	
 public:
 	bool IsInfiniteDuration() const { return bInfiniteDuration; }
+
+	bool IsSkipExecPinEnabled() const { return bEnableSkipExecPin; }
+	
+	bool IsCancelExecPinEnabled() const { return !bInfiniteDuration && bEnableCancelExecPin; }
+	
+	bool IsSkipConditionPinEnabled() const { return bEnableSkipConditionPin; }
+	
+	bool IsCancelConditionPinEnabled() const { return !bInfiniteDuration && bEnableCancelConditionPin; }
+	
+	bool IsPauseConditionPinEnabled() const { return !bInfiniteDuration && bEnablePauseConditionPin; }
 	
 protected:
 	
@@ -51,25 +68,12 @@ protected:
 	
 	UPROPERTY()
 	double FinishTime;
-
-	/*
-	UEdGraphPin* ExecutePin;
-	UEdGraphPin* CompletedPin;
-	UEdGraphPin* DurationPin;
-	UEdGraphPin* SkipExecPin;
-	UEdGraphPin* CancelExecPin;
-	UEdGraphPin* SkipConditionPin;
-	UEdGraphPin* CancelConditionPin;
-	UEdGraphPin* PauseConditionPin;
-	*/
 	
 public:
 	void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	void AllocateDefaultPins() override;
 
-	void UpdatePinStates();
-	
 	void ExpandNode(class FKismetCompilerContext& Compiler, UEdGraph* SourceGraph) override;	
 
 	FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
