@@ -29,24 +29,27 @@
 
 ### DEMONSTRATION
 
+This is a very programmer-art scene involving a walkway with several lights, a couple of simple sci-fi doors, and some loudspeakers for ambience.
+
 https://github.com/user-attachments/assets/f2b23127-251b-479e-bb31-d9f940fdac69
 
 The level above contains:
+
 ### GENERAL ACTORS:
-- Two doors, each with a simple "open" event. The animation, light, and sound is all handled in the door blueprint.
+
+- Two doors, each with a simple "open" event. The animation, light, and sound is all handled by a Sequencer Component in the door blueprint.
 - Several lights, each with a simple "turn on" event. Like the door, the animation and sound of the lights is handled in the light blueprint.
-- Two loudspeakers, just dummy actors for using PlaySoundAtLocation.
+- Two loudspeakers, which are just dummy actors for the scripts to use PlaySoundAtLocation.
 
 ### TRIGGER ACTORS, WITH BANGO SCRIPTS:
+
 - One blank actor with a script, set to auto-run. This starts the music and announcer voices coming from two loudspeakers.
 - One pressure-plate trigger controlling the first door. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The Activate script runs on BeginOverlap, and vice versa.
 - Two simple sphere collider triggers, the first turning on the hallway lights and the second opening the last door. These contain an overlap sphere and a Bango Script component. The script component is ran on the trigger's BeginOverlap event. The trigger is coded to self-destruct, to prevent repeat activations.
 
-The trigger actors are NOT related to Bango Scripts. You will need to supply your own reusable trigger classes. More info in the wiki.
+Trigger systems/actors are NOT included in or related to Bango Scripts. This plugin is BYOB (Bring Your Own Bangotriggers).
 
-&nbsp;
-
-Here's what the scripts for this scene look like, in order of appearance:
+Here's what the scripts for the demo scene look like, in order of appearance:
 
 &nbsp;
 
