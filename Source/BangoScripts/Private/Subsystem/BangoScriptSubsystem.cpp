@@ -234,6 +234,12 @@ void UBangoScriptSubsystem::PruneFinishedScripts(UWorld* World)
 	
 	for (auto [Handle, Script] : RunningScripts)
 	{
+	    // Do not auto-destroy any scripts which are marked to be kept alive
+	    if (Script->GetKeepAliveWhenIdle())
+	    {
+	        continue;
+	    }
+		
 		if (Manager.GetNumActionsForObject(Script) == 0)
 		{
 			UE_LOG(LogBango, Verbose, TEXT("Idle script being automatically destroyed: {%s}"), *Script->GetName());
