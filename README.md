@@ -1,39 +1,42 @@
 # Bango Scripts
 
-Have you ever placed a trigger volume and wondered *"how can I conditionally spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds?"*
+### THE PROBLEM
 
-Imagine if you could write an *instanced* blueprint event directly onto an actor placed in a level. This plugin effectively allows you to do this. You can create and attach small script blueprints onto actors using a special actor component. The script component has a `Run` function which will spawn and run an instance of the script blueprint. The script blueprints contain a single `Start` event node that will be executed.
+- Have you ever placed a trigger volume and wondered *"how can I spawn three enemies at some markers, then turn on those lights, and start playing some boss music after 2 seconds? What if I want to spawn different enemies based on the player's skill setting?"*
+- Many teams will build some sort of "Actions" system which involves arrays full of "Action" entries. This is clanky, difficult to visualize and work with, and can require a lot of effort to build new entry types, even for basic things.
 
-***Bango Scripts*** also provides some extra helper-nodes which bring some traditionally common DSL/game script language features into blueprints, such as explicit references to specific actors in a level (similar to what Level Blueprints can do, but better).
+### THE SOLUTION
 
-You can also create re-usable scripts in your Content folder to use on multiple  actors, with input variables which are configurable on each instance.
+- What if you could write an *instanced* blueprint event directly onto an actor placed in a level?
+- What if you could reference other actors in the level with simple, easy-to-use nodes?
+- What if you had more blueprint nodes that helped with actual level scripting, and not just O.O.P. coding?
 
-### Summary Info
+### SUMMARY INFO
 > [!NOTE]
 > - Intended to execute small, short-lived scripted events.
 > - Supported on: UE5.6 - UE5.7
-> - Current status: ⚠️**Experimental**⚠️ *possible data loss; do not use in a real project!*
+> - Current status: ⚠️**Experimental**⚠️
  
 > [!WARNING]
 > - *Runtime serialization*: Bango uses Blueprint. Blueprint graph execution state is not serializable; you cannot save/restore a script back to its middle of operation (you might want to use a different system for that, like Flow Graph).
 > - *Untested in multiplayer*: this plugin is currently being used for single-player projects; it may work fine, but is untested in multiplayer.
 
 > [!CAUTION]
-> - *Known issues*: Be sure to visit the [Issues](https://github.com/HomerJohnston/BangoScripts/issues) page for known problems.
+> - This plugin is experimental; be sure to visit the [Issues](https://github.com/HomerJohnston/BangoScripts/issues) page for any known problems.
 
 &nbsp;
 
-# Demonstration - Gameplay
+### DEMONSTRATION
 
 https://github.com/user-attachments/assets/f2b23127-251b-479e-bb31-d9f940fdac69
 
 The level above contains:
-### ACTORS:
+### GENERAL ACTORS:
 - Two doors, each with a simple "open" event. The animation, light, and sound is all handled in the door blueprint.
 - Several lights, each with a simple "turn on" event. Like the door, the animation and sound of the lights is handled in the light blueprint.
 - Two loudspeakers, just dummy actors for using PlaySoundAtLocation.
 
-### TRIGGERS & SCRIPTS:
+### TRIGGER ACTORS, WITH BANGO SCRIPTS:
 - One blank actor with a script, set to auto-run. This starts the music and announcer voices coming from two loudspeakers.
 - One pressure-plate trigger controlling the first door. This contains an overlap collider box and two Bango Script components (Activate/Deactivate). The Activate script runs on BeginOverlap, and vice versa.
 - Two simple sphere collider triggers, the first turning on the hallway lights and the second opening the last door. These contain an overlap sphere and a Bango Script component. The script component is ran on the trigger's BeginOverlap event. The trigger is coded to self-destruct, to prevent repeat activations.
@@ -70,26 +73,6 @@ Here's what the scripts for this scene look like, in order of appearance:
 
 &nbsp;
 
-# Fun Features
+### GETTING STARTED
 
-https://github.com/user-attachments/assets/d522717e-166c-4c23-972d-d19953e7b8e2
-
-<p align="center"><i>Actor references can be inserted into the script by copy-pasting from the level viewport, or dragged from the world outliner list.</i></p>
-
-&nbsp;
-
-https://github.com/user-attachments/assets/cfb96e1f-808f-4f9a-a38b-a77feeb3a249
-
-<p align="center"><i>Actor references draw helpful reference lines while the blueprint is open.</i></p>
-
-&nbsp;
-
-https://github.com/user-attachments/assets/12682b63-7a3e-4d9e-b719-198e1ca3a7b9
-
-<p align="center"><i>If a script asset is open, running that script automatically hooks up the debugger.</i></p>
-
-&nbsp;
-
-# Getting Started & Technical Info
-
-Go to the wiki to get started using Bango Scripts.
+Go to the wiki to try out Bango Scripts.
