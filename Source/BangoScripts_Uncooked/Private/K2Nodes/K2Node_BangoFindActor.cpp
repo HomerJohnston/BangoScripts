@@ -65,8 +65,6 @@ void UK2Node_BangoFindActor::PostEditChangeProperty(struct FPropertyChangedEvent
 void UK2Node_BangoFindActor::PostPlacedNewNode()
 {
 	Super::PostPlacedNewNode();
-	
-	Color = FLinearColor::MakeRandomColor();
 }
 
 void UK2Node_BangoFindActor::AllocateDefaultPins()
@@ -328,9 +326,6 @@ void UK2Node_BangoFindActor::SetActor(AActor* Actor)
 	TargetActor = ActorPath;
 	
 	CastTo = Actor->GetClass();
-
-	// Manual name is unused with a target actor
-	TargetName = NAME_None;
 }
 
 AActor* UK2Node_BangoFindActor::GetReferencedLevelActor() const
@@ -364,6 +359,16 @@ void UK2Node_BangoFindActor::JumpToDefinition() const
 
 	// Execute the command to move camera to the object(s).
 	GUnrealEd->Exec_Camera( TEXT("ALIGN ACTIVEVIEWPORTONLY"),*GLog); 
+}
+
+bool UK2Node_BangoFindActor::CanEditChange(const FProperty* InProperty) const
+{
+	if (InProperty->GetFName() == GET_MEMBER_NAME_CHECKED(ThisClass, CastTo))
+	{
+		// return TargetActor.IsNull();
+	}
+	
+	return Super::CanEditChange(InProperty);
 }
 
 #undef LOCTEXT_NAMESPACE

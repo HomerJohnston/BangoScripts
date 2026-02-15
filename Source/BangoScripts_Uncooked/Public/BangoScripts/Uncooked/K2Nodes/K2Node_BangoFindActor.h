@@ -23,14 +23,9 @@ class UK2Node_BangoFindActor : public UK2Node_BangoBase
 
 public:
 	UK2Node_BangoFindActor();
-
-protected:	
-	/** This node will *either* target a manual name with CastTo, OR it will use TargetActor below. */
-	UPROPERTY(VisibleAnywhere)
-	FName TargetName;
 	
 	/** Change to the desired class to cast the output automatically. */
-	UPROPERTY(EditAnywhere, meta = (EditCondition = "TargetName != NAME_None", EditConditionHides))
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<AActor> CastTo;
 	
 	/** Level-blueprint-like actor reference, used by dragging an actor onto the blueprint from the world outliner. */
@@ -39,16 +34,11 @@ protected:
 	
 	/** Used by the slate widget to highlight the node. */
 	EBangoFindActorNode_ErrorState ErrorState;
-
-	UPROPERTY(EditAnywhere, DuplicateTransient)
-	FLinearColor Color;
 	
 public:
 	TSubclassOf<AActor> GetCastTo() const { return CastTo; }
 	
 	TSoftObjectPtr<AActor> GetTargetActor() const { return TargetActor; } 
-	
-	const FLinearColor& GetColor() const { return Color; }
 	
 	bool ShouldDrawCompact() const override;
 	
@@ -89,6 +79,8 @@ public:
 	
 	// Intentionally unreflected; slate widgets will update this whenever the node is selected. The ScriptComponent visualizer will use it to highlight recently selected connections.
 	uint64 LastSelectedFrame = 0;
+	
+	bool CanEditChange(const FProperty* InProperty) const override;
 };
 
 using namespace BangoNodeBuilder;
