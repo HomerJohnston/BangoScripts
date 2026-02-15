@@ -398,7 +398,7 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 	// This should always be running one frame later than the requests were queued
 	for (const auto& Request : ChangeRequests)
 	{
-		if (Bango::Editor::GetScriptType(Request.Script) != Editor::EBangoScriptType::LevelScript)
+		if (Bango::Editor::GetScriptType(Request.Script) == Editor::EBangoScriptType::ContentAssetScript)
 		{
 			continue;
 		}

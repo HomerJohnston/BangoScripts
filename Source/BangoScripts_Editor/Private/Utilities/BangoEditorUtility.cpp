@@ -77,6 +77,11 @@ Bango::Editor::EBangoScriptType Bango::Editor::GetScriptType(TSoftClassPtr<UBang
 		return EBangoScriptType::LevelScript;
 	}
 	
+	if (ScriptClass.IsNull())
+	{
+		return EBangoScriptType::None;
+	}
+	
 	return EBangoScriptType::ContentAssetScript;
 }
 
