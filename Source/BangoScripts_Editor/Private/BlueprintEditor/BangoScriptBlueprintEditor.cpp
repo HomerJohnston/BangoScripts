@@ -681,15 +681,20 @@ void FBangoScriptBlueprintEditor::PasteNodesHere(UEdGraph* DestinationGraph, con
 		FPlatformApplicationMisc::ClipboardCopy(*ClipboardStringBuilder);
 	}
 	
-	// We delay it by one frame because sometimes Windows sucks and it takes a bit for the clipboard to update into the PasteNodesHere func
+	// We delay it by TWO frames because sometimes Windows sucks and it takes a bit for the clipboard to update into the PasteNodesHere func. One frame works 90% of the time... Two works 99.9%
 	TWeakObjectPtr<UEdGraph> WeakGraph = DestinationGraph;
 	
 	auto DelayedCall = [this, WeakGraph, GraphLocation] ()
 	{
-		if (UEdGraph* DestinationGraph = WeakGraph.Get())
+		auto DoubleDelayedCall = [this, WeakGraph, GraphLocation] ()
 		{
-			FBlueprintEditor::PasteNodesHere(DestinationGraph, GraphLocation);
-		}
+			if (UEdGraph* DestinationGraph = WeakGraph.Get())
+			{
+				FBlueprintEditor::PasteNodesHere(DestinationGraph, GraphLocation);
+			}	
+		};
+		
+		GEditor->GetTimerManager()->SetTimerForNextTick(DoubleDelayedCall);
 	};
 	
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayedCall);
