@@ -168,8 +168,6 @@ FText SBangoScriptPropertyEditorClass::GetDisplayValueAsString() const
 
 void SBangoScriptPropertyEditorClass::CreateClassFilter()
 {
-	using namespace BangoScriptPropertyEditorClass;
-	
 	ClassViewerOptions.bShowBackgroundBorder = false;
 	ClassViewerOptions.bShowUnloadedBlueprints = true;
 	ClassViewerOptions.bShowNoneOption = true;
@@ -181,7 +179,7 @@ void SBangoScriptPropertyEditorClass::CreateClassFilter()
 	ClassViewerOptions.bAllowViewOptions = bShowViewOptions;
 	ClassViewerOptions.bShowObjectRootClass	= false;
 
-	TSharedRef<FPropertyEditorClassFilter> PropEdClassFilter = MakeShared<FPropertyEditorClassFilter>();
+	TSharedRef<BangoScriptPropertyEditorClass::FPropertyEditorClassFilter> PropEdClassFilter = MakeShared<BangoScriptPropertyEditorClass::FPropertyEditorClassFilter>();
 	PropEdClassFilter->ClassPropertyMetaClass = MetaClass;
 	PropEdClassFilter->bAllowAbstract = false;
 	//PropEdClassFilter->AllowedClassFilters = AllowedClassFilters;
