@@ -510,7 +510,13 @@ void UBangoScriptsDebugDrawService::OnBangoScriptRegistrationChange(UBangoScript
 	{
 		ScriptOwners.Remove(ScriptComponent->GetOwner());
 		
-	    ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.RemoveAll(this);
+	    if (AActor* Owner = ScriptComponent->GetOwner())
+	    {
+	        if (USceneComponent* RootComponent = Owner->GetRootComponent())
+	        {
+	            RootComponent->TransformUpdated.RemoveAll(this);
+	        }
+	    }
 
 	    RemoveElement(Element);
 	}
