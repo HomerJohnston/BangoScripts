@@ -15,6 +15,7 @@
 #include "WorldPartition/WorldPartition.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Canvas.h"
+#include "Engine/GameViewportClient.h"
 #include "Unsorted/BangoActorNodeDraw.h"
 #include "Widgets/SViewport.h"
 

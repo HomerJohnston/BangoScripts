@@ -1,4 +1,4 @@
-﻿#include "BangoScripts/Editor/Customizations/Properties/BangoScriptContainerCustomization.h"
+﻿#include "BangoScriptContainerCustomization.h"
 
 #include "BlueprintEditor.h"
 #include "DetailWidgetRow.h"

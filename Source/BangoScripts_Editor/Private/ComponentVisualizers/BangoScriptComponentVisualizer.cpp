@@ -1,11 +1,8 @@
 ﻿#include "BangoScriptComponentVisualizer.h"
 
-#include "LevelEditor.h"
 #include "SceneView.h"
 #include "BangoScripts/Components/BangoScriptComponent.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
-#include "Components/BillboardComponent.h"
-#include "Components/Viewport.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Utilities/BangoEditorUtility.h"
 

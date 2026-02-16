@@ -9,7 +9,6 @@
 #include "BangoScripts/Components/BangoScriptComponent.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
-#include "BangoScripts/Editor/Customizations/Properties/BangoScriptContainerCustomization.h"
 #include "BangoScripts/Core/BangoScriptContainer.h"
 
 #include "Private/KismetPins/BangoScriptsPinFactory.h"
@@ -19,6 +18,7 @@
 #include "Private/Commands/BangoEditorActions.h"
 #include "Private/Customizations/BangoGraphPanelNodeFactory.h"
 #include "Private/Utilities/BangoFolderUtility.h"
+#include "Private/Customizations/Properties/BangoScriptContainerCustomization.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
