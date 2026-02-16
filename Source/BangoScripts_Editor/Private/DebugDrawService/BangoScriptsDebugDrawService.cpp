@@ -494,25 +494,26 @@ void UBangoScriptsDebugDrawService::OnBangoScriptRegistrationChange(UBangoScript
 {
 	FBangoScriptOctreeElement Element(ScriptComponent);
 	
-	static int AddCount;
-		
 	if (RegistrationStatus == EBangoScriptComponentRegisterStatus::Registered)
 	{
 		AddElement(Element);
-		AddCount++;
-		// TODO this doesn't work. When dragging actor via gizmo handles, it does not fire PostEditChangeProperty of the root component
-		//ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.AddUObject(this, &ThisClass::OnScriptComponentMoved, TWeakObjectPtr<UBangoScriptComponent>(ScriptComponent));
-		ScriptOwners.Add(ScriptComponent->GetOwner());
+		
+	    if (GEditor->IsPlaySessionInProgress())
+	    {
+	        // Note: This is only for runtime. TransformUpdated does not fire when something is moved at edit-time. 
+	        ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.AddUObject(this, &ThisClass::OnScriptComponentMoved, TWeakObjectPtr<UBangoScriptComponent>(ScriptComponent));   
+	    }
+
+	    ScriptOwners.Add(ScriptComponent->GetOwner());
 	}
 	else
 	{
 		ScriptOwners.Remove(ScriptComponent->GetOwner());
-		//ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.RemoveAll(this);
-		RemoveElement(Element);
-		AddCount--;
+		
+	    ScriptComponent->GetOwner()->GetRootComponent()->TransformUpdated.RemoveAll(this);
+
+	    RemoveElement(Element);
 	}
-	
-	UE_LOG(LogBangoEditor, Verbose, TEXT("ScriptReg: %s, %i"), *ScriptComponent->GetPathName(), AddCount);
 }
 
 // ----------------------------------------------
@@ -535,7 +536,7 @@ void UBangoScriptsDebugDrawService::OnScriptComponentMoved(USceneComponent* Scen
 void UBangoScriptsDebugDrawService::AddElement(FBangoScriptOctreeElement& Element)
 {
 	ScriptComponentTree.AddElement(Element);
-	
+    
 	// DrawDebugSphere(Element.ScriptComponent->GetWorld(), Element.Position, 50.0f, 12, FColor::Green, false, 5.0f);
 }
 
