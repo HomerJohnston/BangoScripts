@@ -2,8 +2,6 @@
 
 #include "ContentBrowserDataSubsystem.h"
 #include "IContentBrowserDataModule.h"
-#include "ISourceControlModule.h"
-#include "K2Node_CustomEvent.h"
 #include "ObjectTools.h"
 #include "PackageTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -15,7 +13,6 @@
 #include "BangoScripts/EditorTooling/BangoHelpers.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Private/Unsorted/BangoDummyObject.h"
-#include "Private/Menus/BangoEditorMenus.h"
 #include "Private/Utilities/BangoEditorUtility.h"
 #include "Private/Utilities/BangoFolderUtility.h"
 #include "Private/Unsorted/BangoHideScriptFolderFilter.h"
@@ -24,7 +21,6 @@
 #include "Misc/TransactionObjectEvent.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "Subsystems/EditorAssetSubsystem.h"
-#include "UObject/ObjectSaveContext.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -135,6 +131,9 @@ void UBangoLevelScriptsEditorSubsystem::OnMapLoad(const FString& String, FCanLoa
 {
 	bMapLoading = true;
 	
+    // Forcefully ignore any change requests created due to level loading
+    ChangeRequests.Empty();
+    
 	// The intent is to obliterate "undo" soft delete script assets after a new map is loaded in.
 	auto DelayCollectGarbage = FTimerDelegate::CreateLambda([] ()
 	{
@@ -142,23 +141,20 @@ void UBangoLevelScriptsEditorSubsystem::OnMapLoad(const FString& String, FCanLoa
 	});
 	
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayCollectGarbage);
-	
-	// Forcefully ignore any change requests created due to level loading
-	ChangeRequests.Empty();
 }
 
 // ----------------------------------------------
 
 void UBangoLevelScriptsEditorSubsystem::OnMapOpened(const FString& String, bool bArg)
 {
+    // Forcefully ignore any change requests created due to level loading
+    ChangeRequests.Empty();
+    
 	// Keep ignoring any change requests for one tick
 	auto DelayUnlock = [this] ()
 	{
 		bMapLoading = false;
 	};
-	
-	// Forcefully ignore any change requests created due to level loading
-	ChangeRequests.Empty();
 	
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayUnlock);
 }
@@ -171,9 +167,6 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, 
 	{
 		return;
 	}
-	
-	// TODO I need a way to allow hooking in other types more nicely. What if a user wants a custom type and not just UBangoScriptComponent?
-	// Should I have a C++ interface that other things could hook into?
 	
 	// This happens when a copied component is pasted
 	if (RenamedObject->GetFlags() == RF_Transactional)
@@ -227,22 +220,6 @@ void UBangoLevelScriptsEditorSubsystem::OnObjectRenamed(UObject* RenamedObject, 
 	};
 	
 	GEditor->GetTimerManager()->SetTimerForNextTick(DelayedScriptRename);
-}
-
-// ----------------------------------------------
-
-void UBangoLevelScriptsEditorSubsystem::OnObjectConstructed(UObject* Object)
-{
-	/*
-	IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Object);
-	
-	if (!CanProcessScripts())
-	{
-		return;
-	}
-	
-	EnqueueChangedScriptContainer(*ScriptHolder);
-	*/
 }
 
 // ----------------------------------------------
@@ -303,7 +280,6 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDuplicated: %s, %s"), *Outer->GetName(), *ScriptContainer.GetGuid().ToString());
 	
 	// Through experimentation, a *true* duplicated component will either have the Transactional flag OR it will be wrapped in actor duplication.
-	
 	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors || bDuplicatingLevel)
 	{
 		FString Info;
@@ -376,11 +352,9 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 {
 	UE_LOG(LogBangoEditor, Verbose, TEXT("--------------------------------"))
 	UE_LOG(LogBangoEditor, Verbose, TEXT("ProcessScriptRequestQueue"))
-
 	UE_LOG(LogBangoEditor, Verbose, TEXT("          Change Requests:"));
-	
-	/*
-	for (const auto& CreationRequest : ChangeRequests)
+
+    for (const auto& CreationRequest : ChangeRequests)
 	{
 		UObject* Object = CreationRequest.GetObject();
 		IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Object);
@@ -390,10 +364,9 @@ void UBangoLevelScriptsEditorSubsystem::ProcessScriptRequestQueues()
 			FString StatusString;
 			ScriptHolder->LogStatus(&StatusString);
 			
-			// UE_LOG(LogBangoEditor, Verbose, TEXT("            Object: {%s}, Script: {%s} or {%s}"), *CreationRequest.Outer.ToString(), *CreationRequest.Script.ToString(), *CreationRequest.ScriptContainer->GetScriptClass().ToString());
+			UE_LOG(LogBangoEditor, Verbose, TEXT("            Object: {%s}, Script: {%s} or {%s}"), *CreationRequest.GetObject()->GetName(), *CreationRequest.Script.ToString(), *CreationRequest.ScriptContainer->GetScriptClass().ToString());
 		}
 	}
-	*/
 	
 	// This should always be running one frame later than the requests were queued
 	for (const auto& Request : ChangeRequests)
@@ -527,8 +500,7 @@ void UBangoLevelScriptsEditorSubsystem::CreateLevelScript(IBangoScriptHolderInte
 			UE_LOG(LogBangoEditor, Error, TEXT("Failed to create new level script!"))
 			return;
 		}
-	
-		
+	    
 		UClass* GenClass = Blueprint->GeneratedClass;
 		
 		if (GenClass)
@@ -632,29 +604,7 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 		{
 			UE_LOG(LogBangoEditor, Warning, TEXT("MarkPackageDirty failed on duplicated script blueprint, unknown reason"));
 		}
-		
-		// UPackageTools::SavePackagesForObjects( {Outer->GetPackage(), DuplicatedBlueprint->GetPackage() } );
 	}
-	
-	/*
-	auto DelayTest = [Outer, NewScriptGuid, DuplicatedBlueprint]
-	{
-		IBangoScriptHolderInterface* ScriptHolder = Cast<IBangoScriptHolderInterface>(Outer);
-		
-		if (!ScriptHolder)
-		{
-			return;
-		}
-		
-		//Outer->Modify();
-	
-		FBangoScriptContainer& ScriptContainer = ScriptHolder->GetScriptContainer();
-		//ScriptContainer.SetGuid(NewScriptGuid);
-		//ScriptContainer.SetScriptClass(DuplicatedBlueprint->GeneratedClass);
-	};
-	
-	GEditor->GetTimerManager()->SetTimerForNextTick(DelayTest);
-	*/
 }
 
 // ----------------------------------------------
@@ -778,46 +728,6 @@ void UBangoLevelScriptsEditorSubsystem::OnInitialAssetRegistrySearchComplete()
 		FEditorDelegates::OnDuplicateActorsBegin.AddWeakLambda(this, [this] () { bDuplicatingActors = true; } );
 		FEditorDelegates::OnDuplicateActorsEnd.AddWeakLambda(this, [this] () { bDuplicatingActors = false; } );
 	
-		FCoreUObjectDelegates::OnObjectConstructed.AddUObject(this, &ThisClass::OnObjectConstructed);
-		/*
-		//UEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UEditorSubsystem>();
-		FCoreUObjectDelegates::OnObjectPreSave.AddWeakLambda(this, [this] (UObject*, FObjectPreSaveContext)
-		{
-			UE_LOG(LogBangoEditor, Verbose, TEXT("Clearing request queues..."));
-			ChangeRequests.Empty();
-			ChangeRequests.Empty();
-			
-			bSavingLevel = true;
-			
-			auto DelayUnset = [this]
-			{
-				UE_LOG(LogTemp, Error, TEXT("===")); bSavingLevel = true;
-				this->bSavingLevel = false;
-			};
-			
-			GEditor->GetTimerManager()->SetTimerForNextTick(DelayUnset);
-		});
-		
-		FEditorDelegates::PreSaveWorldWithContext.AddWeakLambda(this, [this] (UWorld*, FObjectPreSaveContext)
-		{
-			UE_LOG(LogBangoEditor, Verbose, TEXT("Clearing request queues..."));
-			ChangeRequests.Empty();
-			ChangeRequests.Empty();
-			
-			bSavingLevel = true;
-			
-			auto DelayUnset = [this]
-			{
-				UE_LOG(LogTemp, Error, TEXT("======")); bSavingLevel = true;
-				this->bSavingLevel = false;
-			};
-			
-			GEditor->GetTimerManager()->SetTimerForNextTick(DelayUnset);
-		});
-		// FEditorDelegates::PostSaveWorldWithContext.AddWeakLambda(this, [this] (UWorld*, FObjectPostSaveContext) { UE_LOG(LogTemp, Error, TEXT("---")); bSavingLevel = false; });
-			*/
-		
-		
 		// Called by UBangoScriptComponent (potentially others)
 		FBangoEditorDelegates::OnScriptContainerCreated.AddUObject(this, &ThisClass::OnLevelScriptContainerCreated);
 		FBangoEditorDelegates::OnScriptContainerDestroyed.AddUObject(this, &ThisClass::OnLevelScriptContainerDestroyed);
@@ -917,8 +827,6 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetPostImport(UFactory* Factory, UOb
 {
 	UWorld* World = Cast<UWorld>(Object);
 	
-	ULevel* LevelX = Cast<ULevel>(Object);
-	
 	if (!World)
 	{
 		return;
@@ -951,9 +859,6 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetPostImport(UFactory* Factory, UOb
 				{
 					continue;
 				}
-				
-				// UE_LOG(LogBangoEditor, Display, TEXT("OnAssetPostImport calling OnLevelScriptContainerDuplicated"));
-				// OnLevelScriptContainerDuplicated(*ScriptHolder);
 			}
 		}
 	}

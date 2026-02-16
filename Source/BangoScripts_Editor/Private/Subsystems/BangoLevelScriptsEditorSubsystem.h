@@ -110,8 +110,6 @@ public:
 	void OnMapOpened(const FString& String, bool bArg);
 	
 	void OnObjectRenamed(UObject* RenamedObject, UObject* RenamedObjectOuter, FName OldName) const;
-	
-	void OnObjectConstructed(UObject* Object);
 
 	static TSharedPtr<IContentBrowserHideFolderIfEmptyFilter> Filter;	
 	
