@@ -82,7 +82,7 @@ namespace Bango::Editor
 
 	// Common
 	bool GetScreenPos(const FSceneView& View, const FVector& WorldPos, FVector& ScreenPos);
-	
-	// 
-	// bool ProjectWorldToScreenAlloWBehind(const FSceneView& View, const FVector& WorldPos, FVector& OutScreenPos);
+    
+    // Returns true while in PIE with game viewport focused, otherwise returns false
+    bool IsGameViewportFocused();
 }

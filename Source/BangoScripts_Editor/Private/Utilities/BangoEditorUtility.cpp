@@ -1,8 +1,6 @@
 ﻿#include "BangoEditorUtility.h"
 
 #include "ExternalPackageHelper.h"
-#include "LineTypes.h"
-#include "ObjectTools.h"
 #include "SceneView.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
 #include "BangoScripts/Core/BangoScript.h"
@@ -12,15 +10,13 @@
 #include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
 #include "BlueprintEditor/BangoScriptBlueprintEditor.h"
-#include "Components/Viewport.h"
 #include "HAL/FileManager.h"
 #include "Kismet2/KismetEditorUtilities.h"
-#include "UObject/SavePackage.h"
 #include "WorldPartition/WorldPartition.h"
-#include "WorldPartition/WorldPartitionSubsystem.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Canvas.h"
 #include "Unsorted/BangoActorNodeDraw.h"
+#include "Widgets/SViewport.h"
 
 // ----------------------------------------------
 
@@ -284,11 +280,18 @@ FString Bango::Editor::GetLocalScriptName(FString InName)
 
 void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerController* ALWAYS_NULL, FBangoScriptBlueprintEditor* ScriptBlueprintEditor)
 {
+    // Don't try to draw if we don't even have a canvas
 	if (!Canvas || !Canvas->Canvas || !Canvas->SceneView)
 	{
 		return;
 	}
-	
+    
+    if (IsGameViewportFocused())
+    {
+        return;
+    }
+    
+    // Don't try to draw if we don't have a blueprint
 	UBangoScriptBlueprint* Blueprint = ScriptBlueprintEditor->GetBangoScriptBlueprintObj();
 
 	if (!Blueprint)
@@ -553,24 +556,42 @@ bool Bango::Editor::GetScreenPos(const FSceneView& View, const FVector& WorldPos
 
 // ----------------------------------------------
 
-/*
-bool Bango::Editor::ProjectWorldToScreenAlloWBehind(const FSceneView& View, const FVector& WorldPos, FVector& OutScreenPos)
+bool Bango::Editor::IsGameViewportFocused()
 {
-	const FMatrix ViewProjectionMatrix = View.ViewMatrices.GetViewProjectionMatrix();
+    if (GEditor->IsPlaySessionInProgress() && !GEditor->bIsSimulatingInEditor)
+    {
+        UWorld* World = GEditor->PlayWorld;
+		
+        if (!World)
+        {
+            return false;
+        }
+		
+        UGameViewportClient* GameViewportClient = GEditor->GameViewport;
 	
-	FVector4 Clip = ViewProjectionMatrix.TransformFVector4(FVector4(WorldPos, 1.0f));
+        if (!GameViewportClient)
+        {
+            return false;
+        }
+		
+        TSharedPtr<SViewport> ViewportWidget = GameViewportClient->GetGameViewportWidget();
+		
+        if (!ViewportWidget.IsValid())
+        {
+            return false;
+        }
 
-	float RHW = 1.0f / Clip.W;
-
-	FVector2D NDC(Clip.X * RHW, Clip.Y * RHW);
-	
-	int32 ViewportSizeX = View.UnscaledViewRect.Width();
-	int32 ViewportSizeY = View.UnscaledViewRect.Height();
-	
-	OutScreenPos.X = (NDC.X * 0.5f + 0.5f) * ViewportSizeX;
-	OutScreenPos.Y = (1.0f - (NDC.Y * 0.5f + 0.5f)) * ViewportSizeY;
-	OutScreenPos.Z = Clip.W;
-	
-	return true;
+        if (ViewportWidget->HasAnyUserFocus())
+        {
+            // APlayerController* PC = World->GetFirstPlayerController();
+            // if (PC && PC->GetPawn())
+            //  {
+            return true;
+            // }
+        }
+    }
+    
+	return false;
 }
-*/
+
+// ----------------------------------------------
