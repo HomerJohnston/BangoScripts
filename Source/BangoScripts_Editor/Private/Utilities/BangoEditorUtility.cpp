@@ -315,7 +315,15 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 	{
 		return;
 	}
-	
+		
+    if (const UBangoScript* Script = GetDefault<UBangoScript>(ScriptBlueprint.GeneratedClass))
+    {
+        if (Script->HideActorReferenceIndicators())
+        {
+            return;
+        }
+    }
+
 	AActor& OwnerActor = *ScriptBlueprint.GetOwnerActor().Get();
 	
 	FVector DrawOrigin = OwnerActor.GetActorLocation() + ScriptHolder->GetDebugDrawOrigin();

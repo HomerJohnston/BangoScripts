@@ -54,12 +54,6 @@ protected:
     UPROPERTY(EditAnywhere)
     bool bPreventAutoDestroy = false;
     
-#if WITH_EDITORONLY_DATA
-	// This will be kept in sync with the FBangoScriptContainer's ScriptGuid and is used for undo/redo purposes and other sync
-	UPROPERTY(VisibleAnywhere)
-	FGuid ScriptGuid;
-#endif
-	
 	/** Reference to the object that ran this script. */ // Assigned by the Bango Script Subsystem on run.
 	UPROPERTY()
 	TWeakObjectPtr<UObject> This;
@@ -68,19 +62,24 @@ protected:
 	UPROPERTY(EditAnywhere, DisplayName = "'This' Class")
 	TSubclassOf<UObject> This_ClassType;
 	
+#if WITH_EDITORONLY_DATA
 protected:
-    bool GetKeepAliveWhenIdle() const { return bPreventAutoDestroy; }
-    
-public:
-#if WITH_EDITOR
-	FGuid GetScriptGuid() const { return ScriptGuid; }
+    UPROPERTY(EditAnywhere)
+    bool bHideActorReferenceIndicators;
+#endif
 	
+#if WITH_EDITOR
+public:
 	TSubclassOf<UObject> GetThis_ClassType() const { return This_ClassType; }
 	
 	void SetThis_ClassType(UClass* Class) { This_ClassType = Class; }
+    
+    bool HideActorReferenceIndicators() const { return bHideActorReferenceIndicators; }
 #endif
 	    
 protected:
+    bool GetKeepAliveWhenIdle() const { return bPreventAutoDestroy; }
+    
     /** This is implemented by designers. */
     UFUNCTION(BlueprintImplementableEvent)
     void Start();
