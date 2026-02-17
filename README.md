@@ -34,7 +34,7 @@ Unreal's Blueprint language is **not** a level scripting system; it is an object
 
 This is a very programmer-art scene involving a walkway with several lights, a couple of simple sci-fi doors, and some loudspeakers for ambience.
 
-https://github.com/user-attachments/assets/f2b23127-251b-479e-bb31-d9f940fdac69
+https://github.com/user-attachments/assets/1a0a8150-9280-4dd6-9737-ded6e9e2b380
 
 The level above contains:
 
