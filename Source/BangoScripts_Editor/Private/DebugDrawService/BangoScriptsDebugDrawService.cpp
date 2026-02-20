@@ -362,6 +362,11 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 		
 		auto FrustumTest = [this, CullingFrustum, PlayerController, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
 		{
+			if (ScriptElement.ScriptComponent.IsStale())
+			{
+				return;
+			}
+			
 			if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
 			{
 				return;
@@ -454,6 +459,11 @@ void UBangoScriptsDebugDrawService::UpdateNearbyScripts()
 			
 			auto FrustumTest = [this, CullingFrustum, SceneView, MouseScreenPos](const FBangoScriptOctreeElement& ScriptElement)
 			{
+				if (ScriptElement.ScriptComponent.IsStale())
+				{
+					return;
+				}
+				
 				if (!ScriptElement.ScriptComponent->IsBillboardEnabled())
 				{
 					return;
