@@ -818,7 +818,6 @@ void UBangoLevelScriptsEditorSubsystem::OnAssetAdded(const FAssetData& AssetData
 
 void UBangoLevelScriptsEditorSubsystem::OnAssetRemoved(const FAssetData& AssetData)
 {
-	UE_LOG(LogBangoEditor, Display, TEXT("OnAssetRemoved"));
 }
 
 // ----------------------------------------------
