@@ -83,7 +83,7 @@ void FBangoScriptBlueprintEditor::SetupGraphEditorEvents_Impl(UBlueprint* Bluepr
 	InEvents.OnNodeSpawnedByKeymap = SGraphEditor::FOnNodeSpawnedByKeymap::CreateSP(this, &FBangoScriptBlueprintEditor::OnNodeSpawnedByKeymap );
 	//InEvents.OnDisallowedPinConnection = SGraphEditor::FOnDisallowedPinConnection::CreateSP(this, &FBangoBlueprintEditor::OnDisallowedPinConnection);
 	InEvents.OnDoubleClicked = SGraphEditor::FOnDoubleClicked::CreateSP(this, &FBangoScriptBlueprintEditor::NavigateToParentGraphByDoubleClick);
-		
+	
 	// Custom menu for K2 schemas
 	if(InGraph->Schema != nullptr && InGraph->Schema->IsChildOf(UEdGraphSchema_K2::StaticClass()))
 	{
@@ -123,6 +123,20 @@ void FBangoScriptBlueprintEditor::Tick(float DeltaTime)
 			check(DeferredNamespaceImports.IsEmpty());
 		}
 	}
+}
+
+// ----------------------------------------------
+
+bool FBangoScriptBlueprintEditor::IsEditable(UEdGraph* InGraph) const
+{
+	TSoftObjectPtr<AActor> Owner = GetBangoScriptBlueprintObj()->GetOwnerActor();
+	
+	if (Owner.IsNull())
+	{
+		return FBlueprintEditor::IsEditable(InGraph);
+	}
+	
+	return Owner.IsValid();
 }
 
 // ----------------------------------------------
