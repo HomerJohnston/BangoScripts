@@ -12,6 +12,8 @@
 #include "Misc/FileHelper.h"
 #include "Modules/ModuleManager.h"
 #include "UObject/ObjectSaveContext.h"
+#include "WorldPartition/WorldPartition.h"
+#include "WorldPartition/WorldPartitionActorDescInstance.h"
 
 #if WITH_EDITOR
 #include "Interfaces/IPluginManager.h"
@@ -269,29 +271,26 @@ void UBangoScriptComponent::PostLoad()
 	Bango::Debug::PrintComponentState(this, "PostLoad");
 	
 	Super::PostLoad();
+}
+
+void UBangoScriptComponent::OnCookEvent(UE::Cook::ECookEvent CookEvent, UE::Cook::FCookEventContext& Context)
+{
+	Super::OnCookEvent(CookEvent, Context);
 	
-	TWeakObjectPtr<UBangoScriptComponent> WeakThis = this;
-	
-	auto CheckScriptValidity = [WeakThis] ()
+	// TODO: ACTOR STREAMABLE REFS
+	// This worked perfectly, but does not solve Standalone problems.
+	/*
+	for (auto& [ActorSoft, Location] : ScriptContainer.StreamingSourceActorRefs)
 	{
-		if (WeakThis.IsValid())
+		UE_LOG(LogBango, Warning, TEXT("-------------------------------- %s"), *ActorSoft.ToString());
+		if (ActorSoft.IsValid())
 		{
-			TSoftClassPtr<UBangoScript> ScriptClass = WeakThis->ScriptContainer.GetScriptClass();
-		
-			if (!ScriptClass.IsNull())
-			{
-				FName PackageName = ScriptClass.ToSoftObjectPath().GetLongPackageFName();
-			
-				if (!FPackageName::DoesPackageExist(PackageName.ToString()))
-				{
-					WeakThis->Modify();
-					WeakThis->ScriptContainer.Unset();
-				}
-			}	
+			Modify();
+			Location = ActorSoft.Get()->GetActorLocation();
+			UE_LOG(LogBango, Warning, TEXT("-------------------------------- %s"), *Location.ToString());
 		}
-	};
-	
-	// GEditor->GetTimerManager()->SetTimerForNextTick(CheckScriptValidity);
+	}
+	*/
 }
 
 void UBangoScriptComponent::BeginDestroy()
@@ -385,12 +384,35 @@ void UBangoScriptComponent::InvalidateLightingCacheDetailed(bool bInvalidateBuil
 
 void UBangoScriptComponent::PreSave(FObjectPreSaveContext SaveContext)
 {
-	bSaving = true;
+	UE_LOG(LogBango, Verbose, TEXT("PreSave {%s}"), *GetPathName());
 	
 	Super::PreSave(SaveContext);
 	
-	UE_LOG(LogBango, Verbose, TEXT("PreSave {%s}"), *GetPathName());
+	// TODO: ACTOR STREAMABLE REFS
+	/*
+	if (SaveContext.IsCooking())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UWorldPartition* WorldPartition = World->GetWorldPartition())
+			{
+				for (auto[StreamingSource, Location] : ScriptContainer.StreamingSourceActorRefs)
+				{
+					const FWorldPartitionActorDescInstance* ActorDesc = WorldPartition->GetActorDescInstanceByPath(StreamingSource.ToSoftObjectPath());
+			
+					if (ActorDesc)
+					{
+						Location = ActorDesc->GetActorTransform().GetLocation();
+						UE_LOG(LogTemp, Warning, TEXT("%s"), *Location.ToString());
+					}
+				}
+			}	
+		}
+	}
+	*/
 	
+	// TODO: SAVE NUISANCES - not sure if I need this code or not to reduce save-all nuisances
+	/*
 	// The level scripts subsystem may be fixing this up after another tick. So let's save the referenced script after another tick, too.
 	TWeakObjectPtr<UBangoScriptComponent> WeakThis = this;
 	
@@ -415,7 +437,8 @@ void UBangoScriptComponent::PreSave(FObjectPreSaveContext SaveContext)
 		}
 	};
 
-	// GEditor->GetTimerManager()->SetTimerForNextTick(DelaySaveScript);
+	GEditor->GetTimerManager()->SetTimerForNextTick(DelaySaveScript);
+	*/
 }
 
 void UBangoScriptComponent::PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext)
@@ -443,18 +466,16 @@ void UBangoScriptComponent::Run()
 		return;
 	}
 	
-#if WITH_EDITOR
-	RunningHandle =  
-#endif
-	UBangoScriptSubsystem::EnqueueScript(ScriptContainer.GetScriptClass(), GetOwner(), ScriptContainer.GetPropertyBag());
+	RunningHandle = UBangoScriptSubsystem::EnqueueScript(ScriptContainer.GetScriptClass(), GetOwner(), ScriptContainer.GetPropertyBag());
 	
-#if WITH_EDITOR
 	if (RunningHandle.IsRunning())
 	{
 		TDelegate<void(FBangoScriptHandle)> OnFinished = TDelegate<void(FBangoScriptHandle)>::CreateUObject(this, &ThisClass::OnScriptFinished);
 		UBangoScriptSubsystem::RegisterOnScriptFinished(this, RunningHandle, OnFinished);
+		
+		// TODO: ACTOR STREAMABLE REFS
+		// ScriptContainer.SpawnStreamingSources(this);
 	}
-#endif
 }
 
 // ----------------------------------------------
@@ -578,7 +599,6 @@ void UBangoScriptComponent::SetScriptBlueprint(UBangoScriptBlueprint* Blueprint)
 
 // ----------------------------------------------
 
-#if WITH_EDITOR
 void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 {
 	if (FinishedHandle != RunningHandle)
@@ -586,9 +606,10 @@ void UBangoScriptComponent::OnScriptFinished(FBangoScriptHandle FinishedHandle)
 		return;
 	}
 	
+	ScriptContainer.DespawnStreamingSources();
+	
 	RunningHandle.Expire();
 }
-#endif
 
 // ----------------------------------------------
 
@@ -609,6 +630,38 @@ void UBangoScriptComponent::PostEditUndo(TSharedPtr<ITransactionObjectAnnotation
 	Bango::Debug::PrintComponentState(this, "PostEditUndo");
 
 	Super::Super::PostEditUndo(TransactionAnnotation);
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void UBangoScriptComponent::PreDuplicate(FObjectDuplicationParameters& DupParams)
+{
+	// TODO: ACTOR STREAMABLE REFS
+	/*
+	if (DupParams.DuplicateMode == EDuplicateMode::PIE)
+	{
+		// !!!!!!!!!!!!!!!!!!!!!!!!! This doesn't even get called properly AT ALL. Epic completely failed at this. Might work in non-world partition levels?
+
+		UWorldPartition* WorldPartition = GetWorld()->GetWorldPartition();
+		
+		if (WorldPartition)
+		{
+			for (auto[StreamingSource, Location] : ScriptContainer.StreamingSourceActorRefs)
+			{
+				const FWorldPartitionActorDescInstance* ActorDesc = WorldPartition->GetActorDescInstanceByPath(StreamingSource.ToSoftObjectPath());
+			
+				if (ActorDesc)
+				{
+					Location = ActorDesc->GetActorTransform().GetLocation();
+					UE_LOG(LogTemp, Warning, TEXT("%s"), *Location.ToString());
+				}
+			}
+		}
+	}
+	*/
+	Super::PreDuplicate(DupParams);
 }
 #endif
 

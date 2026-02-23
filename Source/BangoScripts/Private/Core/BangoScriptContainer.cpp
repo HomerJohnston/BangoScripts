@@ -1,12 +1,16 @@
 ﻿#include "BangoScripts/Core/BangoScriptContainer.h"
 
+#include "BangoScripts/Actors/BangoWPStreamingSourceProxy.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
+#include "WorldPartition/WorldPartition.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
+#include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
+#include "WorldPartition/ActorDescContainerInstance.h"
 #endif
 
 // ----------------------------------------------
@@ -14,6 +18,81 @@
 FBangoScriptContainer::FBangoScriptContainer()
 {
 }
+
+// ----------------------------------------------
+
+void FBangoScriptContainer::SpawnStreamingSources(UObject* WorldContext)
+{
+	// TODO: ACTOR STREAMABLE REFS
+#if 0
+	UWorld* World = WorldContext->GetWorld();
+	
+	if (!World)
+	{
+		checkNoEntry();
+		return;
+	}
+	
+	for (auto [Target, Position] : StreamingSourceActorRefs)
+	{
+		FActorSpawnParameters Params;
+	
+		FVector Location;
+		
+#if WITH_EDITOR
+		// How do I make something like this work in STANDALONE????
+		
+		bool bFoundLocation = false;
+		
+		FBangoEditorDelegates::RequestActorLocation.ExecuteIfBound(Target, bFoundLocation, Location);
+		
+		if (bFoundLocation)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("It worked!"));
+		}
+		
+		/*
+		UWorldPartition* WorldPartition = World->GetWorldPartition();
+		
+		if (WorldPartition)
+		{
+			const FWorldPartitionActorDescInstance* ActorDesc = WorldPartition->GetActorDescInstanceByPath(Target.ToSoftObjectPath());
+			
+			if (ActorDesc)
+			{
+				Location = ActorDesc->GetActorTransform().GetLocation();
+			}
+		}
+		*/
+#else
+		Location = Position;
+#endif
+		
+		ABangoWPStreamingSourceProxy* NewStreamingSource = World->SpawnActor<ABangoWPStreamingSourceProxy>(Location, FRotator::ZeroRotator, Params); 
+		
+		NewStreamingSource->SetEnabled(true);
+		
+		SpawnedStreamingSources.Add(NewStreamingSource);
+	}
+#endif
+}
+
+// ----------------------------------------------
+
+void FBangoScriptContainer::DespawnStreamingSources()
+{
+	for (auto& StreamingSource : SpawnedStreamingSources)
+	{
+		if (StreamingSource.IsValid())
+		{
+			StreamingSource->Destroy();
+		}
+	}
+	
+	SpawnedStreamingSources.Empty();
+}
+
+// ----------------------------------------------
 
 #if WITH_EDITOR
 void FBangoScriptContainer::SetGuid(const FGuid& InGuid)

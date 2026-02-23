@@ -100,6 +100,8 @@ namespace Bango::Colors
 		BANGOSCRIPTS_EDITORTOOLING_API FLinearColor Darken(FLinearColor InColor, float Darken);
 	};
 	
+	inline FLinearColor SoftPointerCyan(0.586f, 1.0f, 1.0f, 0.5f);
+	
 	// TODO Legacy stuff cleanup 
 	inline FLinearColor LightGrey			(0.50,	0.50,	0.50);
 	inline FLinearColor DarkGrey			(0.02,	0.02,	0.02);

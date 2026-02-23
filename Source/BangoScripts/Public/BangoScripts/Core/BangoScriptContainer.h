@@ -28,7 +28,7 @@ public:
 	const TSoftClassPtr<UBangoScript>& GetScriptClass() const { return ScriptClass; }
 
 	const FInstancedPropertyBag* GetPropertyBag() const { return &ScriptInputs; }
-
+	
 private:
 	/** A brief description of the blueprint. This can be displayed in the level editor viewport. */
 	UPROPERTY(EditInstanceOnly)
@@ -42,6 +42,32 @@ private:
 	
 	UPROPERTY(EditAnywhere)
 	FInstancedPropertyBag ScriptInputs;
+	
+public:
+#if WITH_EDITORONLY_DATA
+	/** This is not used in any active code. It is only used to determine if an actor has already been set to a specific reference type in the script graph. */
+	UPROPERTY(VisibleAnywhere)
+	TSet<TSoftObjectPtr<AActor>> SoftActorRefs;
+#endif
+	
+	/** This is not actively used for anything. Storing these forces World Partition to link this script owner actor with these actors so they're loaded together. This is required to remain in shipping runtime. */
+	UPROPERTY(VisibleAnywhere)
+	TSet<TObjectPtr<AActor>> HardActorRefs;
+	
+	// TODO: ACTOR STREAMABLE REFS
+	// This is disabled due to a plethora of technical challenges. I may try to come up with something to make it work one day.
+	// The intent was to make it possible for a script running to spawn a streaming source at the target actor, but it's VERY difficult to do this reliably.
+	/** Actors stored in here will get streaming sources spawned on them while the script runs. Location is ONLY updated during cook. */
+	// UPROPERTY(VisibleAnywhere)
+	// TMap<TSoftObjectPtr<AActor>, FVector> StreamingSourceActorRefs;
+	
+protected:
+	TArray<TWeakObjectPtr<AActor>> SpawnedStreamingSources;
+	
+public:
+	void SpawnStreamingSources(UObject* WorldContext);
+	
+	void DespawnStreamingSources();
 	
 #if WITH_EDITORONLY_DATA
 	// Used during construction of the ScriptClass only

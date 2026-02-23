@@ -193,6 +193,18 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 			.HAlign(HAlign_Center)	
 		]
 	];
+	
+	// TODO should I hide this
+	/*
+	TSharedPtr<IPropertyHandle> HardReferencedActors = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, HardActorRefs));
+	ChildBuilder.AddProperty(HardReferencedActors.ToSharedRef());
+	*/
+	
+	// TODO: ACTOR STREAMABLE REFS
+	/*
+	TSharedPtr<IPropertyHandle> StreamingSourceActors = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, StreamingSourceActorRefs));
+	ChildBuilder.AddProperty(StreamingSourceActors.ToSharedRef());
+	*/
 }
 
 // ----------------------------------------------
@@ -974,7 +986,7 @@ void FBangoScriptContainerCustomization::UpdateGraphWidgetBox()
 		[
 			SNew(SButton)
 			.ContentPadding(4)
-			.ButtonStyle(FAppStyle::Get(), "FlatButton.Default")
+			//.ButtonStyle(FAppStyle::Get(), "FlatButton.Default")
 			.ButtonStyle(FAppStyle::Get(), "HoverHintOnly")
 			.OnClicked(this, &FBangoScriptContainerCustomization::OnClicked_EditScript)
 			[

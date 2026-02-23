@@ -24,6 +24,12 @@ struct FBangoBrushes
 	FName Icon_PortalOut;
 	
 	FName Icon_EditScript;
+	FName Icon_SoftPointerIndicator;
+	FName Icon_StreamingSourceIndicator;
+	
+	FName Icon_ActorRefButton_Soft;
+	FName Icon_ActorRefButton_Hard;
+	FName Icon_ActorRefButton_StreamingSource;
 		
 	FName Border_InlineBlueprintGraph;
 };

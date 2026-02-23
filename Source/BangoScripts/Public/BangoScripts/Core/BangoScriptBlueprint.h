@@ -32,6 +32,8 @@ public:
 	
 	const IBangoScriptHolderInterface* GetScriptHolder() const;
 	
+	IBangoScriptHolderInterface* GetScriptHolderMutable();
+	
 	void SetOwnerActor(AActor* Actor);
 	
 	void SetScriptHolder(IBangoScriptHolderInterface& ScriptHolder);

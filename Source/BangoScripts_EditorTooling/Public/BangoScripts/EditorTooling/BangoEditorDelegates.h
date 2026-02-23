@@ -64,5 +64,8 @@ struct FBangoEditorDelegates
 	
 	// Can be broadcasted by game code (e.g. UBangoScriptComponent's PreSave func) to initiate an editor save of a script asset
 	BANGOSCRIPTS_EDITORTOOLING_API static TMulticastDelegate<void(IBangoScriptHolderInterface* ScriptHolder, TSoftClassPtr<UBangoScript> UnsavedScript)> RequestScriptSave;
+	
+	// TODO: ACTOR STREAMABLE REFS
+	// BANGOSCRIPTS_EDITORTOOLING_API static TDelegate<void(TSoftObjectPtr<AActor> TargetActor, bool& OutSuccess, FVector& OutLocation)> RequestActorLocation;
 };
 #endif

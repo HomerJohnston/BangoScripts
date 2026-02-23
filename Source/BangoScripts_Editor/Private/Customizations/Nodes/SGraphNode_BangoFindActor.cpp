@@ -1,5 +1,6 @@
 ﻿#include "SGraphNode_BangoFindActor.h"
 
+#include "BangoEditorStyle.h"
 #include "GraphEditorSettings.h"
 #include "IDocumentation.h"
 #include "SCommentBubble.h"
@@ -7,13 +8,19 @@
 #include "SGraphPin.h"
 #include "TutorialMetaData.h"
 #include "BangoScripts/Components/BangoActorIDComponent.h"
+#include "BangoScripts/Core/BangoScriptBlueprint.h"
+#include "BangoScripts/Core/BangoScriptContainer.h"
 #include "BangoScripts/Utility/BangoUtility.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
+#include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
 #include "Styling/SlateIconFinder.h"
 #include "Widgets/SToolTip.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
+
+#include "Private/BangoEditorStyle.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -128,6 +135,7 @@ TArray<FOverlayWidgetInfo> SGraphNode_BangoFindActor::GetOverlayWidgets(bool bSe
 {
 	TArray<FOverlayWidgetInfo> Widgets = SGraphNode::GetOverlayWidgets(bSelected, WidgetSize);
 	
+#if 0
 	TSoftObjectPtr<AActor> TargetActor = GetTargetActorSoft();
 	
 	if (!TargetActor.IsNull())
@@ -144,53 +152,7 @@ TArray<FOverlayWidgetInfo> SGraphNode_BangoFindActor::GetOverlayWidgets(bool bSe
 		.Image(FAppStyle::Get().GetBrush("Icons.FilledCircle"))
 		.DesiredSizeOverride(FVector2D(Size))
 		.ColorAndOpacity(Bango::Colors::Funcs::GetHashedColor(Hash, 1.0f, 1.0f));
-	
 		HashColorInfo.OverlayOffset = FVector2f(HPadding, WidgetSize.Y - Size - VPadding);
-	}
-	
-#if 0
-	if (!GetBangoFindActorNode()->GetTargetActor().IsNull())
-	{
-		return Widgets;
-	}
-	
-	TSubclassOf<AActor> Subclass = GetBangoFindActorNode()->GetCastTo();
-	
-	if (Subclass)
-	{
-		FString Label = Subclass->GetName();
-		
-		const int32 MaxChars = 15;
-		const FString Ellipsis = "...";
-		
-		if (Label.Len() > MaxChars + 3)
-		Label = Label.Left(MaxChars) + Ellipsis;
-		
-		FOverlayWidgetInfo& CastInfo = Widgets.Add_GetRef(FOverlayWidgetInfo());
-		
-		CastInfo.Widget = SNew(SBorder)
-		.BorderImage(nullptr)
-		.Padding(0)
-		.VAlign(VAlign_Center)
-		.HAlign(HAlign_Center)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			[
-				SNew(SImage)
-				.Image(FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.ViaCast")))
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.Padding(4, 0, 0, 0)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(Label))
-			]
-		];
-		
-		CastInfo.OverlayOffset = FVector2f((WidgetSize.X + 6), 14);
 	}
 #endif
 	
@@ -391,10 +353,44 @@ void SGraphNode_BangoFindActor::UpdateCompactNode()
 	
 	TSharedRef<SVerticalBox> InnerVerticalBox =
 		SNew(SVerticalBox)
-		+SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 		[
 			// NODE CONTENT AREA
 			SNew( SOverlay)
+			.Clipping(EWidgetClipping::ClipToBoundsAlways)
+			+ SOverlay::Slot()
+			.Padding(0, -32, 12, -32)
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SImage)
+				.Image_Lambda([this] ()
+				{
+					switch (GetHardActorReferenceState())
+					{
+						case EHardActorReferenceStatus::Unknown:
+						{
+							return FStyleDefaults::GetNoBrush();
+						}
+						case EHardActorReferenceStatus::HardReference:
+						{
+							return FStyleDefaults::GetNoBrush();
+						}
+						case EHardActorReferenceStatus::SoftReference:
+						{
+							return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_SoftPointerIndicator);
+						}
+						case EHardActorReferenceStatus::StreamingSource:
+						{
+							return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_StreamingSourceIndicator);
+						}
+					}
+					
+					return FStyleDefaults::GetNoBrush();
+				})
+				.ColorAndOpacity(this, &SGraphNode_BangoFindActor::ColorAndOpacity_SoftIndicator)
+				.DesiredSizeOverride(FVector2D(64.0, 64.0))
+			]
 			+SOverlay::Slot()
 			[
 				SNew(SImage)
@@ -412,7 +408,79 @@ void SGraphNode_BangoFindActor::UpdateCompactNode()
 				SNew(SImage)
 				.Image( GetStyleSet().GetBrush("Graph.VarNode.Gloss") )
 			]
-			+SOverlay::Slot()
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(8, 26, 12, 0)
+			[
+				SNew(SBox)
+				.HeightOverride(16)
+				.WidthOverride(16)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(SButton)
+					.ContentPadding(0)
+					.ButtonStyle(FAppStyle::Get(), "HoverHintOnly")
+					.OnClicked(this, &SGraphNode_BangoFindActor::OnClicked_ToggleHard)
+					.ToolTipText_Lambda([this]()
+					{
+						switch (GetHardActorReferenceState())
+						{
+							case EHardActorReferenceStatus::Unknown:
+							{
+								return LOCTEXT("BangoActorRefNode_Unloaded", "Unknown");
+							}
+							case EHardActorReferenceStatus::HardReference:
+							{
+								return LOCTEXT("BangoActorRefNode_HardRef", "Hard Ref");
+							}
+							case EHardActorReferenceStatus::SoftReference:
+							{
+								return LOCTEXT("BangoActorRefNode_SoftRef", "Soft Ref - WARNING: you must ensure actor will be loaded when script runs!");
+							}
+							case EHardActorReferenceStatus::StreamingSource:
+							{
+								return LOCTEXT("BangoActorRefNode_StreamingSource", "Streaming Source");
+							}
+						}
+							
+						return LOCTEXT("BangoActorRefNode_Error", "Error");
+					})
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(SImage)
+						.Image_Lambda([this] ()
+						{
+							switch (GetHardActorReferenceState())
+							{
+								case EHardActorReferenceStatus::Unknown:
+								{
+									return FAppStyle::Get().GetBrush("Icons.FilledCircle");
+								}
+								case EHardActorReferenceStatus::HardReference:
+								{
+									return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_ActorRefButton_Hard);
+								}
+								case EHardActorReferenceStatus::SoftReference:
+								{
+									return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_ActorRefButton_Soft);
+								}
+								case EHardActorReferenceStatus::StreamingSource:
+								{
+									return FBangoEditorStyle::GetImageBrush(BangoEditorBrushes.Icon_ActorRefButton_StreamingSource);
+								}
+							}
+							
+							return FAppStyle::Get().GetBrush("Icons.FilledCircle");
+						})
+						.DesiredSizeOverride(FVector2D(16.0f))
+						.ColorAndOpacity(Bango::Colors::Funcs::GetHashedColor(GetTypeHash(GetTargetActorSoft()), 1.0f, 1.0f))
+					]
+				]
+			]
+			+ SOverlay::Slot()
 			.Padding( FMargin(0,3) )
 			[
 				NodeOverlay
@@ -584,6 +652,76 @@ FText SGraphNode_BangoFindActor::Text_BangoNameIndicator() const
 			return INVTEXT("MISSING ID COMPONENT");
 		}
 	}
+}
+
+void SGraphNode_BangoFindActor::OnCheckStateChanged_SoftStatus(ECheckBoxState CheckBoxState) const
+{
+	GetBangoFindActorNode()->ToggleHard();
+}
+
+FSlateColor SGraphNode_BangoFindActor::ColorAndOpacity_SoftIndicator() const
+{
+	switch (GetHardActorReferenceState())
+	{
+		case EHardActorReferenceStatus::Unknown:
+		{
+			return Bango::Colors::Yellow_SemiTrans;
+		}
+		case EHardActorReferenceStatus::HardReference:
+		{
+			return Bango::Colors::Transparent;
+		}
+		case EHardActorReferenceStatus::SoftReference:
+		{
+			return Bango::Colors::SoftPointerCyan;
+		}
+		case EHardActorReferenceStatus::StreamingSource:
+		{
+			return Bango::Colors::Orange.Desaturate(0.5f);
+		}
+	}
+	
+	return Bango::Colors::Error;
+}
+
+SGraphNode_BangoFindActor::EHardActorReferenceStatus SGraphNode_BangoFindActor::GetHardActorReferenceState() const
+{
+	using enum EHardActorReferenceStatus;
+	
+	if (GetTargetActorSoft().IsNull())
+	{
+		return Unknown;
+	}
+
+	AActor* Actor = GetTargetActorSoft().Get();
+	
+	if (UBangoScriptBlueprint* Blueprint = GetBangoFindActorNode()->GetBangoScriptBlueprint())
+	{
+		if (const IBangoScriptHolderInterface* Interface = Blueprint->GetScriptHolder())
+		{
+			if (Interface->GetScriptContainer().HardActorRefs.Contains(Actor))
+			{
+				return HardReference;
+			}
+			
+			// TODO: ACTOR STREAMABLE REFS
+			/*
+			if (Interface->GetScriptContainer().StreamingSourceActorRefs.Contains(GetTargetActorSoft()))
+			{
+				return StreamingSource;
+			}
+			*/
+		}
+	}
+	
+	return SoftReference;
+}
+
+FReply SGraphNode_BangoFindActor::OnClicked_ToggleHard()
+{
+	GetBangoFindActorNode()->ToggleHard();
+	
+	return FReply::Handled();
 }
 
 void SGraphNode_BangoFindActor::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)

@@ -3,9 +3,13 @@
 #include "K2Node_DynamicCast.h"
 #include "Selection.h"
 #include "UnrealEdGlobals.h"
+#include "BangoScripts/Core/BangoScriptBlueprint.h"
+#include "BangoScripts/Core/BangoScriptContainer.h"
 #include "BangoScripts/Subsystem/BangoActorIDSubsystem.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
+#include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 #include "BangoScripts/EditorTooling/BangoHelpers.h"
+#include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
 #include "BangoScripts/Uncooked/K2Nodes/Base/_BangoMenuSubcategories.h"
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder.h"
 #include "Editor/UnrealEdEngine.h"
@@ -13,6 +17,8 @@
 #include "WorldPartition/WorldPartition.h"
 
 #include "BangoScripts/Uncooked/NodeBuilder/BangoNodeBuilder_Macros.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -46,7 +52,7 @@ FText UK2Node_BangoFindActor::GetTooltipText() const
 {
 	if (!TargetActor.IsNull())
 	{
-		return LOCTEXT("TooltipText_BangoFindActorNode_TargetActor", "Soft actor pointer lookup");
+		return LOCTEXT("TooltipText_BangoFindActorNode_TargetActor", "Actor Reference");
 	}
 	
 	return LOCTEXT("TooltipText_BangoFindActorNode_BangoName", "Bango ID Component lookup.");
@@ -65,6 +71,35 @@ void UK2Node_BangoFindActor::PostEditChangeProperty(struct FPropertyChangedEvent
 void UK2Node_BangoFindActor::PostPlacedNewNode()
 {
 	Super::PostPlacedNewNode();
+
+	InitializeInternal();
+}
+
+void UK2Node_BangoFindActor::PostPasteNode()
+{
+	Super::PostPasteNode();
+	
+	InitializeInternal();
+}
+
+void UK2Node_BangoFindActor::InitializeInternal()
+{
+	if (!bInitialized)
+	{
+		if (TargetActor.IsValid())
+		{
+			if (UWorld* ActorWorld = TargetActor.Get()->GetWorld())
+			{
+				if (ActorWorld->GetWorldPartition())
+				{
+					ToggleHard();
+				}
+			}
+		}
+		
+		Modify();
+		bInitialized = true;
+	}
 }
 
 void UK2Node_BangoFindActor::AllocateDefaultPins()
@@ -179,16 +214,6 @@ void UK2Node_BangoFindActor::ExpandNode_SoftActor(class FKismetCompilerContext& 
 	auto Node_SoftObjectRef =			Builder.MakeNode<NB::CallFunction>(1, 1);
 	auto Node_ResolveObject =			Builder.MakeNode<NB::CallFunction>(1, 1);
 	
-	/*
-	*
-	UK2Node_CallFunction* ConvertToSoftObjectRef = Compiler->SpawnIntermediateNode<UK2Node_CallFunction>(OriginNode, Graph);
-	ConvertToSoftObjectRef->FunctionReference.SetExternalMember(GET_FUNCTION_NAME_CHECKED(UKismetSystemLibrary, Conv_SoftObjPathToSoftObjRef), UKismetSystemLibrary::StaticClass());
-	ConvertToSoftObjectRef->AllocateDefaultPins();
-
-	UK2Node_CallFunction* ConvertToObjectFunc = Compiler->SpawnIntermediateNode<UK2Node_CallFunction>(OriginNode, Graph);
-	ConvertToObjectFunc->FunctionReference.SetExternalMember(GET_FUNCTION_NAME_CHECKED(UKismetSystemLibrary, Conv_SoftObjectReferenceToObject), UKismetSystemLibrary::StaticClass());
-	ConvertToObjectFunc->AllocateDefaultPins();
-	*/
 	// -----------------
 	// Post-setup
 
@@ -359,6 +384,56 @@ void UK2Node_BangoFindActor::JumpToDefinition() const
 
 	// Execute the command to move camera to the object(s).
 	GUnrealEd->Exec_Camera( TEXT("ALIGN ACTIVEVIEWPORTONLY"),*GLog); 
+}
+
+void UK2Node_BangoFindActor::ToggleHard()
+{
+	// Don't permit *any* editing if the actor isn't loaded and present in the world
+	if (TargetActor.IsNull() || TargetActor.IsPending())
+	{
+		FText Title = LOCTEXT("BangoChangeActorRefHardness_FailTitle", "Cannot Change Ref Type");
+		float Duration = 6.0f;
+		FText Description = LOCTEXT("BangoChangeActorRefHardness_FailDescription_Unloaded", "Actor reference is null or unloaded; must be loaded to change this setting!");
+		FNotificationInfo NotificationInfo(Title);
+		NotificationInfo.ExpireDuration = Duration;
+		NotificationInfo.Image = FAppStyle::GetBrush("Icons.WarningWithColor");
+		NotificationInfo.SubText = Description;
+		FSlateNotificationManager::Get().AddNotification(NotificationInfo);
+		
+		return;
+	}
+
+	AActor* Actor = TargetActor.Get();
+	
+	// TODO: ACTOR STREAMABLE REFS
+	IBangoScriptHolderInterface* ScriptHolder = GetBangoScriptBlueprint()->GetScriptHolderMutable();
+	TSet<TSoftObjectPtr<AActor>>& SoftActorRefs = ScriptHolder->GetScriptContainer().SoftActorRefs;
+	TSet<TObjectPtr<AActor>>& HardActorRefs = ScriptHolder->GetScriptContainer().HardActorRefs;
+	// TMap<TSoftObjectPtr<AActor>, FVector>& StreamingSourceActorRefs = ScriptHolder->GetScriptContainer().StreamingSourceActorRefs;
+
+	if (SoftActorRefs.Contains(TargetActor))
+	{
+		ScriptHolder->_getUObject()->Modify();
+		SoftActorRefs.Remove(TargetActor);
+		HardActorRefs.Add(Actor);
+	}
+	/*
+	else if (StreamingSourceActorRefs.Contains(TargetActor))
+	{
+		ScriptHolder->_getUObject()->Modify();
+		StreamingSourceActorRefs.Remove(TargetActor);
+		HardActorRefs.Add(Actor);
+	}*/
+	else if (HardActorRefs.Contains(Actor))
+	{
+		ScriptHolder->_getUObject()->Modify();
+		HardActorRefs.Remove(Actor);
+	}
+	else
+	{
+		ScriptHolder->_getUObject()->Modify();
+		HardActorRefs.Add(Actor);
+	}
 }
 
 bool UK2Node_BangoFindActor::CanEditChange(const FProperty* InProperty) const

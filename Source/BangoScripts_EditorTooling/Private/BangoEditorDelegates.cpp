@@ -27,3 +27,6 @@ TMulticastDelegate<void(IBangoScriptHolderInterface* Requester, const TSoftObjec
 TMulticastDelegate<void(UBangoScriptComponent* ScriptComponent, EBangoScriptComponentRegisterStatus RegistrationStatus)> FBangoEditorDelegates::ScriptComponentRegistered;
 
 TMulticastDelegate<void(IBangoScriptHolderInterface* ScriptHolder, TSoftClassPtr<UBangoScript> UnsavedScript)> FBangoEditorDelegates::RequestScriptSave;
+
+// TODO: ACTOR STREAMABLE REFS
+// TDelegate<void(TSoftObjectPtr<AActor> TargetActor, bool& OutSuccess, FVector& OutLocation)> FBangoEditorDelegates::RequestActorLocation;

@@ -88,6 +88,8 @@ public:
 	
 	void PostLoad() override;
 	
+	void OnCookEvent(UE::Cook::ECookEvent CookEvent, UE::Cook::FCookEventContext& Context) override;
+	
 	void BeginDestroy() override;
 	
 	void FinishDestroy() override;
@@ -102,8 +104,6 @@ public:
 	void InvalidateLightingCacheDetailed(bool bInvalidateBuildEnqueuedLighting, bool bTranslationOnly) override;
 	
 	void PreSave(FObjectPreSaveContext SaveContext) override;
-	
-	bool bSaving = false;
 	
 	void PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext) override;
 	
@@ -147,13 +147,12 @@ protected:
 	UPROPERTY(Category = "Bango", AdvancedDisplay, EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/BangoScripts.EBangoScriptComponentAllowedNetConfigs"))
 	uint8 AllowedNetConfigs;
 	
-#if WITH_EDITORONLY_DATA
 	UPROPERTY(Transient)
 	FBangoScriptHandle RunningHandle;
 
+#if WITH_EDITORONLY_DATA
     UPROPERTY(Transient)
     TObjectPtr<UBillboardComponent> BillboardInstance;
-	
 public:
 	FOctreeElementId2 DebugElementId;
 	
@@ -167,6 +166,8 @@ public:
 	void Run();
 	
 protected:
+	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
+	
 	bool ContextPassesAllowFlags() const;
 	
 #if WITH_EDITOR
@@ -176,8 +177,6 @@ public:
 	
 	void SetScriptBlueprint(UBangoScriptBlueprint* Blueprint); 
 	
-	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
-	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	
 	// This one is non-const because during PIE/Simulate we have the option of dynamically running the script. UBangoScriptComponent::Run() is mutable.
@@ -186,6 +185,8 @@ public:
 	void PreEditUndo() override;
 
 	void PostEditUndo(TSharedPtr<ITransactionObjectAnnotation> TransactionAnnotation) override;
+	
+	void PreDuplicate(FObjectDuplicationParameters& DupParams) override;
 	
 	UBillboardComponent* GetBillboard() const { return BillboardInstance; }
 	

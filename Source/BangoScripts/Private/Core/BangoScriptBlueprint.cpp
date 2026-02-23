@@ -46,6 +46,15 @@ const TSoftObjectPtr<AActor> UBangoScriptBlueprint::GetOwnerActor() const
 #if WITH_EDITOR
 const IBangoScriptHolderInterface* UBangoScriptBlueprint::GetScriptHolder() const
 {
+	return const_cast<UBangoScriptBlueprint*>(this)->GetScriptHolderMutable();
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+IBangoScriptHolderInterface* UBangoScriptBlueprint::GetScriptHolderMutable()
+{
 	FSoftObjectPath ObjectPath(ScriptHolderObjectPath);
 	TSoftObjectPtr<UObject> ObjectSoft = TSoftObjectPtr<UObject>(ObjectPath);
 	
