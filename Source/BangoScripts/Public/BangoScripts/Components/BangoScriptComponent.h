@@ -103,8 +103,6 @@ public:
 	
 	void PreSave(FObjectPreSaveContext SaveContext) override;
 	
-	bool bSaving = false;
-	
 	void PreSaveRoot(FObjectPreSaveRootContext ObjectSaveContext) override;
 	
 	void PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
@@ -147,13 +145,12 @@ protected:
 	UPROPERTY(Category = "Bango", AdvancedDisplay, EditAnywhere, meta = (Bitmask, BitmaskEnum = "/Script/BangoScripts.EBangoScriptComponentAllowedNetConfigs"))
 	uint8 AllowedNetConfigs;
 	
-#if WITH_EDITORONLY_DATA
 	UPROPERTY(Transient)
 	FBangoScriptHandle RunningHandle;
 
+#if WITH_EDITORONLY_DATA
     UPROPERTY(Transient)
     TObjectPtr<UBillboardComponent> BillboardInstance;
-	
 public:
 	FOctreeElementId2 DebugElementId;
 	
@@ -167,6 +164,8 @@ public:
 	void Run();
 	
 protected:
+	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
+	
 	bool ContextPassesAllowFlags() const;
 	
 #if WITH_EDITOR
@@ -175,8 +174,6 @@ public:
 	UBangoScriptBlueprint* GetScriptBlueprint(bool bForceLoad = false) const;
 	
 	void SetScriptBlueprint(UBangoScriptBlueprint* Blueprint); 
-	
-	void OnScriptFinished(FBangoScriptHandle FinishedHandle);
 	
 	static TMulticastDelegate<void(FBangoDebugDrawCanvas& Canvas, UBangoScriptComponent* ScriptComponent)> OnDebugDrawEditor;
 	

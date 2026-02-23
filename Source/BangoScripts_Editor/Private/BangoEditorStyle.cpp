@@ -191,16 +191,21 @@ void FBangoEditorStyle::SetupStyles()
 	// BRUSHES - SVGs
 	// ============================================================================================
 	//	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Chevron_Right,				"Icon_Chevron_Right", ".svg",			FVector2f(16, 16), Bango::Colors::White);
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Hourglass,						"NodeIcons/Icon_Hourglass", ".svg",				FVector2f(20, 20), Bango::Colors::White);
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PauseHand,						"NodeIcons/Icon_PauseHand", ".svg",				FVector2f(20, 20), Bango::Colors::White);
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Plunger,						"NodeIcons/Icon_Plunger", ".svg",				FVector2f(20, 20), Bango::Colors::White);
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Plunger_Dim,					"NodeIcons/Icon_Plunger", ".svg",				FVector2f(20, 20), Bango::Colors::White_Trans);
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PortalIn,						"NodeIcons/Icon_PortalIn", ".svg",				FVector2f(20, 20), Bango::Colors::White);
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PortalOut,						"NodeIcons/Icon_PortalOut", ".svg",				FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Hourglass,						"NodeIcons/Icon_Hourglass", ".svg",						FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PauseHand,						"NodeIcons/Icon_PauseHand", ".svg",						FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Plunger,						"NodeIcons/Icon_Plunger", ".svg",						FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_Plunger_Dim,					"NodeIcons/Icon_Plunger", ".svg",						FVector2f(20, 20), Bango::Colors::White_Trans);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PortalIn,						"NodeIcons/Icon_PortalIn", ".svg",						FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_PortalOut,						"NodeIcons/Icon_PortalOut", ".svg",						FVector2f(20, 20), Bango::Colors::White);
+		
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_SoftPointerIndicator,			"NodeIcons/Icon_SoftPointerIndicator", ".svg",				FVector2f(20, 20), Bango::Colors::White);
+	 
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_ActorRefButton_Soft,			"ButtonIcons/Icon_ActorRefButton_Soft", ".svg",				FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_ActorRefButton_Hard,			"ButtonIcons/Icon_ActorRefButton_Hard", ".svg",				FVector2f(20, 20), Bango::Colors::White);
 	
-	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_EditScript,					"ButtonIcons/Icon_EditScript", ".svg",			FVector2f(20, 20), Bango::Colors::White);
+	BANGO_DEFINE_BRUSH(FSlateVectorImageBrush,	Icon_EditScript,					"ButtonIcons/Icon_EditScript", ".svg",						FVector2f(20, 20), Bango::Colors::White);
 	
-	BANGO_DEFINE_BRUSH(FSlateBorderBrush,		Border_InlineBlueprintGraph,		"Textures/Border_2px_White_Sharp", ".png",		FMargin(4.0f / 8.0f));
+	BANGO_DEFINE_BRUSH(FSlateBorderBrush,		Border_InlineBlueprintGraph,		"Textures/Border_2px_White_Sharp", ".png",				FMargin(4.0f / 8.0f));
 	
 	// ============================================================================================
 	// SLIDER STYLES

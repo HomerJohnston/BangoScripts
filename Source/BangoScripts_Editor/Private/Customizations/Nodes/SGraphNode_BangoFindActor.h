@@ -8,6 +8,13 @@ class FBangoFindActorAction;
 
 class SGraphNode_BangoFindActor : public SGraphNodeK2Base
 {
+	enum class EHardActorReferenceStatus
+	{
+		Unknown,
+		HardReference,
+		SoftReference,
+	};
+	
 public:
 	SLATE_BEGIN_ARGS(SGraphNode_BangoFindActor)
 	{
@@ -45,6 +52,12 @@ public:
 	EVisibility Visibility_UnloadedIndicator() const;
 	
 	FText Text_BangoNameIndicator() const;
+
+	FSlateColor ColorAndOpacity_SoftIndicator() const;
+	
+	EHardActorReferenceStatus GetHardActorReferenceState() const;
+	
+	FReply OnClicked_ToggleHard();
 	
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	

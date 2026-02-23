@@ -2,7 +2,6 @@
 
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
-#include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
 
 #if WITH_EDITOR
@@ -14,6 +13,8 @@
 FBangoScriptContainer::FBangoScriptContainer()
 {
 }
+
+// ----------------------------------------------
 
 #if WITH_EDITOR
 void FBangoScriptContainer::SetGuid(const FGuid& InGuid)

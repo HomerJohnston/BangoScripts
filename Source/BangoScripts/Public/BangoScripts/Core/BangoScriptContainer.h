@@ -28,8 +28,8 @@ public:
 	const TSoftClassPtr<UBangoScript>& GetScriptClass() const { return ScriptClass; }
 
 	const FInstancedPropertyBag* GetPropertyBag() const { return &ScriptInputs; }
-
-private:
+	
+protected:
 	/** A brief description of the blueprint. This can be displayed in the level editor viewport. */
 	UPROPERTY(EditInstanceOnly)
 	FString Description = "";
@@ -43,7 +43,19 @@ private:
 	UPROPERTY(EditAnywhere)
 	FInstancedPropertyBag ScriptInputs;
 	
+public:
 #if WITH_EDITORONLY_DATA
+	/** This is not used in any active code. It is only used to determine if an actor has already been set to a specific reference type in the script's graph. */
+	UPROPERTY(VisibleAnywhere)
+	TSet<TSoftObjectPtr<AActor>> SoftActorRefs;
+#endif
+	
+	/** This is not actively used for anything. Storing these forces World Partition to link this script owner actor with these actors so they're loaded together. This is required to remain in shipping runtime. */
+	UPROPERTY(VisibleAnywhere)
+	TSet<TObjectPtr<AActor>> HardActorRefs;
+	
+#if WITH_EDITORONLY_DATA
+protected:
 	// Used during construction of the ScriptClass only
 	FString RequestedName = "";
 	bool bNewLeveScriptRequested = false;

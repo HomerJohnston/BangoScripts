@@ -25,12 +25,16 @@ public:
 	UK2Node_BangoFindActor();
 	
 	/** Change to the desired class to cast the output automatically. */
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> CastTo;
+	UPROPERTY(Category = "Default", EditAnywhere)
+	TSubclassOf<AActor> CastTo = nullptr;
 	
 	/** Level-blueprint-like actor reference, used by dragging an actor onto the blueprint from the world outliner. */
-	UPROPERTY(VisibleAnywhere)
-	TSoftObjectPtr<AActor> TargetActor;
+	UPROPERTY(Category = "Default", VisibleAnywhere, DisplayName = "Actor")
+	TSoftObjectPtr<AActor> TargetActor = nullptr;
+	
+	/** This is only used for copy/paste/new node detection */
+	UPROPERTY()
+	bool bInitialized = false;
 	
 	/** Used by the slate widget to highlight the node. */
 	EBangoFindActorNode_ErrorState ErrorState;
@@ -55,7 +59,11 @@ public:
 public:
 	void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
-	virtual void PostPlacedNewNode() override;
+	void PostPlacedNewNode() override;
+	
+	void PostPasteNode() override;
+	
+	void InitializeInternal();
 	
 	void AllocateDefaultPins() override;
 	
@@ -77,6 +85,8 @@ public:
 	
 	void JumpToDefinition() const override;
 	
+	BANGOSCRIPTS_UNCOOKED_API void ToggleHard();
+
 	// Intentionally unreflected; slate widgets will update this whenever the node is selected. The ScriptComponent visualizer will use it to highlight recently selected connections.
 	uint64 LastSelectedFrame = 0;
 	

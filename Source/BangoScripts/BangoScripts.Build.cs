@@ -6,11 +6,11 @@ public class BangoScripts : ModuleRules
 {
 	public BangoScripts(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		bUseUnity = true;
+		// PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		// bUseUnity = true;
 
-		// PCHUsage = ModuleRules.PCHUsageMode.NoPCHs;
-		// bUseUnity = false;
+		PCHUsage = ModuleRules.PCHUsageMode.NoPCHs;
+		bUseUnity = false;
 
 		PublicIncludePaths.AddRange(
 			new string[] {

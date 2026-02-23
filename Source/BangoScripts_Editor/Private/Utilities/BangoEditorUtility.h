@@ -75,7 +75,10 @@ namespace Bango::Editor
 	void DrawCircle_ScreenSpace(const FSceneView& View, FCanvas& Canvas, const FVector& ScreenPosition, float Radius, float Thickness, const FLinearColor& Color);
 	
 	//
-	void DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff = 0.0f, float EndCutoff = 0.0f);
+	void DrawDashedLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float DashLength = 100.0f, float StartCutoff = 0.0f, float EndCutoff = 0.0f);
+	
+	//
+	void DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart, const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff = 0.0f, float EndCutoff = 0.0f, float DashLength = 0.0f);
 	
 	//
 	bool GetActorScreenPos(const FSceneView& View, const AActor& Actor, FVector& OutWorldPosition, FVector& OutScreenPosition);

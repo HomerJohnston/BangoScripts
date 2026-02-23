@@ -188,6 +188,8 @@ void UBangoScriptSubsystem::AbortScript(UObject* Requester, FBangoScriptHandle& 
 	Handle.Invalidate();
 }
 
+// ----------------------------------------------
+
 void UBangoScriptSubsystem::RegisterOnScriptFinished(UObject* WorldContext, FBangoScriptHandle RunningHandle, const TDelegate<void(FBangoScriptHandle)>& Delegate)
 {
 	check(WorldContext);
@@ -225,6 +227,8 @@ void UBangoScriptSubsystem::Tick(float DeltaTime, ELevelTick TickType, ENamedThr
 	
 	LaunchQueuedScripts();
 }
+
+// ----------------------------------------------
 
 void UBangoScriptSubsystem::PruneFinishedScripts(UWorld* World)
 {

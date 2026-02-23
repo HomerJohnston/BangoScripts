@@ -4,13 +4,14 @@
 #include "SceneView.h"
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
 #include "BangoScripts/Core/BangoScript.h"
+#include "BangoScripts/Core/BangoScriptContainer.h"
 #include "BangoScripts/EditorTooling/BangoColors.h"
+#include "BangoScripts/EditorTooling/BangoDebugUtility.h"
 #include "BangoScripts/Utility/BangoScriptsLog.h"
 #include "BangoScripts/EditorTooling/BangoScriptsEditorLog.h"
 #include "BangoScripts/Interfaces/BangoScriptContainerObjectInterface.h"
 #include "BangoScripts/Uncooked/K2Nodes/K2Node_BangoFindActor.h"
 #include "BlueprintEditor/BangoScriptBlueprintEditor.h"
-#include "HAL/FileManager.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "WorldPartition/WorldPartition.h"
 #include "EdGraph/EdGraph.h"
@@ -18,15 +19,16 @@
 #include "Engine/GameViewportClient.h"
 #include "Unsorted/BangoActorNodeDraw.h"
 #include "Widgets/SViewport.h"
+#include "WorldPartition/WorldPartitionSubsystem.h"
 
 // ----------------------------------------------
-
-struct FBangoActorNodeDraw;
 
 FString Bango::Editor::GetGameScriptRootFolder()
 {
 	return TEXT("__BangoScripts__");
 }
+
+// ----------------------------------------------
 
 const TCHAR* Bango::Editor::GetLevelScriptNamePrefix()
 {
@@ -165,7 +167,6 @@ UPackage* Bango::Editor::MakeLevelScriptPackage_Internal(AActor* Actor, UObject*
 		FString ActorFName = Actor->GetFName().ToString();
 		
 		ActorFolderPath = ActorFName;
-		//ActorFolderPath.RemoveFromStart(ActorClass);
 	}
 	
 	check(!ActorFolderPath.IsEmpty());
@@ -303,6 +304,8 @@ void Bango::Editor::DebugDrawBlueprintToViewport(UCanvas* Canvas, APlayerControl
 	DebugDrawActorConnections(*Blueprint, *Canvas->SceneView, *Canvas->Canvas);
 }
 
+// ----------------------------------------------
+
 void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBlueprint, const FSceneView& View,	FCanvas& Canvas)
 {
 	const IBangoScriptHolderInterface* ScriptHolder = ScriptBlueprint.GetScriptHolder();
@@ -316,7 +319,7 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 	{
 		return;
 	}
-		
+	
     if (const UBangoScript* Script = GetDefault<UBangoScript>(ScriptBlueprint.GeneratedClass))
     {
         if (Script->HideActorReferenceIndicators())
@@ -326,6 +329,36 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
     }
 
 	AActor& OwnerActor = *ScriptBlueprint.GetOwnerActor().Get();
+
+	FName ScriptWPGridName = NAME_None;
+	
+	auto GetWPGridCellName = [] (TSoftObjectPtr<AActor> ActorSoft) -> FName
+	{
+		if (AActor* Actor = ActorSoft.Get())
+		{
+			if (UWorld* World = Actor->GetWorld())
+			{
+				if (UWorldPartition* WorldPartition = World->GetWorldPartition())
+				{
+					UActorDescContainerInstance* ActorDescContainer = WorldPartition->GetActorDescContainerInstance();
+		
+					if (ActorDescContainer)
+					{
+						const FWorldPartitionActorDescInstance* ActorDesc = ActorDescContainer->GetActorDescInstanceByPath(FSoftObjectPath(Actor));
+			
+						if (ActorDesc)
+						{
+							return ActorDesc->GetRuntimeGrid();
+						}
+					}
+				}
+			}
+		}
+		
+		return NAME_None;
+	};
+	
+	ScriptWPGridName = GetWPGridCellName(ScriptBlueprint.GetOwnerActor());
 	
 	FVector DrawOrigin = OwnerActor.GetActorLocation() + ScriptHolder->GetDebugDrawOrigin();
 	
@@ -354,6 +387,13 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 			{
 				const TSoftObjectPtr<AActor> TargetActor = Node->GetTargetActor();
 			
+				if (ScriptWPGridName != NAME_None)
+				{
+					FName ThisActorWPGridName = GetWPGridCellName(TargetActor);
+					
+					UE_LOG(LogTemp, Warning, TEXT("%s --- %s"), *ScriptWPGridName.ToString(), *ThisActorWPGridName.ToString());
+				}
+				
 				if (const AActor* Actor = TargetActor.Get())
 				{
 					if (Actor->IsLockLocation())
@@ -370,10 +410,10 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 				}
 			}
 			
-			const float BaseRadius = 0.005 * View.UnscaledViewRect.Size().Y;// Canvas.GetViewRect().Size().Y;// Viewport.GetSizeXY().Y;
+			const float BaseRadius = 0.005 * View.UnscaledViewRect.Size().Y;
 
 			// Now we draw
-			for (const FBangoActorNodeDraw& ActorNode : UniqueFindActorNodes)// int32 i = 0; i < VisitedActors FindActorNodes.Num(); ++i)
+			for (const FBangoActorNodeDraw& ActorNode : UniqueFindActorNodes)
 			{
 				if (!ActorNode.Actor.IsValid())
 				{
@@ -395,9 +435,9 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 				{
 					return;
 				}
-				
+								
 				DrawCircle_ScreenSpace(View, Canvas, TargetActorScreenPos, Radius, Thickness, Color);					
-				
+
 				// Draw connection line
 				FVector Delta = ActorNode.Actor->GetActorLocation() - DrawOrigin;
 				
@@ -408,7 +448,17 @@ void Bango::Editor::DebugDrawActorConnections(UBangoScriptBlueprint& ScriptBluep
 					FVector Start = DrawOrigin;
 					FVector End = TargetActorWorldPos;
 			
-					Bango::Editor::DrawLine_WorldSpace(View, Canvas, Start, End, Thickness, Color, StartDrawDistance);
+					float DashLength = 0.0f;
+					
+					if (const IBangoScriptHolderInterface* Interface = ScriptBlueprint.GetScriptHolder())
+					{
+						if (!Interface->GetScriptContainer().HardActorRefs.Contains(&Actor))
+						{
+							DashLength = 150.0f;
+						}
+					}
+					
+					Bango::Editor::DrawLine_WorldSpace(View, Canvas, Start, End, Thickness, Color, StartDrawDistance, 0.0f, DashLength);
 				}
 			}
 		}
@@ -475,7 +525,7 @@ void Bango::Editor::DrawCircle_ScreenSpace(const FSceneView& View, FCanvas& Canv
 
 // ----------------------------------------------
 
-void Bango::Editor::DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart,	const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff)
+void Bango::Editor::DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas, const FVector& WorldStart,	const FVector& WorldEnd, float Thickness, const FLinearColor& Color, float StartCutoff, float EndCutoff, float DashLength)
 {
 	FVector Delta = WorldEnd - WorldStart;
 	if (Delta.SizeSquared() <= FMath::Square(StartCutoff + EndCutoff))
@@ -508,28 +558,66 @@ void Bango::Editor::DrawLine_WorldSpace(const FSceneView& View, FCanvas& Canvas,
 		TrueEnd = ClipPlane.GetNormal() + FMath::LinePlaneIntersection(TrueStart, TrueEnd, ClipPlane.GetOrigin(), ClipPlane.GetNormal());
 	}
 	
-	FVector ScreenStart;
-	FVector ScreenEnd;
+	if (DashLength <= KINDA_SMALL_NUMBER)
+	{
+		DashLength = 999999999.0f;
+	}
 	
-	if (!GetScreenPos(View, TrueStart, ScreenStart))
+	int32 Segments = 1 + (TrueEnd - TrueStart).Length() / (DashLength);
+	
+	FRay Ray(TrueStart, TrueEnd - TrueStart);
+	
+	for (int32 i = 0; i < Segments; ++i)
 	{
-		return;
-	}
+		FVector DashStart = Ray.Origin + i * (DashLength) * Ray.Direction;
 
-	if (!GetScreenPos(View, TrueEnd, ScreenEnd))
-	{
-		return;
-	}
+		FVector DashEnd;
 
-	if ((TrueEnd - TrueStart).Dot(LineDir) <= 0.0f)
-	{
-		return;
-	}
+		if (i >= Segments - 1)
+		{
+			DashEnd = TrueEnd;
+		}
+		else
+		{
+			DashEnd = DashStart + DashLength * Ray.Direction;
+		}
+
+		FVector ScreenStart;
+		FVector ScreenEnd;
+	
+		if (!GetScreenPos(View, DashStart, ScreenStart))
+		{
+			return;
+		}
+
+		if (!GetScreenPos(View, DashEnd, ScreenEnd))
+		{
+			return;
+		}
+
+		if ((DashEnd - DashStart).Dot(LineDir) <= 0.0f)
+		{
+			return;
+		}
 	 
-	FCanvasLineItem Line(FVector2D(ScreenStart.X, ScreenStart.Y), FVector2D(ScreenEnd.X, ScreenEnd.Y));
-	Line.LineThickness = Thickness;
-	Line.SetColor(Color);
-	Canvas.DrawItem(Line);
+		FCanvasLineItem Line(FVector2D(ScreenStart.X, ScreenStart.Y), FVector2D(ScreenEnd.X, ScreenEnd.Y));
+	
+		FLinearColor DashColor = Color;
+		float DashThickness = Thickness;
+		
+		if (FMath::Modulo(i+1, 2) == 0)
+		{
+			DashColor = Color * 0.25f;
+			DashThickness = Thickness - 1.0f;
+		}
+		
+		if (DashThickness > KINDA_SMALL_NUMBER)
+		{
+			Line.LineThickness = DashThickness;
+			Line.SetColor(DashColor);
+			Canvas.DrawItem(Line);
+		}
+	}
 }
 
 // ----------------------------------------------
@@ -592,11 +680,7 @@ bool Bango::Editor::IsGameViewportFocused()
 
         if (ViewportWidget->HasAnyUserFocus())
         {
-            // APlayerController* PC = World->GetFirstPlayerController();
-            // if (PC && PC->GetPawn())
-            //  {
             return true;
-            // }
         }
     }
     
