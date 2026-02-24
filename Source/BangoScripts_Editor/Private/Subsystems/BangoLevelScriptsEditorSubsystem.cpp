@@ -8,6 +8,7 @@
 #include "BangoScripts/Core/BangoScriptBlueprint.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "BangoScripts/Core/BangoScriptContainer.h"
+#include "BangoScripts/EditorTooling/BangoDebugUtility.h"
 #include "BangoScripts/EditorTooling/BangoEditorDelegates.h"
 #include "BangoScripts/EditorTooling/BangoScriptHelperSubsystem.h"
 #include "BangoScripts/EditorTooling/BangoHelpers.h"
@@ -276,11 +277,25 @@ void UBangoLevelScriptsEditorSubsystem::OnLevelScriptContainerDuplicated(IBangoS
 	}
 	
 	UObject* Outer = ScriptHolder._getUObject();
-	FBangoScriptContainer& ScriptContainer = ScriptHolder.GetScriptContainer();
-	UE_LOG(LogBangoEditor, Verbose, TEXT("OnLevelScriptContainerDuplicated: %s, %s"), *Outer->GetName(), *ScriptContainer.GetGuid().ToString());
+	
+	bool bActorComponentDuplicate = false;
+	
+	if (UActorComponent* ActorComponent = Cast<UActorComponent>(Outer))
+	{
+		Bango::Debug::PrintComponentState(ActorComponent, "OnLevelScriptContainerDuplicated");
+		
+		if (ActorComponent->GetFlags() == RF_NoFlags && ActorComponent->GetOwner() && (ActorComponent->GetOwner()->HasAnyFlags(RF_Transactional)) )  
+		{
+			bActorComponentDuplicate = true;
+		}
+	}
 	
 	// Through experimentation, a *true* duplicated component will either have the Transactional flag OR it will be wrapped in actor duplication.
-	if (Outer->HasAllFlags(RF_Transactional) || bDuplicatingActors || bDuplicatingLevel)
+	if (
+		Outer->HasAllFlags(RF_Transactional) 
+		|| bDuplicatingActors 
+		|| bDuplicatingLevel
+		|| bActorComponentDuplicate)
 	{
 		FString Info;
 		ScriptHolder.LogStatus(&Info);
@@ -564,6 +579,7 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 	
 	// Prepare the newly duplicated script container
 	ScriptContainer.Unset();
+	// Do not execute ClearActorRefs here, we're duplicating it!
 	
 	FGuid NewScriptGuid = FGuid::NewGuid(); 
 	
@@ -626,6 +642,7 @@ void UBangoLevelScriptsEditorSubsystem::TryUndeleteScript(FSoftObjectPath Script
                 {
                 	UE_LOG(LogBango, Warning, TEXT("Tried to restore deleted Bango Blueprint but there was another package at the location. Invalidating this Script Container property."));
                 	ScriptContainer->Unset();
+					ScriptContainer->ClearActorRefs();
                 }
                 else
                 {

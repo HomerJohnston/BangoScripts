@@ -37,7 +37,14 @@ void FBangoScriptContainer::Unset()
 	ScriptClass = nullptr;
 	ScriptClass.Reset();
 	ScriptInputs.Reset();
-	
+}
+#endif
+
+// ----------------------------------------------
+
+#if WITH_EDITOR
+void FBangoScriptContainer::ClearActorRefs()
+{
 	SoftActorRefs.Empty();
 	HardActorRefs.Empty();
 }

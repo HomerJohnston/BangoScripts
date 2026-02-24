@@ -344,10 +344,7 @@ void UBangoScriptComponent::PostEditImport()
 	Bango::Debug::PrintComponentState(this, "PostEditImport");
 	Super::PostEditImport();
 	
-	if (GetFlags() == RF_Transactional)
-	{
-		FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
-	}
+	FBangoEditorDelegates::OnScriptContainerDuplicated.Broadcast(AsScriptHolder());
 }
 #endif
 

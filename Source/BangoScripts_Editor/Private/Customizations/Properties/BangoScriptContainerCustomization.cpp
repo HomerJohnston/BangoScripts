@@ -327,6 +327,7 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 			Outer->Modify();
 
 			ScriptContainer.Unset();
+			ScriptContainer.ClearActorRefs();
 			
 			SendDummyPECPEvent(Outer);
 			break;
@@ -348,6 +349,7 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 				FBangoEditorDelegates::OnScriptContainerDestroyed.Broadcast(ScriptHolder, EBangoScriptDeletedHelper::SuspectedDelete);
 				
 				ScriptContainer.Unset();
+				ScriptContainer.ClearActorRefs();
 				
 				SendDummyPECPEvent(Outer);
 			}
@@ -368,12 +370,14 @@ FReply FBangoScriptContainerCustomization::OnClicked_UnsetDeleteScript()
 				{
 					Outer->Modify();
 					ScriptContainer->Unset();
+					ScriptContainer->ClearActorRefs();
 				}
 			}
 			else
 			{
 				Outer->Modify();
 				ScriptContainer->Unset();
+				ScriptContainer->ClearActorRefs();
 			}	
 			
 			SendDummyPECPEvent(Outer);

@@ -84,6 +84,8 @@ public:
 #if WITH_EDITOR
 	void Unset();
 	
+	void ClearActorRefs();
+	
 	void SetScriptClass(TSubclassOf<UObject> NewScriptClass);
 	
 	void UpdateScriptInputs();
