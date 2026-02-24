@@ -577,7 +577,7 @@ void UBangoLevelScriptsEditorSubsystem::DuplicateLevelScript(IBangoScriptHolderI
 	}
 	
 	UBangoScriptBlueprint* DuplicatedBlueprint = Bango::Editor::DuplicateLevelScript(SourceBlueprint, NewScriptPackage, ScriptContainer.GetRequestedName(), NewScriptGuid, OwnerActor);
-	check(DuplicatedBlueprint);
+	DuplicatedBlueprint->SetScriptHolder(ScriptHolder);
 	
 	UE_LOG(LogBangoEditor, Verbose, TEXT(" >>>>>>>>>>>>>>>>>> OnLevelScriptContainerDuplicated, Owner: %s, Guid: %s, NewScript: %s"), *Outer->GetPathName(), *NewScriptGuid.ToString(), *DuplicatedBlueprint->GetPathName());
 	

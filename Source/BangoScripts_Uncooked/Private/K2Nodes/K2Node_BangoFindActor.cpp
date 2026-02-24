@@ -123,6 +123,46 @@ void UK2Node_BangoFindActor::InitializeInternal()
 
 // ----------------------------------------------
 
+void UK2Node_BangoFindActor::DestroyNode()
+{
+	Super::DestroyNode();
+	
+	UEdGraph* Graph = GetGraph();
+
+	TArray<UK2Node_BangoFindActor*> AllFindActorNodes;
+	Graph->GetNodesOfClass(AllFindActorNodes);
+	
+	bool bActorStillReferenced = false;
+	
+	for (UK2Node_BangoFindActor* Node : AllFindActorNodes)
+	{
+		if (Node->TargetActor == this->TargetActor)
+		{
+			bActorStillReferenced = true;
+			break;
+		}
+	}
+	
+	if (!bActorStillReferenced)
+	{
+		if (IBangoScriptHolderInterface* ScriptHolder = GetBangoScriptBlueprint()->GetScriptHolderMutable())
+		{
+			TSet<TSoftObjectPtr<AActor>>& SoftRefs = ScriptHolder->GetScriptContainer().SoftActorRefs;
+			TSet<TObjectPtr<AActor>>& HardRefs = ScriptHolder->GetScriptContainer().HardActorRefs;
+
+			if (SoftRefs.Contains(TargetActor) || (TargetActor.IsValid() && HardRefs.Contains(TargetActor.Get())))
+			{
+				ScriptHolder->_getUObject()->Modify();
+				
+				SoftRefs.Remove(TargetActor);
+				HardRefs.Remove(TargetActor.Get());
+			}
+		}
+	}
+}
+
+// ----------------------------------------------
+
 void UK2Node_BangoFindActor::AllocateDefaultPins()
 {
 	auto* SoftActorPin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_SoftObject, FName("SoftActor"));
@@ -444,23 +484,29 @@ void UK2Node_BangoFindActor::ToggleHard()
 
 	AActor* Actor = TargetActor.Get();
 	
-	IBangoScriptHolderInterface* ScriptHolder = GetBangoScriptBlueprint()->GetScriptHolderMutable();
-	TSet<TSoftObjectPtr<AActor>>& SoftActorRefs = ScriptHolder->GetScriptContainer().SoftActorRefs;
-	TSet<TObjectPtr<AActor>>& HardActorRefs = ScriptHolder->GetScriptContainer().HardActorRefs;
+	if (IBangoScriptHolderInterface* ScriptHolder = GetBangoScriptBlueprint()->GetScriptHolderMutable())
+	{
+		TSet<TSoftObjectPtr<AActor>>& SoftActorRefs = ScriptHolder->GetScriptContainer().SoftActorRefs;
+		TSet<TObjectPtr<AActor>>& HardActorRefs = ScriptHolder->GetScriptContainer().HardActorRefs;
 
-	ScriptHolder->_getUObject()->Modify();
-	
-	if (SoftActorRefs.Remove(TargetActor))
-	{
-		HardActorRefs.Add(Actor);
-	}
-	else if (HardActorRefs.Remove(Actor))
-	{
-		SoftActorRefs.Add(TargetActor);
+		ScriptHolder->_getUObject()->Modify();
+		
+		if (SoftActorRefs.Remove(TargetActor))
+		{
+			HardActorRefs.Add(Actor);
+		}
+		else if (HardActorRefs.Remove(Actor))
+		{
+			SoftActorRefs.Add(TargetActor);
+		}
+		else
+		{
+			HardActorRefs.Add(Actor);
+		}
 	}
 	else
 	{
-		HardActorRefs.Add(Actor);
+		checkNoEntry();
 	}
 }
 

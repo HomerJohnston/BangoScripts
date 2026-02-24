@@ -65,6 +65,8 @@ public:
 	
 	void InitializeInternal();
 	
+	void DestroyNode() override;
+	
 	void AllocateDefaultPins() override;
 	
 	FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;

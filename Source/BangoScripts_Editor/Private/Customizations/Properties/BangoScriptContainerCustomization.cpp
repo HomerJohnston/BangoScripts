@@ -192,6 +192,12 @@ void FBangoScriptContainerCustomization::CustomizeChildren(TSharedRef<IPropertyH
 			.HAlign(HAlign_Center)	
 		]
 	];
+	
+	// TSharedPtr<IPropertyHandle> SoftReferencedActors = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, SoftActorRefs));
+	// ChildBuilder.AddProperty(SoftReferencedActors.ToSharedRef());
+	
+	TSharedPtr<IPropertyHandle> HardReferencedActors = PropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FBangoScriptContainer, HardActorRefs));
+	ChildBuilder.AddProperty(HardReferencedActors.ToSharedRef());
 }
 
 // ----------------------------------------------

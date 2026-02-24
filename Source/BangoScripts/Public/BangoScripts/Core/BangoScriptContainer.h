@@ -40,18 +40,21 @@ protected:
 	// Used for async loading
 	TSharedPtr<FStreamableHandle> ScriptClassHandle = nullptr;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditInstanceOnly)
 	FInstancedPropertyBag ScriptInputs;
 	
 public:
 #if WITH_EDITORONLY_DATA
 	/** This is not used in any active code. It is only used to determine if an actor has already been set to a specific reference type in the script's graph. */
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	TSet<TSoftObjectPtr<AActor>> SoftActorRefs;
 #endif
 	
-	/** This is not actively used for anything. Storing these forces World Partition to link this script owner actor with these actors so they're loaded together. This is required to remain in shipping runtime. */
-	UPROPERTY(VisibleAnywhere)
+	/** 
+	 * YOU SHOULD NOT EDIT THIS. Storing actor refs here forces World Partition to link this script owner actor with these actors so they're loaded together. 
+	 * This property will be hidden at a later date after this feature is stable. 
+	 */
+	UPROPERTY(EditInstanceOnly, AdvancedDisplay, DisplayName = "Hard Actor Refs (DEBUG VIEW)")
 	TSet<TObjectPtr<AActor>> HardActorRefs;
 	
 #if WITH_EDITORONLY_DATA
