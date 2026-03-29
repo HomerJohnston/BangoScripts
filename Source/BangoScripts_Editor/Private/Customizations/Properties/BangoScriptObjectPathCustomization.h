@@ -5,6 +5,8 @@
 
 class FBangoScriptObjectPathCustomization : public IPropertyTypeCustomization
 {
+    // ==========================================
+    // CONSTRUCTION
 public:
     
 	FBangoScriptObjectPathCustomization();
@@ -12,26 +14,29 @@ public:
 	virtual ~FBangoScriptObjectPathCustomization() override;
 	
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
-	
-	// ------------------------------------------
+
+    // ==========================================
+    // STATE
+
 protected:
-
     TSharedPtr<IPropertyHandle> ObjectPathStringProperty;
+    
     TSharedPtr<SWidget> PathStringPropertyValueWidget;
-    
-    bool bUnlocked = false;
-    
-	// ------------------------------------------
 
+    // ==========================================
+    // API
+
+protected:
+    
 	void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 
-	// ------------------------------------------
-
 	void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
+
+    // ==========================================
+    // HELPERS
     
-    
-    // ------------------------------------------
 protected:
+    
     void GetAllowedClasses(TArray<const UClass*>& AllowedClasses);
     
     bool ShouldFilterActor(const AActor* Actor);
