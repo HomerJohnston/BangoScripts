@@ -18,7 +18,9 @@
 #include "Private/Commands/BangoEditorActions.h"
 #include "Private/Customizations/BangoGraphPanelNodeFactory.h"
 #include "Private/Utilities/BangoFolderUtility.h"
+
 #include "Private/Customizations/Properties/BangoScriptContainerCustomization.h"
+#include "Private/Customizations/Properties/BangoScriptObjectPathCustomization.h"
 
 #define LOCTEXT_NAMESPACE "BangoScripts"
 
@@ -80,6 +82,7 @@ void FBangoScripts_EditorModule::StartupModule()
 	
 	//////////////////
 	REGISTER_PROPERTY_CUSTOMIZATION(FBangoScriptContainer, FBangoScriptContainerCustomization);
+	REGISTER_PROPERTY_CUSTOMIZATION(FBangoScriptObjectPath, FBangoScriptObjectPathCustomization);
 	REGISTER_COMPONENT_VISUALIZER(UBangoScriptComponent, FBangoScriptComponentVisualizer);
 	
 	LateRegisterClassFilter();

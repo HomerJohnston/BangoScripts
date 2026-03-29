@@ -31,7 +31,7 @@ class FBangoScriptContainerCustomization : public IPropertyTypeCustomization
 public:
 	FBangoScriptContainerCustomization();
 	
-	~FBangoScriptContainerCustomization();
+	virtual ~FBangoScriptContainerCustomization() override;
 	
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
 	

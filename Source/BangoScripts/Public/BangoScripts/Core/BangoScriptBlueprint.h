@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "BangoScriptObjectPath.h"
 #include "BangoScripts/Core/BangoScript.h"
 #include "Engine/Blueprint.h"
 #include "IO/PackageId.h"
@@ -77,26 +78,29 @@ public:
 	// ------------------------------------------
 	// Script settings / data members
 protected:
-	/*
-	 * Every script will have a unique ID. This is used to uniquely rename and rediscover scripts when they are deleted and undo'd. 
-	 * Upon deleting a script container, the script asset is renamed into the transient package with its Guid as its unique name.
-	 * Upon undoing a deletion, the script is discovered by its Guid name and is restored to its previous name.
-	 */
-	UPROPERTY(NonPIEDuplicateTransient, TextExportTransient)
+    
+	/* 
+	Every script will have a unique ID. This is used to uniquely rename and rediscover scripts when they are deleted and undo'd. 
+	Upon deleting a script container, the script asset is renamed into the transient package with its Guid as its unique name.
+	Upon undoing a deletion, the script is discovered by its Guid name and is restored to its previous name. 
+	*/
+	UPROPERTY(VisibleAnywhere, NonPIEDuplicateTransient, TextExportTransient)
 	FGuid ScriptGuid;
 	
 	/* 
-	 * We use a raw FString to avoid packaging/asset reference discovery issues with UE thinking that the actor is referenced by this script. 
-	 * This is only used for blueprint editor niceties and has no effect on gameplay.
-	 */
-	UPROPERTY(NonPIEDuplicateTransient, TextExportTransient)
-	FString OwnerActorPath;
-	
+	We use a raw FString to avoid packaging/asset reference discovery issues with UE thinking that the actor is referenced by this script. 
+	This is only used for blueprint editor niceties and has no effect on gameplay.
+	Format is a standard object path, e.g.: 
+	/Game/FolderPath/LevelName.LevelName:PersistentLevel.Type_C_# 
+	*/
+    UPROPERTY(EditAnywhere, NonPIEDuplicateTransient, TextExportTransient)
+    FBangoScriptObjectPath OwnerActorPath;
+    
 	/* 
-	 * We use a raw FString to avoid packaing/asset reference discovery issues with UE thinking that the actor is referenced by this script. 
-	 * This is only used for blueprint editor niceties and has no effect on gameplay.
-	 */
-	UPROPERTY(NonPIEDuplicateTransient, TextExportTransient)
-	FString ScriptHolderObjectPath;
+	This is the path to the actual UObject that implements IBangoScriptHolderInterface. This is usually a Bango Script Component of the owner actor, e.g.:
+	/Game/FolderPath/LevelName.LevelName:PersistentLevel.Type_C_17.BangoScriptComponentName 
+	*/
+	UPROPERTY(EditAnywhere, NonPIEDuplicateTransient, TextExportTransient)
+	FBangoScriptObjectPath ScriptHolderObjectPath;
 #endif
 };
